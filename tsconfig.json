@@ -1,0 +1,23 @@
+{
+    "compilerOptions": {
+        "removeComments": false,
+        "preserveConstEnums": true,
+        "sourceMap": true,
+        "suppressImplicitAnyIndexErrors": true,
+        "allowSyntheticDefaultImports": true,
+        "moduleResolution": "node",
+        "module": "es6",
+        "target": "es6",
+        "experimentalDecorators": true,
+        "emitDecoratorMetadata": true,
+        "jsx": "react",
+        "types": [
+            "node"
+        ]
+    },
+    // This is opinionated for me. Change it as per your wish. (Don't Forget to change tslint config as well)
+    "formatCodeOptions": {
+        "indentSize": 4,
+        "tabSize": 4
+    }
+}

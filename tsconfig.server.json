@@ -1,0 +1,34 @@
+{
+    "compilerOptions": {
+        "removeComments": false,
+        "preserveConstEnums": true,
+        "sourceMap": true,
+        "suppressImplicitAnyIndexErrors": true,
+        "allowSyntheticDefaultImports": true,
+        "strictNullChecks": true,
+        "lib": [
+            "es2017",
+            "dom"
+        ],
+        "target": "es2017",
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "experimentalDecorators": true,
+        "emitDecoratorMetadata": true,
+        "types": [
+            "node"
+        ],
+        "outDir": "dist"
+    },
+    "include": [
+        "src/**/*"
+    ],
+    "exclude": [
+        "src/frontend/**/*",
+        "src/renderer/**/*"
+    ],
+    "formatCodeOptions": {
+        "indentSize": 4,
+        "tabSize": 4
+    }
+}
