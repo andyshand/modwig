@@ -33,28 +33,6 @@ export function send(newPacket: any) {
 
 ws.onmessage = (event) => {
   console.log("Received: ", event.data)
-  // try {
-  //     const separator = "<MESSAGEHEADERFUCKYOU>"
-  //     const messages = data.split(separator)
-  //     messages.forEach(function (message) {
-  //         message = message.trim()
-  //         if (message.length === 0) {
-  //             return
-  //         }
-  //         const parsed = JSON.parse(message);
-  //         //console.log(parsed);
-  //         onMessage.forEach(function (callback) {
-  //             callback(parsed)
-  //         })
-
-          
-  //     })
-
-  // } catch (e) {
-  //     console.error(e)
-  //     console.log(data)
-  // }
-
 }
 
 setInterval(() => {
