@@ -15,7 +15,7 @@ loadAPI(10);
 load('es5-shim.min.js');
 load('json3.min.js');
 load('Object2.js');
-var FX_TRACK_BANK_SIZE = 32;
+var FX_TRACK_BANK_SIZE = 16;
 var MAIN_TRACK_BANK_SIZE = 128;
 host.setShouldFailOnDeprecatedUse(true);
 host.defineController("andy shand", "Bitwig Enhancement Suite", "0.1", "b90a4894-b89c-40b9-b372-e1e8659699df", "andy shand");
@@ -104,7 +104,8 @@ var GlobalController = /** @class */ (function (_super) {
     function GlobalController(deps) {
         var _this = _super.call(this, deps) || this;
         _this.deps = deps;
-        _this.trackBank = host.createTrackBank(MAIN_TRACK_BANK_SIZE, 0, 0);
+        _this.trackBank = host.createMainTrackBank(MAIN_TRACK_BANK_SIZE, 0, 0);
+        _this.fxBank = host.createEffectTrackBank(FX_TRACK_BANK_SIZE, 0);
         _this.cursorTrack = host.createCursorTrack("selectedTrack", "selectedTrack", 0, 0, true);
         _this.lastSelectedTrack = '';
         /**
@@ -116,8 +117,7 @@ var GlobalController = /** @class */ (function (_super) {
             _this.lastSelectedTrack = value;
             _this.selectedTrackChanged.emit(value);
         });
-        for (var i = 0; i < MAIN_TRACK_BANK_SIZE; i++) {
-            var t = _this.trackBank.getItemAt(i);
+        _this.mapTracks(function (t, i) {
             t.name().markInterested();
             t.solo().markInterested();
             t.mute().markInterested();
@@ -127,14 +127,13 @@ var GlobalController = /** @class */ (function (_super) {
             // send all tracks when track name changes
             // hopefully this runs when new tracks are added
             t.name().addValueObserver(function (name) {
-                println(Controller.get(TrackSearchController).active);
                 if (Controller.get(TrackSearchController).active) {
                     // Don't send track changes whilst highlighting search results
                     return;
                 }
                 _this.sendAllTracks();
             });
-        }
+        });
         return _this;
     }
     GlobalController.prototype.mapTracks = function (cb) {
@@ -142,6 +141,10 @@ var GlobalController = /** @class */ (function (_super) {
         for (var i = 0; i < MAIN_TRACK_BANK_SIZE; i++) {
             var t = this.trackBank.getItemAt(i);
             out.push(cb(t, i));
+        }
+        for (var i = 0; i < FX_TRACK_BANK_SIZE; i++) {
+            var t = this.fxBank.getItemAt(i);
+            out.push(cb(t, i + MAIN_TRACK_BANK_SIZE));
         }
         return out;
     };
@@ -164,6 +167,14 @@ var GlobalController = /** @class */ (function (_super) {
     GlobalController.prototype.selectTrackWithName = function (name) {
         for (var i = 0; i < MAIN_TRACK_BANK_SIZE; i++) {
             var t = this.trackBank.getItemAt(i);
+            if (t.name().get() == name) {
+                t.selectInMixer();
+                t.makeVisibleInArranger();
+                return;
+            }
+        }
+        for (var i = 0; i < FX_TRACK_BANK_SIZE; i++) {
+            var t = this.fxBank.getItemAt(i);
             if (t.name().get() == name) {
                 t.selectInMixer();
                 t.makeVisibleInArranger();

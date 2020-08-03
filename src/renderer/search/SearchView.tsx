@@ -14,6 +14,8 @@ const Input = styled.input`
     color: white;
     box-shadow: none;
     border: none;
+    font-size: 1.3rem;
+    padding: 1em;
 `
 export interface SearchResult {
     title: string

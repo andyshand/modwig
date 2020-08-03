@@ -7,7 +7,7 @@ let windowOpen
 export function setupSearch() {
     windowOpen = new BrowserWindow({ 
         width: 500, 
-        height: 800, 
+        height: 600, 
         frame: false, 
         show: false,
         webPreferences: {
