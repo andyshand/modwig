@@ -5,7 +5,6 @@ const { Keyboard } = require('bindings')('bes')
 
 let windowOpen
 const listenerId = Keyboard.addEventListener('keydown', event => {
-    console.log('key was pressed', event)
     const app = getActiveApplication()
     if (app.application !== 'BitwigStudio' && event.keycode === 49 && event.ctrlKey && !windowOpen) {
         // ctrl + space pressed

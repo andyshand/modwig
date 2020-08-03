@@ -1,5 +1,6 @@
 import React from 'react'
 import { SearchView, SearchProps } from './SearchView'
+import { send } from '../bitwig-api/Bitwig'
 
 export class TrackSearchView extends React.Component {
 
@@ -8,7 +9,9 @@ export class TrackSearchView extends React.Component {
     }
 
     componentDidMount() {
-
+        send({
+            type: 'ping'
+        })
     }
 
     // mapTrackItem(track: Bitwig.Track) : SearchResult {

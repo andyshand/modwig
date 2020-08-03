@@ -107,7 +107,6 @@ a {
     }
 `
 
-console.log('wkjhasdkjahsdkasjhd')
 ReactDOM.render(
     <HashRouter>
         <GlobalStyle />

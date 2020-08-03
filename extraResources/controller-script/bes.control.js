@@ -12,11 +12,14 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 loadAPI(10);
-load('JSON.js');
+load('es5-shim.min.js');
+load('json3.min.js');
+load('Object2.js');
 var FX_TRACK_BANK_SIZE = 32;
 var MAIN_TRACK_BANK_SIZE = 128;
 host.setShouldFailOnDeprecatedUse(true);
 host.defineController("andy shand", "Bitwig Enhancement Suite", "0.1", "b90a4894-b89c-40b9-b372-e1e8659699df", "andy shand");
+var connection;
 var EventEmitter = /** @class */ (function () {
     function EventEmitter() {
         this.nextId = 0;
@@ -27,7 +30,7 @@ var EventEmitter = /** @class */ (function () {
         this.listenersById[nowId] = cb;
     };
     EventEmitter.prototype.emit = function (value) {
-        for (var _i = 0, _a = Object.values(this.listenersById); _i < _a.length; _i++) {
+        for (var _i = 0, _a = Object2.values(this.listenersById); _i < _a.length; _i++) {
             var listener = _a[_i];
             listener(value);
         }
@@ -38,31 +41,38 @@ var PacketManager = /** @class */ (function () {
     function PacketManager() {
         var _this = this;
         this.listenersByType = {};
-        this.connection = host.createRemoteConnection("browser_connection", 8182);
+        this.connection = connection;
+        println("Created remote connection on port: " + this.connection.getPort());
         this.connection.setClientConnectCallback(function (connection) {
-            println("connected");
+            println("Connected to Node");
             _this.activeConnection = connection;
             _this.activeConnection.setDisconnectCallback(function () {
-                println("closed");
+                println("Disconnected from Node");
                 _this.activeConnection = null;
             });
             _this.activeConnection.setReceiveCallback(function (data) {
                 try {
                     var str = bytesToString(data);
+                    // println('string is ' + str)
                     var packet = JSON.parse(str);
+                    // println('parsed the packet')
                     var listeners = _this.listenersByType[packet.type] || [];
+                    if (packet.type === 'ping') {
+                        _this.send({ type: 'pong' });
+                    }
+                    // println('send response???')
                     for (var _i = 0, listeners_1 = listeners; _i < listeners_1.length; _i++) {
                         var listener = listeners_1[_i];
                         try {
                             listener(packet);
                         }
                         catch (e) {
-                            errorln('packet handler errored: ' + e);
+                            println(e);
                         }
                     }
                 }
                 catch (e) {
-                    errorln('error parsing packet');
+                    println(e);
                 }
             });
         });
@@ -71,7 +81,10 @@ var PacketManager = /** @class */ (function () {
         this.listenersByType[type] = this.listenersByType[type] || [].concat(cb);
     };
     PacketManager.prototype.send = function (packet) {
-        this.activeConnection.send(JSON.stringify(packet));
+        if (this.activeConnection) {
+            var asString = JSON.stringify(packet);
+            this.activeConnection.send((asString.length + asString).getBytes());
+        }
     };
     return PacketManager;
 }());
@@ -98,7 +111,7 @@ var GlobalController = /** @class */ (function (_super) {
          * Will get called whenever the name of the current track changes (most reliable way I know of)
          */
         _this.selectedTrackChanged = new EventEmitter();
-        _this.cursorTrack.name().markIntersted();
+        _this.cursorTrack.name().markInterested();
         _this.cursorTrack.name().addValueObserver(function (value) {
             _this.lastSelectedTrack = value;
             _this.selectedTrackChanged.emit(value);
@@ -130,7 +143,7 @@ var GlobalController = /** @class */ (function (_super) {
     GlobalController.prototype.sendAllTracks = function () {
         var tracks = this.mapTracks(function (t, i) {
             return {
-                name: t.name.get(),
+                name: t.name().get(),
                 solo: t.solo().get(),
                 mute: t.mute().get(),
                 color: t.color().get(),
@@ -238,6 +251,8 @@ function bytesToString(data) {
 function init() {
     // var app = host.createApplication()
     var transport = host.createTransport();
+    connection = host.createRemoteConnection("name", 8888);
+    println("Created the host");
     // fix for bug that doesn't reset automation at specific point
     transport.getPosition().markInterested();
     transport.playStartPosition().markInterested();

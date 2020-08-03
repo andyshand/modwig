@@ -1,17 +1,21 @@
 declare const host: any
 declare const loadAPI: any
 declare const println: any
-declare const errorln: any
 declare const load: any
+declare const Object2: any
 
 loadAPI(10);
-load('JSON.js')
+load('es5-shim.min.js')
+load('json3.min.js')
+load('Object2.js')
 
 const FX_TRACK_BANK_SIZE = 32
 const MAIN_TRACK_BANK_SIZE = 128
 
 host.setShouldFailOnDeprecatedUse(true);
 host.defineController("andy shand", "Bitwig Enhancement Suite", "0.1", "b90a4894-b89c-40b9-b372-e1e8659699df", "andy shand");
+
+let connection: any
 
 type Packet = {
     type: string
@@ -25,48 +29,59 @@ class EventEmitter<T> {
         this.listenersById[nowId] = cb
     }
     emit(value: T) {
-        for (const listener of Object.values(this.listenersById)) {
+        for (const listener of Object2.values(this.listenersById)) {
             listener(value)
         }
     }
 }
+
 
 class PacketManager {
     connection: any
     activeConnection: any
     listenersByType: {[type: string]: ((packet: Packet) => void)[]} = {}
     constructor() {
-        this.connection = host.createRemoteConnection("browser_connection", 8182)
+        this.connection = connection
+        println("Created remote connection on port: " + this.connection.getPort())
         this.connection.setClientConnectCallback(connection => {
-            println("connected");
+            println("Connected to Node");
             this.activeConnection = connection
             this.activeConnection.setDisconnectCallback(() => {
-                println("closed");
+                println("Disconnected from Node");
                 this.activeConnection = null
             })
             this.activeConnection.setReceiveCallback(data => {
                 try {
                     const str = bytesToString(data)
+                    // println('string is ' + str)
                     const packet = JSON.parse(str)
+                    // println('parsed the packet')
                     const listeners = this.listenersByType[packet.type] || []
+                    if (packet.type === 'ping') {
+                        this.send({type: 'pong'})
+                    }
+                    // println('send response???')
                     for (const listener of listeners) {
                         try {
                             listener(packet)
                         } catch (e) {
-                            errorln('packet handler errored: ' + e)
+                            println(e)
                         }
                     }
                 } catch(e) {
-                    errorln('error parsing packet')
+                    println(e)
                 }            
             })
         });
-    }    
+    }
     listen(type: string, cb: (p: Packet) => void) {
         this.listenersByType[type] = this.listenersByType[type] || [].concat(cb)
     }
     send(packet: Packet) {
-        this.activeConnection.send(JSON.stringify(packet))
+        if (this.activeConnection) {
+            const asString = JSON.stringify(packet)
+            this.activeConnection.send(((asString.length + asString) as any).getBytes());
+        }
     }
 }
 
@@ -98,7 +113,7 @@ class GlobalController extends Controller {
     constructor(public readonly deps: Deps) {
         super(deps)
 
-        this.cursorTrack.name().markIntersted();
+        this.cursorTrack.name().markInterested();
         this.cursorTrack.name().addValueObserver(value => {
             this.lastSelectedTrack = value
             this.selectedTrackChanged.emit(value)
@@ -133,7 +148,7 @@ class GlobalController extends Controller {
     sendAllTracks() {
         const tracks = this.mapTracks((t, i) => {
             return {
-                name: t.name.get(),
+                name: t.name().get(),
                 solo: t.solo().get(),
                 mute: t.mute().get(),
                 color: t.color().get(),
@@ -237,6 +252,8 @@ function bytesToString(data) {
 function init() {
     // var app = host.createApplication()
     const transport = host.createTransport()
+    connection = host.createRemoteConnection("name", 8888)
+    println("Created the host")
 
     // fix for bug that doesn't reset automation at specific point
     transport.getPosition().markInterested()
