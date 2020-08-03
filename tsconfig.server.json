@@ -21,14 +21,6 @@
         "outDir": "dist"
     },
     "include": [
-        "src/**/*"
-    ],
-    "exclude": [
-        "src/frontend/**/*",
-        "src/renderer/**/*"
-    ],
-    "formatCodeOptions": {
-        "indentSize": 4,
-        "tabSize": 4
-    }
+        "src/main/**/*"
+    ]
 }

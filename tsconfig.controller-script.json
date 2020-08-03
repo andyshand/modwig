@@ -1,0 +1,19 @@
+{
+    "compilerOptions": {
+        "removeComments": false,
+        "preserveConstEnums": true,
+        "suppressImplicitAnyIndexErrors": true,
+        "moduleResolution": "node",
+        "target": "es3",
+        "outFile": "extraResources/controller-script/bes.control.js",
+        "experimentalDecorators": true,
+        "emitDecoratorMetadata": true
+    },
+    "formatCodeOptions": {
+        "indentSize": 4,
+        "tabSize": 4
+    },
+    "include": [
+        "src/controller-script/index.ts"
+    ]
+}

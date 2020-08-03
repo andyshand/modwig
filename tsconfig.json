@@ -14,10 +14,5 @@
         "types": [
             "node"
         ]
-    },
-    // This is opinionated for me. Change it as per your wish. (Don't Forget to change tslint config as well)
-    "formatCodeOptions": {
-        "indentSize": 4,
-        "tabSize": 4
     }
 }

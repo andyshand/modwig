@@ -1,9 +1,8 @@
 const path = require('path')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const isWebpackDevServer = process.argv[1].indexOf('webpack-dev-server') !== -1
-const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const webpack = require('webpack')
-const src = path.join(__dirname, 'src')
+const src = path.join(__dirname, 'src', 'renderer')
 const port = process.env.PORT || 8080
 const { version } = require('./package.json')
 const mode = isWebpackDevServer ? "development" : "production"
@@ -40,9 +39,6 @@ module.exports = {
     },
     devtool: "sourcemap",
     plugins: [
-        new MiniCssExtractPlugin({
-            filename: '[name].css'
-        }),
         new HtmlWebpackPlugin({
             template: path.join(__dirname, 'src', 'renderer', 'index.html'),
 
@@ -58,52 +54,7 @@ module.exports = {
     module: {
         rules: [
             { test: /\.tsx?$/, loader: "ts-loader", include: src },
-            {
-                test: /\.css$/,
-                use: [
-                    isWebpackDevServer ? 'style-loader' : MiniCssExtractPlugin.loader,
-                    'css-loader'
-                ],
-                include: src
-            }, {
-                test: /\.scss$/,
-                include: src,
-                use: [
-                    isWebpackDevServer ? 'style-loader' : MiniCssExtractPlugin.loader,
-                    'css-loader',
-                    'sass-loader',
-                    'import-glob-loader'
-                ]
-            }, {
-                test: /\.(jpe?g|png|gif)$/i,
-                include: src,
-                use: [
-                    'file-loader',
-                    'image-webpack-loader'
-                ]
-            }, {
-                test: /\.(ttf|eot|otf|woff|woff2)$/i,
-                use: 'file-loader'
-            }, {
-                test: /\.svg$/,
-                exclude: /node_modules/,
-                loader: 'svg-react-loader',
-                query: {
-                    classIdPrefix: '[name]-[hash:8]__',
-                    filters: [
-                        // function (value) {
-                        //     // ...
-                        //     this.update(newvalue);
-                        // }
-                    ],
-                    propsMap: {
-                        fillRule: 'fill-rule',
-                        foo: 'bar'
-                    },
-                    xmlnsTest: /^xmlns.*$/
-                }
-            }
-        ].filter(s => !!s)
+        ]
     },
     resolve: {
         extensions: [

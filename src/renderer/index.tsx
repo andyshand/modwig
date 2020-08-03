@@ -1,10 +1,9 @@
-import 'reflect-metadata'
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { Switch, Route, HashRouter } from 'react-router-dom'
 import { createGlobalStyle } from 'styled-components'
 import { Settings } from './settings/Settings';
-import { Search } from './search/Search';
+import { TrackSearchView } from './search/TrackSearchView';
 
 const GlobalStyle = createGlobalStyle`
     @import url('https://fonts.googleapis.com/css?family=Montserrat:300,400,500,600&display=swap');
@@ -108,12 +107,13 @@ a {
     }
 `
 
+console.log('wkjhasdkjahsdkasjhd')
 ReactDOM.render(
     <HashRouter>
         <GlobalStyle />
         <Switch>
             <Route path="/settings" component={Settings} />
-            <Route path="/search" component={Search} />
+            <Route path="/search" component={TrackSearchView} />
         </Switch>
     </HashRouter>,
 document.getElementById('root'));
