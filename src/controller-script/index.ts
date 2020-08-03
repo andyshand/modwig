@@ -58,7 +58,7 @@ class PacketManager {
                     // println('parsed the packet')
                     const listeners = this.listenersByType[packet.type] || []
                     if (packet.type === 'ping') {
-                        this.send({type: 'pong'})
+                        return this.send({type: 'pong'})
                     }
                     // println('send response???')
                     for (const listener of listeners) {
@@ -131,6 +131,11 @@ class GlobalController extends Controller {
             // send all tracks when track name changes
             // hopefully this runs when new tracks are added
             t.name().addValueObserver(name => {
+                println(Controller.get(TrackSearchController).active)
+                if (Controller.get(TrackSearchController).active) {
+                    // Don't send track changes whilst highlighting search results
+                    return
+                }
                 this.sendAllTracks()
             })
         }
@@ -183,6 +188,7 @@ class TrackSearchController extends Controller {
         packetManager.listen('tracksearch/start', () => {
             this.trackSelectedWhenStarted = globalController.lastSelectedTrack
             this.active = true
+            globalController.sendAllTracks()
         })
         packetManager.listen('tracksearch/cancel', () => {
             if (this.trackSelectedWhenStarted.length > 0) {
@@ -191,6 +197,10 @@ class TrackSearchController extends Controller {
             this.active = false
         })
         packetManager.listen('tracksearch/highlighted', ({data: trackName}) => {
+            globalController.selectTrackWithName(trackName)
+        })
+        packetManager.listen('tracksearch/confirm', ({data: trackName}) => {
+            this.active = false
             globalController.selectTrackWithName(trackName)
         })
     }

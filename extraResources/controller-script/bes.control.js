@@ -58,7 +58,7 @@ var PacketManager = /** @class */ (function () {
                     // println('parsed the packet')
                     var listeners = _this.listenersByType[packet.type] || [];
                     if (packet.type === 'ping') {
-                        _this.send({ type: 'pong' });
+                        return _this.send({ type: 'pong' });
                     }
                     // println('send response???')
                     for (var _i = 0, listeners_1 = listeners; _i < listeners_1.length; _i++) {
@@ -127,6 +127,11 @@ var GlobalController = /** @class */ (function (_super) {
             // send all tracks when track name changes
             // hopefully this runs when new tracks are added
             t.name().addValueObserver(function (name) {
+                println(Controller.get(TrackSearchController).active);
+                if (Controller.get(TrackSearchController).active) {
+                    // Don't send track changes whilst highlighting search results
+                    return;
+                }
                 _this.sendAllTracks();
             });
         }
@@ -178,6 +183,7 @@ var TrackSearchController = /** @class */ (function (_super) {
         packetManager.listen('tracksearch/start', function () {
             _this.trackSelectedWhenStarted = globalController.lastSelectedTrack;
             _this.active = true;
+            globalController.sendAllTracks();
         });
         packetManager.listen('tracksearch/cancel', function () {
             if (_this.trackSelectedWhenStarted.length > 0) {
@@ -187,6 +193,11 @@ var TrackSearchController = /** @class */ (function (_super) {
         });
         packetManager.listen('tracksearch/highlighted', function (_a) {
             var trackName = _a.data;
+            globalController.selectTrackWithName(trackName);
+        });
+        packetManager.listen('tracksearch/confirm', function (_a) {
+            var trackName = _a.data;
+            _this.active = false;
             globalController.selectTrackWithName(trackName);
         });
         return _this;

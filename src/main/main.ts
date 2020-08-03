@@ -1,6 +1,6 @@
 import { app, BrowserWindow } from "electron";
 import { runWebsocketToSocket } from "../connector/shared/WebsocketToSocket";
-import './search/Search'
+import { setupSearch } from './search/Search'
 
 // Allow our web interface to communicate directly with Bitwig via websocket
 runWebsocketToSocket()
@@ -26,13 +26,15 @@ function createWindow() {
 app.whenReady().then(() => {
   // createWindow();
 
+
+
   app.on("activate", function () {
     // On macOS it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.
     // if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
 
-  
+  setupSearch()  
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common

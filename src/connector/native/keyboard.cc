@@ -87,7 +87,7 @@ CGEventRef eventtap_callback(CGEventTapProxy proxy, CGEventType type, CGEventRef
     }
 
     jsEvent->keycode = CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
-    auto returnValue = e->cb.BlockingCall( jsEvent, callback );  
+    auto returnValue = e->cb.NonBlockingCall( jsEvent, callback );  
 
     // can return NULL to ignore event
     return event;
