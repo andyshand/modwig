@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Adds extra features to Bitwig",
   "scripts": {
-    "electron": "electron dist/main/index.js",
+    "electron": "electron dist/main/main.js",
     "watch": "tsc -w --p tsconfig.server.json",
     "start": "NODE_ENV=dev nodemon -V --watch ./dist . --exec 'npm run electron'",
     "dev": "webpack-dev-server",
@@ -22,6 +22,9 @@
     "rebuildc:dev": "node-gyp -j 16 rebuild --debug",
     "rebuildc": "node-gyp -j 16 rebuild",
     "cleanc": "node-gyp clean"
+  },
+  "build": {
+    "extraResources": ["./extraResources/**"]
   },
   "repository": "https://github.com/electron/electron-quick-start-typescript",
   "author": "Andrew Shand",

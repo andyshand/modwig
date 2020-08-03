@@ -14,7 +14,7 @@ Napi::Object InitAll(Napi::Env env, Napi::Object exports) {
   BESPoint::Init(env, exports);
   BESRect::Init(env, exports);
   BESMouse::Init(env, exports);
-  BESKeyboard::Init(env, exports);
+  InitKeyboard(env, exports);
   return Screenshot::Init(env, exports);
 }
 

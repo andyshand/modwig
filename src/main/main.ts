@@ -1,6 +1,6 @@
 import { app, BrowserWindow } from "electron";
-import * as path from "path";
-
+import { getActiveApplication } from "../connector/shared/ActiveApplication";
+const { Keyboard } = require('bindings')('bes')
 
 console.log("hello")
 function createWindow() {
@@ -21,10 +21,7 @@ function createWindow() {
   mainWindow.webContents.openDevTools();
 }
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
-app.on("ready", () => {
+app.whenReady().then(() => {
   createWindow();
 
   app.on("activate", function () {
@@ -32,7 +29,15 @@ app.on("ready", () => {
     // dock icon is clicked and there are no other windows open.
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
-});
+
+  var id = Keyboard.addEventListener('keydown', event => {
+    const app = getActiveApplication()
+    
+    if (app.application === 'BitwigStudio' && event.keycode === 49 && event.ctrlKey) {
+      console.log("Let's show the track search!")
+    }
+  })
+})
 
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits

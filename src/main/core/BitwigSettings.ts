@@ -12,8 +12,7 @@ export interface BitwigSettings {
     }
 }
 
-export function loadSettings(): BitwigSettings {
-    return null
+export function loadSettings(): void {
 
 }
 

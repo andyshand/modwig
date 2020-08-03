@@ -3,13 +3,13 @@
     {
       "target_name": "bes",
       "sources": [
-        "src/connector/main.cc",
-        "src/connector/mouse.cc",
-        "src/connector/keyboard.cc",
-        "src/connector/rect.cc",
-        "src/connector/screen.cc",
-        "src/connector/point.cc",
-        "src/connector/color.cc"
+        "src/connector/native/main.cc",
+        "src/connector/native/mouse.cc",
+        "src/connector/native/keyboard.cc",
+        "src/connector/native/rect.cc",
+        "src/connector/native/screen.cc",
+        "src/connector/native/point.cc",
+        "src/connector/native/color.cc"
       ],
       "include_dirs": [
         "<!@(node -p \"require('node-addon-api').include\")"

@@ -26,6 +26,6 @@ export class UI {
 
     }
     readText(loc: Location): string {
-        return null
+        return ''
     }
 }

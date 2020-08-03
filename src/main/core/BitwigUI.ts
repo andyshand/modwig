@@ -13,9 +13,9 @@ class StateItem<T> {
 export class BitwigState extends State {
     panel = new StateItem<'arrange' | 'mix' | 'edit'>('arrange')
     layout = new StateItem(null)
-    subpanel = new StateItem<'detail' | 'automation' | 'device' | 'mixer'>(null)
+    subpanel = new StateItem<'detail' | 'automation' | 'device' | 'mixer'>('detail')
     inspector = new StateItem<'arrange' | 'mix' | 'edit'>('arrange')
-    sidePanel = new StateItem<'browser' | 'project' | 'studio' | 'mappings'>(null)
+    sidePanel = new StateItem<'browser' | 'project' | 'studio' | 'mappings'>('browser')
     onScreenKeyboard = new StateItem<boolean>(false)
     scaling = new StateItem<1 | 1.25 | 1.5 | 1.75 | 2 | 2.25>(1)
     mix = {
