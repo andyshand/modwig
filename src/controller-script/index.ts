@@ -126,6 +126,7 @@ class GlobalController extends Controller {
         this.mapTracks((t, i) => {
             t.name().markInterested()
             t.solo().markInterested()
+            t.arm().markInterested()
             t.mute().markInterested()
             t.color().markInterested()
             t.position().markInterested()
@@ -139,6 +140,18 @@ class GlobalController extends Controller {
                     return
                 }
                 this.sendAllTracks()
+            })
+
+            // Exclusive arm
+            t.arm().addValueObserver(armed => {
+                if (armed) {
+                    // Unarm all other tracks
+                    this.mapTracks((t, i2) => {
+                        if (i !== i2) {
+                            t.arm().set(false);
+                        }
+                    })
+                }
             })
         })
     }
