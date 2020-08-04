@@ -7,6 +7,7 @@ export async function getActiveApplication() : Promise<any> {
     return new Promise((res) => {
         exec("osascript " + path.join(getResourcePath(), 'activeWindow.scpt'), (error, stdout) => {
             const parts = stdout.split(",");
+            // console.log(stdout)
             res({
                 application: parts[0],
                 // windowTitle: (parts[1] || '').replace(/\n$/, "").replace(/^\s/, "")

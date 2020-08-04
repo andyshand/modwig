@@ -8,13 +8,15 @@
 #include "mouse.h"
 #include "keyboard.h"
 #include "screen.h"
+#include "window.h"
 
 Napi::Object InitAll(Napi::Env env, Napi::Object exports) {
   BESColor::Init(env, exports);
   BESPoint::Init(env, exports);
   BESRect::Init(env, exports);
-  BESMouse::Init(env, exports);
   InitKeyboard(env, exports);
+  InitMouse(env, exports);
+  InitWindow(env, exports);
   return Screenshot::Init(env, exports);
 }
 

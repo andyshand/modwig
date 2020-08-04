@@ -1,5 +1,5 @@
 import { WEBSOCKET_PORT, SOCKET_PORT } from "./Constants";
-
+const logInOut = false
 const RECONNECT_IN = 1000 * 3;
 
 let waiting = 0
@@ -22,14 +22,14 @@ export function runWebsocketToSocket() {
                 bitwigConnected = true;
             });
             bitwigClient!.on('data', function (data) {
-                console.log('Bitwig sent: ' + data);
+                if (logInOut) console.log('Bitwig sent: ' + data);
                 let leftToParse = data.toString()
                 while (leftToParse.length > 0) {
                     if (waiting === 0) {
                         waiting = parseInt(leftToParse, 10)
                         partialMsg = ''
                         leftToParse = leftToParse.substr(String(waiting).length)
-                        console.log("waiting on " + waiting)
+                        // console.log("waiting on " + waiting)
                     }
                     let thisTime = leftToParse.substr(0, waiting)
                     leftToParse = leftToParse.substr(waiting)
@@ -66,7 +66,7 @@ export function runWebsocketToSocket() {
         activeWebsocket = ws;
         console.log('Browser connected');
         ws.on('message', messageFromBrowser => {
-            console.log('Browser sent: ', messageFromBrowser);
+            if (logInOut) console.log('Browser sent: ', messageFromBrowser);
             sendToBitwig(messageFromBrowser)
         });
         ws.on('close', () => {
@@ -82,8 +82,8 @@ function sendToBitwig(str) {
     const sizeBuf = Buffer.alloc(4);
     sizeBuf.writeInt32BE(str.length, 0);
     try {
-      console.log('Sending to bitwig: ', str)
-        bitwigClient.write(Buffer.concat([sizeBuf, buff]));
+      if (logInOut) console.log('Sending to bitwig: ', str)
+      bitwigClient.write(Buffer.concat([sizeBuf, buff]));
     }
     catch (e) {
         console.error(e);

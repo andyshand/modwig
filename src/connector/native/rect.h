@@ -25,6 +25,7 @@ public:
     }
     static Napi::Object Init(Napi::Env env, Napi::Object exports);
     BESRect(const Napi::CallbackInfo &info);
+    static Napi::Object FromCGRect(const Napi::Env env, CGRect cgRect);
     CGRect asCGRect() {
         return CGRectMake(_x, _y, _w, _h);
     }

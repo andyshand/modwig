@@ -60,8 +60,8 @@
         "**/node_modules": true,
         "**/bower_components": true,
         "**/*.code-search": true,
-        "build": true,
-        "dist": true,
-        "extraResources/controller-script": true
+        "**/build": true,
+        "**/dist": true,
+        "**/extraResources/controller-script": true
     }
 }

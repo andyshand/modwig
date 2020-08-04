@@ -4,6 +4,7 @@ import { Switch, Route, HashRouter } from 'react-router-dom'
 import { createGlobalStyle } from 'styled-components'
 import { Settings } from './settings/Settings';
 import { TrackSearchView } from './search/TrackSearchView';
+import { ValueEntryView } from './value-entry/ValueEntryView';
 
 const GlobalStyle = createGlobalStyle`
     @import url('https://fonts.googleapis.com/css?family=Montserrat:300,400,500,600&display=swap');
@@ -113,6 +114,7 @@ ReactDOM.render(
         <Switch>
             <Route path="/settings" component={Settings} />
             <Route path="/search" component={TrackSearchView} />
+            <Route path="/value-entry" component={ValueEntryView} />
         </Switch>
     </HashRouter>,
 document.getElementById('root'));

@@ -9,7 +9,8 @@
         "src/connector/native/rect.cc",
         "src/connector/native/screen.cc",
         "src/connector/native/point.cc",
-        "src/connector/native/color.cc"
+        "src/connector/native/color.cc",
+        "src/connector/native/window.cc"
       ],
       "include_dirs": [
         "<!@(node -p \"require('node-addon-api').include\")"

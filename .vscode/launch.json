@@ -1,6 +1,15 @@
 {
     "version": "0.2.0",
-    "configurations": [{
+    "configurations": [
+       {
+          "name": "(lldb) Attach",
+          "type": "cppdbg",
+          "request": "attach",
+          "program": "/Users/andrewshand/.nvm/versions/node/v12.9.1/bin/node",
+          "processId": "${command:pickProcess}",
+          "MIMode": "lldb"
+       },
+    {
        "type": "lldb",
        "request": "launch",
        "name": "Launch Program",

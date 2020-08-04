@@ -1,6 +1,7 @@
 import { app, BrowserWindow } from "electron";
 import { runWebsocketToSocket } from "../connector/shared/WebsocketToSocket";
 import { setupNavigation } from './search/Search'
+import { setupValueEntry } from './value-entry/ValueEntry'
 
 // Allow our web interface to communicate directly with Bitwig via websocket
 runWebsocketToSocket()
@@ -35,6 +36,7 @@ app.whenReady().then(() => {
   });
 
   setupNavigation()  
+  setupValueEntry()
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common

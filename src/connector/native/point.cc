@@ -8,10 +8,11 @@ Napi::Object BESPoint::Init(Napi::Env env, Napi::Object exports)
         InstanceAccessor<&BESPoint::GetX>("x"),
         InstanceAccessor<&BESPoint::GetY>("y")
     });
-    // Napi::FunctionReference *constructor = new Napi::FunctionReference();
-    // BESPoint::constructor = Napi::Persistent(func);  
+
+    BESPoint::constructor = Napi::Persistent(func);  
+    BESPoint::constructor.SuppressDestruct();
     exports.Set("BESPoint", func);
-    // env.SetInstanceData<Napi::FunctionReference>(BESPoint::constructor);
+
     return exports;
 }
 

@@ -11,6 +11,7 @@ using std::forward_list;
 
 bool threadSetup = false;
 std::thread nativeThread;
+CFRunLoopRef runLoop;
 int nextId = 0;
 
 struct CallbackInfo {
@@ -130,13 +131,16 @@ Napi::Value addEventListener(const Napi::CallbackInfo &info) {
         std::cout << 'could not create the tapper!!!!';
     } else {
         CGEventTapEnable(ourInfo->tap, true);
+        ourInfo->runloopsrc = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, ourInfo->tap, 0);
         if (!threadSetup) {
             threadSetup = true;
             nativeThread = std::thread( [=] {
-                ourInfo->runloopsrc = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, ourInfo->tap, 0);
-                CFRunLoopAddSource(CFRunLoopGetCurrent(), ourInfo->runloopsrc, kCFRunLoopCommonModes);
+                runLoop = CFRunLoopGetCurrent();
+                CFRunLoopAddSource(runLoop, ourInfo->runloopsrc, kCFRunLoopCommonModes);
                 CFRunLoopRun();
             } );
+        } else {    
+            CFRunLoopAddSource(runLoop, ourInfo->runloopsrc, kCFRunLoopCommonModes);
         }
     }
     callbacks.push_front(ourInfo);
