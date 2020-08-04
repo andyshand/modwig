@@ -44,10 +44,12 @@ class PacketManager {
         this.connection = connection
         println("Created remote connection on port: " + this.connection.getPort())
         this.connection.setClientConnectCallback(connection => {
+            host.showPopupNotification("BES Connected");
             println("Connected to Node");
             this.activeConnection = connection
             this.activeConnection.setDisconnectCallback(() => {
                 println("Disconnected from Node");
+                host.showPopupNotification("BES Disconnected");
                 this.activeConnection = null
             })
             this.activeConnection.setReceiveCallback(data => {

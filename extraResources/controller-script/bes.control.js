@@ -44,10 +44,12 @@ var PacketManager = /** @class */ (function () {
         this.connection = connection;
         println("Created remote connection on port: " + this.connection.getPort());
         this.connection.setClientConnectCallback(function (connection) {
+            host.showPopupNotification("BES Connected");
             println("Connected to Node");
             _this.activeConnection = connection;
             _this.activeConnection.setDisconnectCallback(function () {
                 println("Disconnected from Node");
+                host.showPopupNotification("BES Disconnected");
                 _this.activeConnection = null;
             });
             _this.activeConnection.setReceiveCallback(function (data) {
