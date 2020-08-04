@@ -108,6 +108,7 @@ class GlobalController extends Controller {
     fxBank = host.createEffectTrackBank(FX_TRACK_BANK_SIZE, 0)
     cursorTrack = host.createCursorTrack("selectedTrack", "selectedTrack", 0, 0, true)
     lastSelectedTrack: string = ''
+    masterTrack = host.createMasterTrack( 0 );
 
     /**
      * Will get called whenever the name of the current track changes (most reliable way I know of)
@@ -179,14 +180,26 @@ class GlobalController extends Controller {
                 position: t.position().get(),
                 volume: t.volume().get()
             }
-        }) 
+        })
         this.deps.packetManager.send({
             type: 'tracks',
-            data: tracks
+            data: tracks.concat({
+                name: 'Master',
+                solo: false,
+                mute: false,
+                color: '#000',
+                position: '-1',
+                volume: 1
+            })
         })
     }
 
     selectTrackWithName(name) {
+        if (name === 'Master') {
+            this.masterTrack.selectInMixer()
+            this.masterTrack.makeVisibleInArranger()
+            return
+        }
         for (let i = 0; i < MAIN_TRACK_BANK_SIZE; i++) {
             const t = this.trackBank.getItemAt(i)
             if (t.name().get() == name) {
