@@ -60,6 +60,7 @@ class PacketManager {
                     if (packet.type === 'ping') {
                         return this.send({type: 'pong'})
                     }
+                    // host.showPopupNotification(packet.type)
                     // println('send response???')
                     for (const listener of listeners) {
                         try {
@@ -226,14 +227,14 @@ class BackForwardController extends Controller {
         super(deps)
         const { packetManager, globalController } = deps
         globalController.selectedTrackChanged.listen(this.onSelectedTrackChanged)
-        packetManager.listen('tracknavigation/back', ({data: trackName}) => {
+        packetManager.listen('tracknavigation/back', () => {
             if (this.historyIndex > 0) {
                 this.ignoreSelectionChangesOnce = true
                 this.historyIndex--
                 globalController.selectTrackWithName(this.trackHistory[this.historyIndex].name)
             }
         })
-        packetManager.listen('tracknavigation/forward', ({data: trackName}) => {
+        packetManager.listen('tracknavigation/forward', () => {
             if (this.historyIndex < this.trackHistory.length - 1) {
                 this.ignoreSelectionChangesOnce = true
                 this.historyIndex++
@@ -242,7 +243,7 @@ class BackForwardController extends Controller {
         })
     }
 
-    onSelectedTrackChanged(name: string) {
+    onSelectedTrackChanged = (name: string) => {
         if (Controller.get(TrackSearchController).active) {
             // Don't record track changes whilst highlighting search results
             return
@@ -294,4 +295,5 @@ function init() {
     deps.globalController = new GlobalController(deps)
     
     new TrackSearchController(deps)    
+    new BackForwardController(deps)    
 }

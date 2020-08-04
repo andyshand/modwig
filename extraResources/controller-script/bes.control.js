@@ -60,6 +60,7 @@ var PacketManager = /** @class */ (function () {
                     if (packet.type === 'ping') {
                         return _this.send({ type: 'pong' });
                     }
+                    // host.showPopupNotification(packet.type)
                     // println('send response???')
                     for (var _i = 0, listeners_1 = listeners; _i < listeners_1.length; _i++) {
                         var listener = listeners_1[_i];
@@ -222,18 +223,34 @@ var BackForwardController = /** @class */ (function (_super) {
         _this.trackHistory = [];
         _this.historyIndex = -1;
         _this.ignoreSelectionChangesOnce = false;
+        _this.onSelectedTrackChanged = function (name) {
+            if (Controller.get(TrackSearchController).active) {
+                // Don't record track changes whilst highlighting search results
+                return;
+            }
+            if (name.trim().length == 0 || _this.ignoreSelectionChangesOnce) {
+                _this.ignoreSelectionChangesOnce = false;
+                return;
+            }
+            while (_this.trackHistory.length > 50) {
+                _this.trackHistory.splice(0, 1);
+                _this.historyIndex--;
+            }
+            _this.trackHistory = _this.trackHistory.slice(0, _this.historyIndex + 1);
+            // println('track name changed to ' + value)
+            _this.trackHistory.push({ name: name });
+            _this.historyIndex++;
+        };
         var packetManager = deps.packetManager, globalController = deps.globalController;
         globalController.selectedTrackChanged.listen(_this.onSelectedTrackChanged);
-        packetManager.listen('tracknavigation/back', function (_a) {
-            var trackName = _a.data;
+        packetManager.listen('tracknavigation/back', function () {
             if (_this.historyIndex > 0) {
                 _this.ignoreSelectionChangesOnce = true;
                 _this.historyIndex--;
                 globalController.selectTrackWithName(_this.trackHistory[_this.historyIndex].name);
             }
         });
-        packetManager.listen('tracknavigation/forward', function (_a) {
-            var trackName = _a.data;
+        packetManager.listen('tracknavigation/forward', function () {
             if (_this.historyIndex < _this.trackHistory.length - 1) {
                 _this.ignoreSelectionChangesOnce = true;
                 _this.historyIndex++;
@@ -242,24 +259,6 @@ var BackForwardController = /** @class */ (function (_super) {
         });
         return _this;
     }
-    BackForwardController.prototype.onSelectedTrackChanged = function (name) {
-        if (Controller.get(TrackSearchController).active) {
-            // Don't record track changes whilst highlighting search results
-            return;
-        }
-        if (name.trim().length == 0 || this.ignoreSelectionChangesOnce) {
-            this.ignoreSelectionChangesOnce = false;
-            return;
-        }
-        while (this.trackHistory.length > 50) {
-            this.trackHistory.splice(0, 1);
-            this.historyIndex--;
-        }
-        this.trackHistory = this.trackHistory.slice(0, this.historyIndex + 1);
-        // println('track name changed to ' + value)
-        this.trackHistory.push({ name: name });
-        this.historyIndex++;
-    };
     return BackForwardController;
 }(Controller));
 function bytesToString(data) {
@@ -292,4 +291,5 @@ function init() {
     deps.packetManager = new PacketManager();
     deps.globalController = new GlobalController(deps);
     new TrackSearchController(deps);
+    new BackForwardController(deps);
 }

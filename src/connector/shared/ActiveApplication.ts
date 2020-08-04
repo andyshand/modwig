@@ -9,7 +9,7 @@ export async function getActiveApplication() : Promise<any> {
             const parts = stdout.split(",");
             res({
                 application: parts[0],
-                windowTitle: parts[1].replace(/\n$/, "").replace(/^\s/, "")
+                // windowTitle: (parts[1] || '').replace(/\n$/, "").replace(/^\s/, "")
             })
         })
     })

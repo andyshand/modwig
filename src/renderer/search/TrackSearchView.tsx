@@ -84,7 +84,12 @@ export class TrackSearchView extends React.Component {
     }
 
     render() {
-        const results = (this.fuzzySet.get(this.state.query) || []).map(scoreAndItem => scoreAndItem[1])
+        let q = this.state.query
+        if (q.length > 0) {
+            // stop exact matches from showing only 1 result
+            q += ''
+        }
+        const results = (this.fuzzySet.get(q, undefined, 0) || []).map(scoreAndItem => scoreAndItem[1])
         const searchProps: SearchProps = {
             onQueryChanged: query => {
                 this.setState({query})

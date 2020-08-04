@@ -4,13 +4,14 @@ const RECONNECT_IN = 1000 * 3;
 
 let waiting = 0
 let partialMsg = ''
+let bitwigClient: any = null
+let bitwigConnected = false;
+
 export function runWebsocketToSocket() {
     const WebSocket = require('ws');
     const net = require('net');
     const wss = new WebSocket.Server({ port: WEBSOCKET_PORT });
     let activeWebsocket;
-    let bitwigConnected = false;
-    let bitwigClient: any = null
 
     function connectBitwig() {
         console.log('Connecting to Bitwig...');
@@ -66,21 +67,30 @@ export function runWebsocketToSocket() {
         console.log('Browser connected');
         ws.on('message', messageFromBrowser => {
             console.log('Browser sent: ', messageFromBrowser);
-            if (bitwigClient && bitwigConnected) {
-                const buff = Buffer.from(messageFromBrowser, 'utf8');
-                const sizeBuf = Buffer.alloc(4);
-                sizeBuf.writeInt32BE(messageFromBrowser.length, 0);
-                try {
-                    bitwigClient.write(Buffer.concat([sizeBuf, buff]));
-                }
-                catch (e) {
-                    console.error(e);
-                }
-            }
+            sendToBitwig(messageFromBrowser)
         });
         ws.on('close', () => {
             console.log('Connection to browser lost. Waiting for reconnection...');
             activeWebsocket = null;
         });
     });
+}
+
+function sendToBitwig(str) {
+  if (bitwigClient && bitwigConnected) {
+    const buff = Buffer.from(str, 'utf8');
+    const sizeBuf = Buffer.alloc(4);
+    sizeBuf.writeInt32BE(str.length, 0);
+    try {
+      console.log('Sending to bitwig: ', str)
+        bitwigClient.write(Buffer.concat([sizeBuf, buff]));
+    }
+    catch (e) {
+        console.error(e);
+    }
+  }
+}
+
+export function sendPacketToBitwig(packet) {
+  return sendToBitwig(JSON.stringify(packet))
 }
