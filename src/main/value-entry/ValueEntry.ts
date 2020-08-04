@@ -6,6 +6,7 @@ const { MainWindow, Keyboard, Mouse } = require('bindings')('bes')
 let valueEntryWindow
 let typedSoFar = ''
 let open = false
+let mousePosBefore = {x: 0, y: 0}
 
 /**
  * With value entry we don't actually pass any value to Bitwig, rather we click and focus
@@ -14,7 +15,7 @@ let open = false
  */
 export function setupValueEntry() {
     valueEntryWindow = new BrowserWindow({ 
-        width: 200, 
+        width: 250, 
         height: 80, 
         webPreferences: {
             nodeIntegration: true
@@ -28,26 +29,40 @@ export function setupValueEntry() {
     const listenerId = Keyboard.addEventListener('keydown', async event => {
         // `isFrontMostApplication` is currently time consuming, so only run it when we're not
         // already open
-        if (!open && await isFrontmostApplication() && event.keycode === 36 && event.cmdKey) {
-            valueEntryWindow.webContents.executeJavaScript(`window.updateTypedValue('')`);
-            valueEntryWindow.moveTop()
+        // F1 or F2
+        if (!open && await isFrontmostApplication() && event.keycode === 0x7A || event.keycode === 0x78) {
             // start value entry
             open = true
             typedSoFar = ''
             const frame = MainWindow.getFrame()
             // console.log('frame', frame.x, frame.y)
-            const clickAt = {
+            const clickAt = event.keycode === 0x7A ? {
                 x: frame.x + 120,
                 y: frame.y + 140
-            }
+            } : {
+                x: frame.x + 150, 
+                y: frame.y + 269
+            } // modulator
             // console.log('clicking at ', clickAt)
             returnMouseAfter(() => {
-                Mouse.click(0, { cmd: true, x: clickAt.x, y: clickAt.y })
+                // Modifier choice is important here. Our real modifier presses
+                // can interrupt our virtual ones from working as expected
+                Mouse.setPosition(clickAt.x, clickAt.y)
+                Keyboard.keyDown(0x37)
+                if (event.keycode === 0x78) {
+                    Mouse.doubleClick(0, { x: clickAt.x, y: clickAt.y })
+                } else {
+                    Mouse.click(0, { x: clickAt.x, y: clickAt.y, cmd: true })
+                }
+                Keyboard.keyUp(0x37)
             })
+            valueEntryWindow.webContents.executeJavaScript(`window.updateTypedValue('')`);
+            valueEntryWindow.moveTop()
         } else if (event.keycode === 53 || event.keycode === 36) {
             // escape or enter (without cmd)
             // close value entry
             valueEntryWindow.hide()
+            // Mouse.setPosition(mousePosBefore.x, mousePosBefore.y)
             open = false
         } else if (open) {
             if (event.keycode === 51) {

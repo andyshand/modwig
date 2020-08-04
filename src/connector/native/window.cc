@@ -40,7 +40,7 @@ Napi::Value GetFrame(const Napi::CallbackInfo &info) {
             }
             return BESRect::constructor.New({ 
                 Napi::Number::New(env, windowRect.origin.x), 
-                Napi::Number::New(env, windowRect.origin.y), 
+                Napi::Number::New(env, windowRect.origin.y), // TODO account for menu bar?
                 Napi::Number::New(env, windowRect.size.width), 
                 Napi::Number::New(env, windowRect.size.height)
             });

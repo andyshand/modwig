@@ -175,12 +175,32 @@ Napi::Value isEnabled(const Napi::CallbackInfo &info) {
     return Napi::Boolean::New(env, false);
 }
 
+Napi::Value keyPress(const Napi::CallbackInfo &info, bool down) {
+    Napi::Env env = info.Env();
+    CGKeyCode keyCode = (CGKeyCode) info[0].As<Napi::Number>().Uint32Value();
+    CGEventFlags flags = (CGEventFlags)0;
+    CGEventRef keyevent = CGEventCreateKeyboardEvent(NULL, keyCode, down);
+    CGEventPost(kCGSessionEventTap, keyevent);
+    CFRelease(keyevent);
+    return Napi::Boolean::New(env, true);
+}
+
+Napi::Value keyDown(const Napi::CallbackInfo &info) {
+    return keyPress(info, true);
+}
+
+Napi::Value keyUp(const Napi::CallbackInfo &info) {
+    return keyPress(info, false);
+}
+
 Napi::Value InitKeyboard(Napi::Env env, Napi::Object exports)
 {
     Napi::Object obj = Napi::Object::New(env);
     obj.Set(Napi::String::New(env, "addEventListener"), Napi::Function::New(env, addEventListener));
     obj.Set(Napi::String::New(env, "removeEventListener"), Napi::Function::New(env, removeEventListener));
     obj.Set(Napi::String::New(env, "isEnabled"), Napi::Function::New(env, isEnabled));
+    obj.Set(Napi::String::New(env, "keyDown"), Napi::Function::New(env, keyDown));
+    obj.Set(Napi::String::New(env, "keyUp"), Napi::Function::New(env, keyUp));
     exports.Set("Keyboard", obj);
     return exports;
 }

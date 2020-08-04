@@ -43,7 +43,7 @@ Napi::Value SetMousePosition(const Napi::CallbackInfo &info)
     return Napi::Value();
 }
 
-void mouseUpDown(const Napi::CallbackInfo &info, bool down) {
+void mouseUpDown(const Napi::CallbackInfo &info, bool down, bool doubleClick = false) {
     CGMouseButton button = (CGMouseButton)info[0].As<Napi::Number>().Uint32Value();
 
     CGPoint pos = BESPoint::Unwrap(GetMousePosition(info).As<Napi::Object>())->asCGPoint();
@@ -69,13 +69,16 @@ void mouseUpDown(const Napi::CallbackInfo &info, bool down) {
             pos.y = (CGFloat)options.Get("y").As<Napi::Number>().DoubleValue();
         }
     }
-
 	CGEventRef event = CGEventCreateMouseEvent(
         NULL,
         cgEventType(button, down),
         pos,
         button
     );
+    CGEventSetFlags(event, flags);
+    if (doubleClick) {
+        CGEventSetIntegerValueField(event, kCGMouseEventClickState, 2);
+    }
 	CGEventPost(kCGSessionEventTap, event);
 	CFRelease(event);
 }
@@ -100,6 +103,14 @@ Napi::Value Click(const Napi::CallbackInfo &info)
     return Napi::Value();
 }
 
+Napi::Value DoubleClick(const Napi::CallbackInfo &info)
+{
+    mouseUpDown(info, true, true);
+    usleep(200000);
+    mouseUpDown(info, false, true);
+    return Napi::Value();
+}
+
 Napi::Object InitMouse(Napi::Env env, Napi::Object exports)
 {
     Napi::Object obj = Napi::Object::New(env);
@@ -108,6 +119,7 @@ Napi::Object InitMouse(Napi::Env env, Napi::Object exports)
     obj.Set(Napi::String::New(env, "up"), Napi::Function::New(env, MouseDown));
     obj.Set(Napi::String::New(env, "down"), Napi::Function::New(env, MouseUp));
     obj.Set(Napi::String::New(env, "click"), Napi::Function::New(env, Click));
+    obj.Set(Napi::String::New(env, "doubleClick"), Napi::Function::New(env, DoubleClick));
     exports.Set("Mouse", obj);
     return exports;
 }

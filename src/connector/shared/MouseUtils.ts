@@ -1,4 +1,4 @@
-const { Mouse } = require('bindings')('bes')
+const { Keyboard, Mouse } = require('bindings')('bes')
 
 export function returnMouseAfter(cb: Function)  {
     const { x, y } = Mouse.getPosition();
