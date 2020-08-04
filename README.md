@@ -6,10 +6,10 @@ BES runs in the background and **adds helpful keyboard shortcuts and features** 
 
 It is currently **Mac only**, but is built with cross-platform support in mind.
 
-- [Features](#markdown-header-features)
-- [Setup](#markdown-header-setup)
-- [How It Works](#markdown-header-features)
-- [Contributing](#markdown-header-contributing)
+- [Features](#features)
+- [Setup](#setup)
+- [How It Works](#how-it-works)
+- [Contributing](#contributing)
 
 # Features
 
