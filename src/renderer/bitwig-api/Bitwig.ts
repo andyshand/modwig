@@ -68,6 +68,14 @@ export function addPacketListener(type: string, cb: (packet: any) => void) {
   }
 }
 
+w.onclose = () => {
+  console.log('websocket closed!!!')
+}
+
+w.onerror = err => {
+  console.error('websocket error!', err)
+}
+
 if (w.pingInterval) {
   clearInterval(w.pingInterval)
 }

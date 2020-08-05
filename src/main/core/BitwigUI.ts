@@ -45,12 +45,13 @@ export class BitwigState extends State {
 }
 
 export async function isFrontmostApplication() {
-    const active = (await getActiveApplication()).application
-    if (active.trim() === '') {
-        console.log('Applescript has broken... You probably need to restart')
-        return false
-    }
-    return active === "BitwigStudio"
+    return true
+    // const active = (await getActiveApplication()).application
+    // if (active.trim() === '') {
+        // console.log('Applescript has broken... You probably need to restart')
+        // return false
+    // }
+    // return active === "BitwigStudio"
 }
 
 export class BitwigUI extends UI {

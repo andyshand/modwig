@@ -14,8 +14,7 @@ export function setupShortcuts() {
                 type: 'tracksearch/highlighted',
                 data: `mixing`
             })
-        }
-        if (event.keycode === 0x19 && event.cmdKey) {
+        } else if (event.keycode === 0x19 && event.cmdKey) {
             sendPacketToBitwig({
                 type: 'tracksearch/highlighted',
                 data: `Master`
