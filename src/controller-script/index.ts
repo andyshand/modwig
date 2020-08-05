@@ -40,7 +40,7 @@ class PacketManager {
     connection: any
     activeConnection: any
     listenersByType: {[type: string]: ((packet: Packet) => void)[]} = {}
-    constructor() {
+    constructor({app}) {
         this.connection = connection
         println("Created remote connection on port: " + this.connection.getPort())
         this.connection.setClientConnectCallback(connection => {
@@ -61,6 +61,14 @@ class PacketManager {
                     const listeners = this.listenersByType[packet.type] || []
                     if (packet.type === 'ping') {
                         return this.send({type: 'pong'})
+                    }
+                    if (packet.type === 'action') {
+                        const action = app.getAction(packet.data)
+                        if (action) {
+                            action.invoke()
+                        } else {
+                            host.showPopupNotification(`Action ${packet.data} not found`)
+                        }
                     }
                     // host.showPopupNotification(packet.type)
                     // println('send response???')
@@ -302,6 +310,7 @@ function bytesToString(data) {
 function init() {
     // var app = host.createApplication()
     const transport = host.createTransport()
+    const app = host.createApplication()
     connection = host.createRemoteConnection("name", 8888)
     println("Created the host")
 
@@ -319,7 +328,7 @@ function init() {
     })
 
     let deps: Deps = {} as any
-    deps.packetManager = new PacketManager()
+    deps.packetManager = new PacketManager({app})
     deps.globalController = new GlobalController(deps)
     
     new TrackSearchController(deps)    
