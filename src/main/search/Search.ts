@@ -89,7 +89,10 @@ export function setupNavigation() {
                 if (targetScroll > 0) {
                     doScroll(targetScroll)
                 }
-            } 
+            } else {
+                // reset scroll, navigated to track without track search
+                delete trackScrollPos[name]
+            }
             waitingToScroll = null
             currTrack = name
         }
