@@ -44,7 +44,6 @@
     "electron-squirrel-startup": "^1.0.0",
     "electron-unhandled": "^3.0.0",
     "electron-util": "^0.12.2",
-    "fuzzyset.js": "0.0.8",
     "is-electron-renderer": "^2.0.1",
     "js-base64": "^3.4.2",
     "moment": "^2.24.0",

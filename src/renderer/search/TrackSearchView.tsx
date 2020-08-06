@@ -1,7 +1,28 @@
 import React from 'react'
 import { SearchResult, SearchView, SearchProps } from './SearchView'
 import { send, addPacketListener } from '../bitwig-api/Bitwig'
-import FuzzySet from 'fuzzyset.js'
+
+let recentCount = 10
+let recent10 = []
+
+const FuzzySet = (options) => {
+
+    const sanitizedOptions = options.map(opt => opt.toLowerCase().trim())
+    const similarity = (option: string, query: string) : number => { 
+        const indexOfMatch = option.indexOf(query)
+        if (indexOfMatch >= 0) {
+            let recentI = recent10.indexOf(option)
+            return 1 - (indexOfMatch / options.length) + (recentI >= 0 ? (recent10.length - recentI) * .5 : 0)
+        }
+        return 0
+    }
+    return {
+        get(query: string) {
+            const sanitizedQ = query.toLowerCase().trim()
+            return sanitizedOptions.slice().sort((a, b) => similarity(b, sanitizedQ) - similarity(a, sanitizedQ))
+        }
+    }
+}
 import { debounce } from '../engine/Debounce'
 const { BrowserWindow, app} = require('electron').remote
 
@@ -71,6 +92,7 @@ export class TrackSearchView extends React.Component {
                 })
                 BrowserWindow.getFocusedWindow().hide()
                 app.hide()
+                recent10 = [name].concat(recent10.slice(0, recentCount))
             },
             title: name,
             id: name,
@@ -89,7 +111,7 @@ export class TrackSearchView extends React.Component {
             // stop exact matches from showing only 1 result
             q += ''
         }
-        const results = (this.fuzzySet.get(q, undefined, 0) || []).map(scoreAndItem => scoreAndItem[1])
+        const results = this.fuzzySet.get(q)
         const searchProps: SearchProps = {
             onQueryChanged: query => {
                 this.setState({query})
