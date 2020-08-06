@@ -13,6 +13,18 @@ const logWithTime = (...args) => {
     console.log(`${d.getHours()}:${pad0(d.getMinutes())}:${pad0(d.getSeconds())}:`, ...args)
 }
 
+let toBWInterceptors: {[type: string]: Function[]} = {}
+let fromBWInterceptors: {[type: string]: Function[]} = {}
+
+function processInterceptors(packetStr, ceptors: {[type: string]: Function[]}) {
+    const packet = JSON.parse(packetStr)
+    if ((ceptors[packet.type] || []).length) {
+        for (const cept of fromBWInterceptors[packet.type]) {
+            cept(packet)
+        }
+    }
+}
+
 export function runWebsocketToSocket() {
     const WebSocket = require('ws');
     const net = require('net');
@@ -43,6 +55,12 @@ export function runWebsocketToSocket() {
                     if (waiting === 0) {
                         if (activeWebsocket) {
                             if (logInOut) logWithTime('Bitwig sent: ' + partialMsg.substr(0, 50));
+                            try {
+                                processInterceptors(partialMsg, fromBWInterceptors)
+                            } catch (e) {
+                                console.error("Error intercepting packet", e)
+                            }
+                            console.log('Sending to browser')
                             activeWebsocket.send(partialMsg);
                         }
                         partialMsg = ''
@@ -73,7 +91,12 @@ export function runWebsocketToSocket() {
         logWithTime('Browser connected');
         ws.on('message', messageFromBrowser => {
             if (logInOut) logWithTime('Browser sent: ', messageFromBrowser);
-            sendToBitwig(messageFromBrowser)
+            try {
+                processInterceptors(messageFromBrowser, toBWInterceptors)
+                sendToBitwig(messageFromBrowser)
+            } catch (e) {
+                console.error("Invalid packet from browser", e)
+            } 
         });
         ws.on('close', () => {
             logWithTime('Connection to browser lost. Waiting for reconnection...');
@@ -99,4 +122,12 @@ function sendToBitwig(str) {
 
 export function sendPacketToBitwig(packet) {
   return sendToBitwig(JSON.stringify(packet))
+}
+
+export function interceptPacket(type: string, toBitwig?: Function, fromBitwig?: Function) {
+    if (toBitwig) {
+        toBWInterceptors[type] = (toBWInterceptors[type] || []).concat(toBitwig)
+    } else if (fromBitwig) {
+        fromBWInterceptors[type] = (fromBWInterceptors[type] || []).concat(fromBitwig)
+    }
 }

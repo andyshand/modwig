@@ -7,8 +7,9 @@ let recent10 = []
 
 const FuzzySet = (options) => {
 
-    const sanitizedOptions = options.map(opt => opt.toLowerCase().trim())
+    const santizie = str => str.toLowerCase().trim()
     const similarity = (option: string, query: string) : number => { 
+        option = santizie(option)
         const indexOfMatch = option.indexOf(query)
         if (indexOfMatch >= 0) {
             let recentI = recent10.indexOf(option)
@@ -18,8 +19,8 @@ const FuzzySet = (options) => {
     }
     return {
         get(query: string) {
-            const sanitizedQ = query.toLowerCase().trim()
-            return sanitizedOptions.slice().sort((a, b) => similarity(b, sanitizedQ) - similarity(a, sanitizedQ))
+            const sanitizedQ = santizie(query)
+            return options.slice().sort((a, b) => similarity(b, sanitizedQ) - similarity(a, sanitizedQ))
         }
     }
 }
@@ -69,10 +70,10 @@ export class TrackSearchView extends React.Component {
     }
 
     highlightTrack = debounce(name => {
-        send({
-            type: 'tracksearch/highlighted', 
-            data: name
-        })
+        // send({
+        //     type: 'tracksearch/highlighted', 
+        //     data: name
+        // })
     }, 500)
 
     cancel = () => {

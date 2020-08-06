@@ -72,13 +72,24 @@ class PacketManager {
                     }
                     // host.showPopupNotification(packet.type)
                     // println('send response???')
+                    let errors = []
                     for (const listener of listeners) {
                         try {
                             listener(packet)
                         } catch (e) {
+                            errors.push(e)
                             println(e)
                         }
                     }
+                    // Send back the packet with additional info so we have a way
+                    // of tracking when things have been processed
+                    this.send({
+                        id: packet.id,
+                        data: packet.data,
+                        type: packet.type,
+                        status: errors.length ? 500 : 200,
+                        errors
+                    })
                 } catch(e) {
                     println(e)
                 }            
@@ -149,6 +160,17 @@ class GlobalController extends Controller {
                     return
                 }
                 this.sendAllTracks()
+            })
+
+            t.addIsSelectedInEditorObserver(selected => {
+                t.makeVisibleInArranger()
+                this.deps.packetManager.send({
+                    type: 'trackselected',
+                    data: {
+                        name: t.name().get(),
+                        selected
+                    }
+                })
             })
 
             // Exclusive arm

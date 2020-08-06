@@ -20,6 +20,7 @@ let state = {
 }
 
 let nextId = 0
+let nextPacketId = 0
 type PacketListenerInfo = {cb: (packet: any) => void, id: number}
 let packetListeners: {[packetType: string]: PacketListenerInfo[]} = {}
 
@@ -30,12 +31,15 @@ export function onMessageReceived(callback) {
     onMessage.push(callback)
 }
 
+// let packetsWaitingForResponse
+
 let queued: any[] = []
 export function send(newPacket: any) {
   queued.push(newPacket)
   if (ws.readyState === 1) {
     for (const packet of queued) {
       console.log("sending: ", packet)
+      packet.id = nextPacketId++
       ws.send(JSON.stringify(packet))
     }
     queued = []

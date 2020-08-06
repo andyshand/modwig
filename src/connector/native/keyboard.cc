@@ -1,5 +1,6 @@
 #include "point.h"
 #include "keyboard.h"
+#include "eventsource.h"
 
 #include <CoreGraphics/CoreGraphics.h>
 #include <iostream>
@@ -39,17 +40,22 @@ struct CallbackInfo {
 
 struct KeyboardEvent {
     UInt16 keycode;
-    bool cmdKey;
-    bool shiftKey;
-    bool ctrlKey;
-    bool optionKey;
+    bool cmdKey, shiftKey, ctrlKey, optionKey;
+};
+struct MouseEvent {
+    int button, x, y;
 };
 
 forward_list<CallbackInfo*> callbacks; 
 
 CGEventRef eventtap_callback(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *refcon) {
-    CallbackInfo* e = (CallbackInfo*) refcon;
+    if (CGEventGetIntegerValueField(event, kCGEventSourceUserData) == 42) {
+        // Skip our own events
+        return event;
+    }
 
+    CallbackInfo* e = (CallbackInfo*) refcon;    
+    
     // hammerspoon says OS X disables eventtaps if it thinks they are slow or odd or just because the moon
     // is wrong in some way... but at least it's nice enough to tell us.
     if ((type == kCGEventTapDisabledByTimeout) || (type == kCGEventTapDisabledByUserInput)) {
@@ -58,38 +64,70 @@ CGEventRef eventtap_callback(CGEventTapProxy proxy, CGEventType type, CGEventRef
     }
 
     CGEventFlags flags = CGEventGetFlags(event);
-
+    
     // TODO Check other thread access is 100% ok
-    KeyboardEvent *jsEvent = new KeyboardEvent();
+    if (type == kCGEventKeyDown || 
+    type == kCGEventKeyUp ||
+    type == kCGEventFlagsChanged) {
+        // Keyboard event
+        KeyboardEvent *jsEvent = new KeyboardEvent();
 
-    auto callback = []( Napi::Env env, Napi::Function jsCallback, KeyboardEvent* value ) {
-      Napi::Object obj = Napi::Object::New(env);
+        auto callback = []( Napi::Env env, Napi::Function jsCallback, KeyboardEvent* value ) {
+        Napi::Object obj = Napi::Object::New(env);
 
-      obj.Set(Napi::String::New(env, "keycode"), Napi::Number::New(env, value->keycode));
-      obj.Set(Napi::String::New(env, "cmdKey"), Napi::Boolean::New(env, value->cmdKey));
-      obj.Set(Napi::String::New(env, "shiftKey"), Napi::Boolean::New(env, value->shiftKey));
-      obj.Set(Napi::String::New(env, "ctrlKey"), Napi::Boolean::New(env, value->ctrlKey));
-      obj.Set(Napi::String::New(env, "optionKey"), Napi::Boolean::New(env, value->optionKey));
+        obj.Set(Napi::String::New(env, "keycode"), Napi::Number::New(env, value->keycode));
+        obj.Set(Napi::String::New(env, "cmdKey"), Napi::Boolean::New(env, value->cmdKey));
+        obj.Set(Napi::String::New(env, "shiftKey"), Napi::Boolean::New(env, value->shiftKey));
+        obj.Set(Napi::String::New(env, "ctrlKey"), Napi::Boolean::New(env, value->ctrlKey));
+        obj.Set(Napi::String::New(env, "optionKey"), Napi::Boolean::New(env, value->optionKey));
 
-      delete value;
-      jsCallback.Call( {obj} );
-    };
+        delete value;
+            jsCallback.Call( {obj} );
+        };
 
-    if ((flags & kCGEventFlagMaskAlphaShift) != 0) {
-        jsEvent->shiftKey = true;
-    } else if ((flags & kCGEventFlagMaskShift) != 0) {
-        jsEvent->shiftKey = true;
-    } else if ((flags & kCGEventFlagMaskControl) != 0) {
-        jsEvent->ctrlKey = true;
-    } else if ((flags & kCGEventFlagMaskAlternate) != 0) {
-        jsEvent->optionKey = true;
-    } else if ((flags & kCGEventFlagMaskCommand) != 0) {
-        jsEvent->cmdKey = true;
+        if ((flags & kCGEventFlagMaskAlphaShift) != 0) {
+            jsEvent->shiftKey = true;
+        } else if ((flags & kCGEventFlagMaskShift) != 0) {
+            jsEvent->shiftKey = true;
+        } else if ((flags & kCGEventFlagMaskControl) != 0) {
+            jsEvent->ctrlKey = true;
+        } else if ((flags & kCGEventFlagMaskAlternate) != 0) {
+            jsEvent->optionKey = true;
+        } else if ((flags & kCGEventFlagMaskCommand) != 0) {
+            jsEvent->cmdKey = true;
+        }
+
+        jsEvent->keycode = CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
+        e->cb.BlockingCall( jsEvent, callback );  
+    } else {
+        // Mouse event
+        MouseEvent *jsEvent = new MouseEvent();
+        CGPoint point = CGEventGetLocation(event);
+        jsEvent->x = (int) point.x;
+        jsEvent->y = (int) point.y;
+        if (type == kCGEventMouseMoved || type == kCGEventOtherMouseDragged) {
+            // Mouse movement doesn't have a button (multiple buttons could theoretically be down)
+            jsEvent->button = -1;
+        } else if (type == kCGEventLeftMouseUp || type == kCGEventLeftMouseDown || type == kCGEventLeftMouseDragged) {
+            jsEvent->button = 0;
+        } else if (type == kCGEventRightMouseUp || type == kCGEventRightMouseDown || type == kCGEventRightMouseDragged) {
+            jsEvent->button = 2;
+        } else {
+            jsEvent->button = 1;
+        }
+
+        auto callback = []( Napi::Env env, Napi::Function jsCallback, MouseEvent* value ) {
+            Napi::Object obj = Napi::Object::New(env);
+
+            obj.Set(Napi::String::New(env, "x"), Napi::Number::New(env, value->x));
+            obj.Set(Napi::String::New(env, "y"), Napi::Number::New(env, value->y));
+            obj.Set(Napi::String::New(env, "button"), Napi::Number::New(env, value->button));
+
+            delete value;
+            jsCallback.Call( {obj} );
+        };
+        e->cb.BlockingCall( jsEvent, callback );  
     }
-
-    jsEvent->keycode = CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
-    auto returnValue = e->cb.NonBlockingCall( jsEvent, callback );  
-
     // can return NULL to ignore event
     return event;
 }
@@ -103,15 +141,20 @@ Napi::Value addEventListener(const Napi::CallbackInfo &info) {
 
     if ("keyup" == eventType) {
         mask = CGEventMaskBit(kCGEventKeyUp);
-    } else {
+    } else if ("keydown" == eventType) {
         mask = CGEventMaskBit(kCGEventKeyDown);
+    } else if ("mousemoved" == eventType) {
+        mask = CGEventMaskBit(kCGEventMouseMoved) | CGEventMaskBit(kCGEventOtherMouseDragged);
+    } else if ("mousedown" == eventType) {
+        mask = CGEventMaskBit(kCGEventLeftMouseDown) | CGEventMaskBit(kCGEventRightMouseDown) | CGEventMaskBit(kCGEventOtherMouseDown);
+    } else if ("mouseup" == eventType) {
+        mask = CGEventMaskBit(kCGEventLeftMouseUp) | CGEventMaskBit(kCGEventRightMouseUp) | CGEventMaskBit(kCGEventOtherMouseUp);
     }
 
     // TODO FREE
     CallbackInfo *ourInfo = new CallbackInfo;
     ourInfo->bareCb = cb;
     ourInfo->id = nextId++;
-    cb.Call( {Napi::String::New(env, "Testing, testing!!!")} );
     ourInfo->cb = Napi::ThreadSafeFunction::New(
       env,
       cb,                      // JavaScript function called asynchronously
@@ -128,7 +171,7 @@ Napi::Value addEventListener(const Napi::CallbackInfo &info) {
         ourInfo);
 
     if (!ourInfo->tap) {
-        std::cout << 'could not create the tapper!!!!';
+        std::cout << "Could not create event tap.";
     } else {
         CGEventTapEnable(ourInfo->tap, true);
         ourInfo->runloopsrc = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, ourInfo->tap, 0);
@@ -178,8 +221,7 @@ Napi::Value isEnabled(const Napi::CallbackInfo &info) {
 Napi::Value keyPress(const Napi::CallbackInfo &info, bool down) {
     Napi::Env env = info.Env();
     CGKeyCode keyCode = (CGKeyCode) info[0].As<Napi::Number>().Uint32Value();
-    CGEventFlags flags = (CGEventFlags)0;
-    CGEventRef keyevent = CGEventCreateKeyboardEvent(NULL, keyCode, down);
+    CGEventRef keyevent = CGEventCreateKeyboardEvent(getCGEventSource(), keyCode, down);
     CGEventPost(kCGSessionEventTap, keyevent);
     CFRelease(keyevent);
     return Napi::Boolean::New(env, true);
