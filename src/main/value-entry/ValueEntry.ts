@@ -44,6 +44,15 @@ export function setupValueEntry() {
             returnMouseAfter(() => {
                 Mouse.setPosition(clickAt.x, clickAt.y)
 
+                if (lowerKey === 'F1') {
+                    // Ensure arranger panel is active
+                    // TODO we'll need a more reliable way to do this if
+                    // someone changes shortcuts. Or require you add this shortcut?
+                    Keyboard.keyPress('ArrowUp', {Control: true, Shift: true})
+                    Keyboard.keyPress('ArrowRight', {Control: true, Shift: true})
+                    Keyboard.keyDown('Meta')
+                    Mouse.click(0, { x: clickAt.x, y: clickAt.y, Meta: true })
+                    Keyboard.keyUp('Meta')
                 } else {
                     Keyboard.keyDown('Meta')
                     Mouse.doubleClick(0, { x: clickAt.x, y: clickAt.y })
