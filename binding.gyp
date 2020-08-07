@@ -11,7 +11,7 @@
         "src/connector/native/point.cc",
         "src/connector/native/color.cc",
         "src/connector/native/window.cc",
-        "src/connector/native/eventsource.cc"
+        "src/connector/native/eventsource.cc",
       ],
       "include_dirs": [
         "<!@(node -p \"require('node-addon-api').include\")"

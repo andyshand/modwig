@@ -54,7 +54,8 @@
         "ratio": "cpp",
         "system_error": "cpp",
         "mutex": "cpp",
-        "thread": "cpp"
+        "thread": "cpp",
+        "map": "cpp"
     },
     "search.exclude": {
         "**/node_modules": true,

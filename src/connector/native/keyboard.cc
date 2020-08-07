@@ -7,6 +7,8 @@
 #include <forward_list>
 #include <thread>
 #include <string>
+#include <map>
+#include <string>
 
 using std::forward_list;
 
@@ -14,6 +16,125 @@ bool threadSetup = false;
 std::thread nativeThread;
 CFRunLoopRef runLoop;
 int nextId = 0;
+
+std::map<int,std::string> macKeycodeMap = {
+  // Layout independent - will break on non-qwerty :(
+  {0x00, "a"},
+  {0x01, "s"},
+  {0x02, "d"},
+  {0x03, "f"},
+  {0x04, "h"},
+  {0x05, "g"},
+  {0x06, "z"},
+  {0x07, "x"},
+  {0x08, "c"},
+  {0x09, "v"},
+  {0x0B, "b"},
+  {0x0C, "q"},
+  {0x0D, "w"},
+  {0x0E, "e"},
+  {0x0F, "r"},
+  {0x10, "y"},
+  {0x11, "t"},
+  {0x12, "1"},
+  {0x13, "2"},
+  {0x14, "3"},
+  {0x15, "4"},
+  {0x16, "6"},
+  {0x17, "5"},
+  {0x18, "="},
+  {0x19, "9"},
+  {0x1A, "7"},
+  {0x1B, "-"},
+  {0x1C, "8"},
+  {0x1D, "0"},
+  {0x1E, "]"},
+  {0x1F, "O"},
+  {0x20, "U"},
+  {0x21, "["},
+  {0x22, "i"},
+  {0x23, "p"},
+  {0x25, "l"},
+  {0x26, "j"},
+  {0x27, "\'"},
+  {0x28, "k"},
+  {0x29, ";"},
+  {0x2A, "\\"},
+  {0x2B, ","},
+  {0x2C, "/"},
+  {0x2D, "n"},
+  {0x2E, "m"},
+  {0x2F, "."},
+  {0x32, "`"},
+  {0x41, "."},
+  {0x43, "*"},
+  {0x45, "+"},
+  {0x47, "Clear"},
+  {0x4B, "/"},
+  {0x4C, "Enter"},
+  {0x4E, "-"},
+  {0x51, "="},
+  {0x52, "0"},
+  {0x53, "1"},
+  {0x54, "2"},
+  {0x55, "3"},
+  {0x56, "4"},
+  {0x57, "5"},
+  {0x58, "6"},
+  {0x59, "7"},
+  {0x5B, "8"},
+  {0x5C, "9"},
+
+  // Keyboard layout independent (won't break)  
+  {0x24, "Enter"},
+  {0x30, "Tab"},
+  {0x31, "Space"},
+  {0x33, "Backspace"},
+  {0x35, "Escape"},
+  {0x37, "Meta"},
+  {0x38, "Shift"},
+  {0x39, "CapsLock"},
+  {0x3A, "Alt"},
+  {0x3B, "Control"},
+  {0x3C, "Shift"},
+  {0x3D, "Alt"},
+  {0x3E, "Control"},
+  {0x3F, "Fn"},
+  {0x40, "F17"},
+  {0x48, "VolumeUp"},
+  {0x49, "VolumeDown"},
+  {0x4A, "Mute"},
+  {0x4F, "F18"},
+  {0x50, "F19"},
+  {0x5A, "F20"},
+  {0x60, "F5"},
+  {0x61, "F6"},
+  {0x62, "F7"},
+  {0x63, "F3"},
+  {0x64, "F8"},
+  {0x65, "F9"},
+  {0x67, "F11"},
+  {0x69, "F13"},
+  {0x6A, "F16"},
+  {0x6B, "F14"},
+  {0x6D, "F10"},
+  {0x6F, "F12"},
+  {0x71, "F15"},
+  {0x72, "Help"},
+  {0x73, "Home"},
+  {0x74, "PageUp"},
+  {0x75, "Delete"},
+  {0x76, "F4"},
+  {0x77, "End"},
+  {0x78, "F2"},
+  {0x79, "PageDown"},
+  {0x7A, "F1"},
+  {0x7B, "ArrowLeft"},
+  {0x7C, "ArrowRight"},
+  {0x7D, "ArrowDown"},
+  {0x7E, "ArrowUp"}
+};
+std::map<std::string, int> macKeycodeMapReverse;
 
 struct CallbackInfo {
     Napi::ThreadSafeFunction cb;
@@ -39,7 +160,8 @@ struct CallbackInfo {
 };
 
 struct JSEvent {
-    UInt16 keyCode;
+    UInt16 nativeKeyCode;
+    std::string lowerKey;
     bool meta, shift, ctrl, alt;
     int button, x, y;
 };
@@ -85,7 +207,8 @@ CGEventRef eventtap_callback(CGEventTapProxy proxy, CGEventType type, CGEventRef
         auto callback = []( Napi::Env env, Napi::Function jsCallback, JSEvent* value ) {
         Napi::Object obj = Napi::Object::New(env);
 
-            obj.Set(Napi::String::New(env, "keyCode"), Napi::Number::New(env, value->keyCode));
+            obj.Set(Napi::String::New(env, "nativeKeyCode"), Napi::Number::New(env, value->nativeKeyCode));
+            obj.Set(Napi::String::New(env, "lowerKey"), Napi::String::New(env, value->lowerKey));
             obj.Set(Napi::String::New(env, "meta"), Napi::Boolean::New(env, value->meta));
             obj.Set(Napi::String::New(env, "shift"), Napi::Boolean::New(env, value->shift));
             obj.Set(Napi::String::New(env, "ctrl"), Napi::Boolean::New(env, value->ctrl));
@@ -96,7 +219,8 @@ CGEventRef eventtap_callback(CGEventTapProxy proxy, CGEventType type, CGEventRef
             delete value;
         };        
 
-        jsEvent->keyCode = CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
+        jsEvent->nativeKeyCode = CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
+        jsEvent->lowerKey = macKeycodeMap[jsEvent->nativeKeyCode];
         e->cb.BlockingCall( jsEvent, callback );  
     } else {
         // Mouse event
@@ -224,7 +348,17 @@ Napi::Value isEnabled(const Napi::CallbackInfo &info) {
 
 Napi::Value keyPresser(const Napi::CallbackInfo &info, bool down) {
     Napi::Env env = info.Env();
-    CGKeyCode keyCode = (CGKeyCode) info[0].As<Napi::Number>().Uint32Value();
+
+    if (macKeycodeMapReverse.size() == 0) {
+        // Initalise our reverse map
+        auto it = macKeycodeMap.begin();
+        while(it != macKeycodeMap.end()) {
+            macKeycodeMapReverse[it->second] = it->first;
+            it++;
+        }
+    }
+
+    CGKeyCode keyCode = (CGKeyCode)macKeycodeMapReverse[info[0].As<Napi::String>()];    
     CGEventFlags flags = (CGEventFlags)0;
     if (info[1].IsObject()) {
         Napi::Object obj = info[1].As<Napi::Object>();

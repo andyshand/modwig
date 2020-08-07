@@ -10,7 +10,6 @@ let windowOpen
 let trackScrollPos: {[trackName: string] : number} = {}
 let currTrack: string | null = null
 let waitingToScroll = false
-let lastClick = new Date(0)
 
 const scrollCurrent = (dX) => {
     if (currTrack) {
@@ -48,7 +47,8 @@ export function setupNavigation() {
         cb(event)
     }
     Keyboard.addEventListener('keydown', ifFrontmostListener(event => {
-        if (event.keyCode === 27 ) {
+        const { lowerKey, ctrl } = event
+        if (lowerKey === '-') {
             if (event.shift) {
                 sendPacketToBitwig({type: 'tracknavigation/forward'})
             } else if (event.ctrl) {
@@ -56,12 +56,12 @@ export function setupNavigation() {
             }
             waitingToScroll = true
         }
-        if (event.keyCode === 49 && event.ctrl) {
+        if (lowerKey === 'Space' && ctrl) {
             // ctrl + space pressed
             windowOpen.show()
             windowOpen.focus()
             // windowOpen.webContents.openDevTools()
-        } else if (windowOpen && event.keyCode === 53) {
+        } else if (windowOpen && lowerKey === "Escape") {
             // escape pressed
             // but we quit from client atm
         }
