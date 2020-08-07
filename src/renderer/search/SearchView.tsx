@@ -2,6 +2,7 @@ import React from 'react'
 import styled from 'styled-components'
 
 const Result = styled.div`
+    user-select: none;
     background: ${props => props.selected ? `#888` : `#444`};
     padding: .7em 1em;
     font-size: 1em;
@@ -138,7 +139,7 @@ export class SearchView extends React.Component<SearchProps> {
             selected: this.isSelected(result),
             key: result.id
         }
-        return <Result {...props}>
+        return <Result {...props} onDoubleClick={result.onConfirm}>
             <span>{result.title}</span> {result.isRecent ? <Recent>⭐</Recent> : null}
         </Result>
     }
