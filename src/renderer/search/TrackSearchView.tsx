@@ -32,7 +32,8 @@ export class TrackSearchView extends React.Component {
     state = {
         tracks: [],
         trackNames: [],
-        query: ''
+        query: '',
+        selectedId: null
     }
     trackNames: string[] = []
     fuzzySet = FuzzySet([])
@@ -59,7 +60,7 @@ export class TrackSearchView extends React.Component {
         // The component is kept around so we need a way
         // to detect when to clear the search field
         app.on('browser-window-focus', () => {
-            this.setState({query: ''})
+            this.setState({query: '', selectedId: null})
             send({
                 type: 'tracksearch/start'
             })
@@ -70,12 +71,9 @@ export class TrackSearchView extends React.Component {
         this.stopListening()
     }
 
-    highlightTrack = debounce(name => {
-        // send({
-        //     type: 'tracksearch/highlighted', 
-        //     data: name
-        // })
-    }, 500)
+    isSelected = (result: SearchResult) => {
+        return result.id === this.state.selectedId
+    }
 
     cancel = () => {
         send({
@@ -85,29 +83,32 @@ export class TrackSearchView extends React.Component {
         app.hide()
     }
 
+    onConfirmed = (result: SearchResult) => {
+        const { title: name } = result
+        send({
+            type: 'tracksearch/confirm', 
+            data: name
+        })
+        BrowserWindow.getFocusedWindow().hide()
+        app.hide()
+        recent10 = [name].concat(recent10.slice(0, recentCount).filter(n => n !== name))
+    }
+
     mapTrackItem = (name: string, i: number) : SearchResult => {
         const track = getTrackByName(name)
+        const id = i + name
         return {
-            onConfirm: () => {
-                send({
-                    type: 'tracksearch/confirm', 
-                    data: name
-                })
-                BrowserWindow.getFocusedWindow().hide()
-                app.hide()
-                recent10 = [name].concat(recent10.slice(0, recentCount).filter(n => n !== name))
-            },
             title: name,
             color: track.color,
-            id: i + name,
+            id,
             isRecent: recent10.indexOf(name) >= 0,
             description: name,
-            onSelected: (selected) => {
-                if (selected) {
-                    this.highlightTrack(name)
-                }
-            }
+            selected: this.state.selectedId ? (this.state.selectedId === id) : i === 0
         }
+    }
+
+    onShouldSelect = (result: SearchResult) => {
+        this.setState({selectedId: result.id})
     }
 
     render() {
@@ -126,8 +127,13 @@ export class TrackSearchView extends React.Component {
         })
         const searchProps: SearchProps = {
             onQueryChanged: query => {
-                this.setState({query})
+                this.setState({
+                    query,
+                    selectedId: null
+                })
             },
+            onConfirmed: this.onConfirmed,
+            onShouldSelect: this.onShouldSelect,
             query: this.state.query,
             onCancelled: this.cancel,
             results: results.map(this.mapTrackItem),

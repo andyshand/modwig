@@ -51,17 +51,7 @@ export interface SearchResult {
     description?: string
     icon?: React.ElementType
 
-    /**
-     * Called when the user presses enter or clicks a search result (closing search)
-     */
-    onConfirm: () => void
-
-    /**
-     * Called when the result is highlighted. When the search is first opened, this will automatically
-     * be called on the first element. Additionally, if the search is closed without confirming a result,
-     * this will be called with false to allow calling code to cleanup any "preview" state.
-     */
-    onSelected?: (selected: boolean) => void
+    selected: boolean
 }
 
 export interface SearchProps {
@@ -69,54 +59,34 @@ export interface SearchProps {
     onCancelled: () => void,
     results: SearchResult[],
     query: string,
+    onShouldSelect: (result: SearchResult) => void,
+    onConfirmed: (result: SearchResult) => void,
     placeholder: string
 }
 
 export class SearchView extends React.Component<SearchProps> {
-    state = {
-        selectedId: null
-    }
     repeatInterval: any
     onInputChange = event => {
-        this.setState({selectedId: null})
         this.props.onQueryChanged(event.target.value)
     }
     onKey = (keyCode: number) => {
-        const selectedIndex = this.props.results.findIndex(this.isSelected)
+        const selectedIndex = this.props.results.findIndex(r => r.selected)
         if (selectedIndex < 0) {
             return
         }
         if (keyCode === 38) {
             // up
             const newSelect = this.props.results[Math.max(0, selectedIndex - 1)]
-            this.setState({
-                selectedId: newSelect.id
-            })
-            newSelect.onSelected(true)
+            this.props.onShouldSelect(newSelect)
         } else if (keyCode === 40) {
             // down
             const newSelect = this.props.results[Math.min(this.props.results.length - 1, selectedIndex + 1)]
-            this.setState({
-                selectedId: newSelect.id
-            })
-            newSelect.onSelected(true)
+            this.props.onShouldSelect(newSelect)
         }
     }
-    static getDerivedStateFromProps(props, state) {
-        if (!state.selectedId && props.results.length) {
-            props.results[0].onSelected(true)
-            return {
-                ...state,
-                selectedId: props.results[0].id
-            }
-        }
-        return state;
-    }
-    isSelected = (result: SearchResult) => {
-        return result.id === this.state.selectedId
-    }
+    
     getSelected = () => {
-        return this.props.results.find(this.isSelected)
+        return this.props.results.find(r => r.selected)
     }
     onKeyDown = (event) => {
         clearInterval(this.repeatInterval)
@@ -126,9 +96,7 @@ export class SearchView extends React.Component<SearchProps> {
         } else if (event.keyCode === 13) {
             // enter
             const selected = this.getSelected()
-            if (selected) {
-                return selected.onConfirm()
-            }
+            this.props.onConfirmed(selected)
         }
         const keyCode = event.keyCode
         this.repeatInterval = setInterval(() => {
@@ -149,11 +117,10 @@ export class SearchView extends React.Component<SearchProps> {
     }
     renderResult = (result: SearchResult) => {
         const props = {
-            selected: this.isSelected(result),
-            key: result.id
+            key: result.id,
+            selected: result.selected
         }
-        return <Result {...props} onDoubleClick={result.onConfirm} onMouseDown={() => this.setState({selectedId: result.id})}>
-
+        return <Result {...props} onDoubleClick={() => this.props.onConfirmed(result)} onMouseDown={() => this.props.onShouldSelect(result)}>
             <Color color={result.color} /> <span>{result.title}</span> <FlexGrow /> {result.isRecent ? <Recent>⭐</Recent> : null}
         </Result>
     }
