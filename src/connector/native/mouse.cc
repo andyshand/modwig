@@ -84,7 +84,7 @@ void mouseUpDown(const Napi::CallbackInfo &info, bool down, bool doubleClick = f
     if (info[1].IsObject()) {
         // We got options
         Napi::Object options = info[1].As<Napi::Object>();
-        if (options.Has("cmd")) {
+        if (options.Has("meta")) {
             flags |= kCGEventFlagMaskCommand;
         } else if (options.Has("ctrl")) {
             flags |= kCGEventFlagMaskControl;

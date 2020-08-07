@@ -106,8 +106,8 @@ export function setupNavigation() {
             } else if (event.button === 0 && event.alt && currTrack && currTrack.toLowerCase() === 'mixing') {
                 // Alt click to jump to track in name of macro (if current track is "mixing")
                 execSync(`echo "" | pbcopy`)
-                Keyboard.keyPress(0x08, {cmd: true}) // select all
-                Keyboard.keyPress(0x08, {cmd: true}) // copy!
+                Keyboard.keyPress(0x08, {meta: true}) // select all
+                Keyboard.keyPress(0x08, {meta: true}) // copy!
                 Keyboard.keyPress(0x35) // esc
                 const output = execSync(`pbpaste`).toString().trim()
                 if (output.length > 0) {

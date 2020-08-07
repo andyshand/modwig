@@ -9,12 +9,12 @@ const { MainWindow, Keyboard } = require('bindings')('bes')
  */
 export function setupShortcuts() {
     const listenerId = Keyboard.addEventListener('keydown', async event => {
-        if (event.keyCode === 0x12 && event.cmd) {
+        if (event.keyCode === 0x12 && event.meta) {
             sendPacketToBitwig({
                 type: 'tracksearch/confirm',
                 data: `mixing`
             })
-        } else if (event.keyCode === 0x19 && event.cmd) {
+        } else if (event.keyCode === 0x19 && event.meta) {
             sendPacketToBitwig({
                 type: 'tracksearch/confirm',
                 data: `Master`

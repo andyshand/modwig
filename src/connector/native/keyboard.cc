@@ -40,7 +40,7 @@ struct CallbackInfo {
 
 struct JSEvent {
     UInt16 keyCode;
-    bool cmd, shift, ctrl, alt;
+    bool meta, shift, ctrl, alt;
     int button, x, y;
 };
 
@@ -73,7 +73,7 @@ CGEventRef eventtap_callback(CGEventTapProxy proxy, CGEventType type, CGEventRef
     } else if ((flags & kCGEventFlagMaskAlternate) != 0) {
         jsEvent->alt = true;
     } else if ((flags & kCGEventFlagMaskCommand) != 0) {
-        jsEvent->cmd = true;
+        jsEvent->meta = true;
     }
 
     // TODO Check other thread access is 100% ok
@@ -86,7 +86,7 @@ CGEventRef eventtap_callback(CGEventTapProxy proxy, CGEventType type, CGEventRef
         Napi::Object obj = Napi::Object::New(env);
 
             obj.Set(Napi::String::New(env, "keyCode"), Napi::Number::New(env, value->keyCode));
-            obj.Set(Napi::String::New(env, "cmd"), Napi::Boolean::New(env, value->cmd));
+            obj.Set(Napi::String::New(env, "meta"), Napi::Boolean::New(env, value->meta));
             obj.Set(Napi::String::New(env, "shift"), Napi::Boolean::New(env, value->shift));
             obj.Set(Napi::String::New(env, "ctrl"), Napi::Boolean::New(env, value->ctrl));
             obj.Set(Napi::String::New(env, "alt"), Napi::Boolean::New(env, value->alt));
@@ -117,7 +117,7 @@ CGEventRef eventtap_callback(CGEventTapProxy proxy, CGEventType type, CGEventRef
         auto callback = []( Napi::Env env, Napi::Function jsCallback, JSEvent* value ) {
             Napi::Object obj = Napi::Object::New(env);
 
-            obj.Set(Napi::String::New(env, "cmd"), Napi::Boolean::New(env, value->cmd));
+            obj.Set(Napi::String::New(env, "meta"), Napi::Boolean::New(env, value->meta));
             obj.Set(Napi::String::New(env, "shift"), Napi::Boolean::New(env, value->shift));
             obj.Set(Napi::String::New(env, "ctrl"), Napi::Boolean::New(env, value->ctrl));
             obj.Set(Napi::String::New(env, "alt"), Napi::Boolean::New(env, value->alt));
@@ -228,7 +228,7 @@ Napi::Value keyPresser(const Napi::CallbackInfo &info, bool down) {
     CGEventFlags flags = (CGEventFlags)0;
     if (info[1].IsObject()) {
         Napi::Object obj = info[1].As<Napi::Object>();
-        if (obj.Has("cmd")) {
+        if (obj.Has("meta")) {
             flags |= kCGEventFlagMaskCommand;
         } else if (obj.Has("shift")) {
             flags |= kCGEventFlagMaskShift;

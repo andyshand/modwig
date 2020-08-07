@@ -52,14 +52,14 @@ export function setupValueEntry() {
                 if (event.keyCode === 0x78) {
                     Mouse.doubleClick(0, { x: clickAt.x, y: clickAt.y })
                 } else {
-                    Mouse.click(0, { x: clickAt.x, y: clickAt.y, cmd: true })
+                    Mouse.click(0, { x: clickAt.x, y: clickAt.y, meta: true })
                 }
                 Keyboard.keyUp(0x37)
             })
             valueEntryWindow.webContents.executeJavaScript(`window.updateTypedValue('')`);
             valueEntryWindow.moveTop()
         } else if (event.keyCode === 53 || event.keyCode === 36) {
-            // escape or enter (without cmd)
+            // escape or enter (without meta)
             // close value entry
             valueEntryWindow.hide()
             // Mouse.setPosition(mousePosBefore.x, mousePosBefore.y)
