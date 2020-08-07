@@ -48,7 +48,7 @@ export function setupNavigation() {
         cb(event)
     }
     Keyboard.addEventListener('keydown', ifFrontmostListener(event => {
-        if (event.keycode === 27 ) {
+        if (event.keyCode === 27 ) {
             if (event.shift) {
                 sendPacketToBitwig({type: 'tracknavigation/forward'})
             } else if (event.ctrl) {
@@ -56,12 +56,12 @@ export function setupNavigation() {
             }
             waitingToScroll = true
         }
-        if (event.keycode === 49 && event.ctrl) {
+        if (event.keyCode === 49 && event.ctrl) {
             // ctrl + space pressed
             windowOpen.show()
             windowOpen.focus()
             // windowOpen.webContents.openDevTools()
-        } else if (windowOpen && event.keycode === 53) {
+        } else if (windowOpen && event.keyCode === 53) {
             // escape pressed
             // but we quit from client atm
         }

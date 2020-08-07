@@ -39,7 +39,7 @@ struct CallbackInfo {
 };
 
 struct JSEvent {
-    UInt16 keycode;
+    UInt16 keyCode;
     bool cmd, shift, ctrl, alt;
     int button, x, y;
 };
@@ -85,7 +85,7 @@ CGEventRef eventtap_callback(CGEventTapProxy proxy, CGEventType type, CGEventRef
         auto callback = []( Napi::Env env, Napi::Function jsCallback, JSEvent* value ) {
         Napi::Object obj = Napi::Object::New(env);
 
-            obj.Set(Napi::String::New(env, "keycode"), Napi::Number::New(env, value->keycode));
+            obj.Set(Napi::String::New(env, "keyCode"), Napi::Number::New(env, value->keyCode));
             obj.Set(Napi::String::New(env, "cmd"), Napi::Boolean::New(env, value->cmd));
             obj.Set(Napi::String::New(env, "shift"), Napi::Boolean::New(env, value->shift));
             obj.Set(Napi::String::New(env, "ctrl"), Napi::Boolean::New(env, value->ctrl));
@@ -96,7 +96,7 @@ CGEventRef eventtap_callback(CGEventTapProxy proxy, CGEventType type, CGEventRef
             delete value;
         };        
 
-        jsEvent->keycode = CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
+        jsEvent->keyCode = CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
         e->cb.BlockingCall( jsEvent, callback );  
     } else {
         // Mouse event
@@ -255,7 +255,7 @@ Napi::Value keyUp(const Napi::CallbackInfo &info) {
 
 Napi::Value keyPress(const Napi::CallbackInfo &info) {
     keyDown(info);
-    usleep(2000);
+    usleep(10000);
     return keyUp(info);
 }
 

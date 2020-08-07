@@ -3,7 +3,7 @@ interface Event {
 }
 interface KeyboardEvent extends Event {
     type: 'keydown' | 'keyup'
-    keycode: string
+    keyCode: string
     metaKey: boolean
     shift: boolean
     alt: boolean
