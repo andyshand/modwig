@@ -10,9 +10,22 @@ const Result = styled.div`
     display: flex;
     align-items: center;
     justify-content: space-between;
+    padding-left: 1.8em;
     > * {
         flex-shrink: 0;
     }
+    position: relative;
+`
+const FlexGrow = styled.div`
+    flex-grow: 1;
+`
+const Color = styled.div`
+    background: ${props => props.color};
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 1em;  
 `
 const Recent = styled.div`
     font-size: .8em;
@@ -33,7 +46,7 @@ export interface SearchResult {
     id: string
 
     isRecent?: boolean
-   
+    color: string
 
     description?: string
     icon?: React.ElementType
@@ -140,7 +153,8 @@ export class SearchView extends React.Component<SearchProps> {
             key: result.id
         }
         return <Result {...props} onDoubleClick={result.onConfirm} onMouseDown={() => this.setState({selectedId: result.id})}>
-            <span>{result.title}</span> {result.isRecent ? <Recent>⭐</Recent> : null}
+
+            <Color color={result.color} /> <span>{result.title}</span> <FlexGrow /> {result.isRecent ? <Recent>⭐</Recent> : null}
         </Result>
     }
     componentDidUpdate(prevProps) {

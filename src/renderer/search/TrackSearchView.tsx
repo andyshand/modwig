@@ -86,6 +86,7 @@ export class TrackSearchView extends React.Component {
     }
 
     mapTrackItem = (name: string, i: number) : SearchResult => {
+        const track = getTrackByName(name)
         return {
             onConfirm: () => {
                 send({
@@ -97,6 +98,7 @@ export class TrackSearchView extends React.Component {
                 recent10 = [name].concat(recent10.slice(0, recentCount).filter(n => n !== name))
             },
             title: name,
+            color: track.color,
             id: i + name,
             isRecent: recent10.indexOf(name) >= 0,
             description: name,

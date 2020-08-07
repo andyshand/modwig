@@ -35,7 +35,6 @@ class EventEmitter<T> {
     }
 }
 
-
 class PacketManager {
     connection: any
     activeConnection: any
@@ -211,9 +210,9 @@ class GlobalController extends Controller {
             if (name.length === 0) return null
             return {
                 name,
+                color: convertBWColorToHex(t.color()),
                 solo: t.solo().get(),
                 mute: t.mute().get(),
-                color: t.color().get(),
                 position: t.position().get(),
                 volume: t.volume().get(),
                 type: t.trackType().get()
@@ -336,6 +335,15 @@ function bytesToString(data) {
     }
     return clientData;
 };
+
+function convertBWColorToHex(color) {
+    const red = color.red()
+    const green = color.green()
+    const blue = color.blue()
+    let pad0 = input => input.length === 1 ? `0${input}` : input
+    const componentToHex = c => pad0(Math.round(c * 255).toString(16).substr(0, 2).toUpperCase())
+    return `#${componentToHex(red)}${componentToHex(green)}${componentToHex(blue)}`
+}
 
 function init() {
     // var app = host.createApplication()
