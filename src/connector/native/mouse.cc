@@ -84,16 +84,19 @@ void mouseUpDown(const Napi::CallbackInfo &info, bool down, bool doubleClick = f
     if (info[1].IsObject()) {
         // We got options
         Napi::Object options = info[1].As<Napi::Object>();
-        if (options.Has("meta")) {
+        if (options.Has("Meta")) {
             flags |= kCGEventFlagMaskCommand;
-        } else if (options.Has("ctrl")) {
+        }
+        if (options.Has("Control")) {
             flags |= kCGEventFlagMaskControl;
-        } else if (options.Has("shift")) {
+        }
+        if (options.Has("Shift")) {
             flags |= kCGEventFlagMaskShift;
-        } else if (options.Has("alt")) {
+        }
+        if (options.Has("Alt")) {
             flags |= kCGEventFlagMaskAlternate;
         }
-
+        
         if (options.Has("x")) {
             pos.x = (CGFloat)options.Get("x").As<Napi::Number>().DoubleValue();
         }

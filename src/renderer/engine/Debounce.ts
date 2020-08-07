@@ -5,3 +5,7 @@ export function debounce(fn, wait = 1) {
       timeout = setTimeout(() => fn.call(this, ...args), wait);
     }
   }
+
+  export async function wait(ms) {
+    return new Promise(res => setTimeout(res, ms))
+  }

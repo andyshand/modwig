@@ -163,7 +163,10 @@ class GlobalController extends Controller {
             })
 
             t.addIsSelectedInEditorObserver(selected => {
-                if (selected) {
+                if (selected && t.trackType().get() !== "Group") {
+                    // Group tracks bug out when you make them visible,
+                    // vertically centering on their child content and not 
+                    // actually showing the group
                     t.makeVisibleInArranger()
                 }
                 this.deps.packetManager.send({

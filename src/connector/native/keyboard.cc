@@ -96,9 +96,13 @@ std::map<int,std::string> macKeycodeMap = {
   {0x39, "CapsLock"},
   {0x3A, "Alt"},
   {0x3B, "Control"},
-  {0x3C, "Shift"},
-  {0x3D, "Alt"},
-  {0x3E, "Control"},
+
+  // These would get overwritten in the two way map (cause they have the same name)
+  // Is this the right way to do it?
+  {0x3C, "RightShift"},
+  {0x3D, "RightAlt"},
+  {0x3E, "RightControl"},
+
   {0x3F, "Fn"},
   {0x40, "F17"},
   {0x48, "VolumeUp"},
@@ -162,7 +166,7 @@ struct CallbackInfo {
 struct JSEvent {
     UInt16 nativeKeyCode;
     std::string lowerKey;
-    bool meta, shift, ctrl, alt;
+    bool Meta, Shift, Control, Alt;
     int button, x, y;
 };
 
@@ -187,15 +191,19 @@ CGEventRef eventtap_callback(CGEventTapProxy proxy, CGEventType type, CGEventRef
 
     CGEventFlags flags = CGEventGetFlags(event);
     if ((flags & kCGEventFlagMaskAlphaShift) != 0) {
-        jsEvent->shift = true;
-    } else if ((flags & kCGEventFlagMaskShift) != 0) {
-        jsEvent->shift = true;
-    } else if ((flags & kCGEventFlagMaskControl) != 0) {
-        jsEvent->ctrl = true;
-    } else if ((flags & kCGEventFlagMaskAlternate) != 0) {
-        jsEvent->alt = true;
-    } else if ((flags & kCGEventFlagMaskCommand) != 0) {
-        jsEvent->meta = true;
+        jsEvent->Shift = true;
+    } 
+    if ((flags & kCGEventFlagMaskShift) != 0) {
+        jsEvent->Shift = true;
+    }
+    if ((flags & kCGEventFlagMaskControl) != 0) {
+        jsEvent->Control = true;
+    }
+    if ((flags & kCGEventFlagMaskAlternate) != 0) {
+        jsEvent->Alt = true;
+    }
+    if ((flags & kCGEventFlagMaskCommand) != 0) {
+        jsEvent->Meta = true;
     }
 
     // TODO Check other thread access is 100% ok
@@ -209,10 +217,10 @@ CGEventRef eventtap_callback(CGEventTapProxy proxy, CGEventType type, CGEventRef
 
             obj.Set(Napi::String::New(env, "nativeKeyCode"), Napi::Number::New(env, value->nativeKeyCode));
             obj.Set(Napi::String::New(env, "lowerKey"), Napi::String::New(env, value->lowerKey));
-            obj.Set(Napi::String::New(env, "meta"), Napi::Boolean::New(env, value->meta));
-            obj.Set(Napi::String::New(env, "shift"), Napi::Boolean::New(env, value->shift));
-            obj.Set(Napi::String::New(env, "ctrl"), Napi::Boolean::New(env, value->ctrl));
-            obj.Set(Napi::String::New(env, "alt"), Napi::Boolean::New(env, value->alt));
+            obj.Set(Napi::String::New(env, "Meta"), Napi::Boolean::New(env, value->Meta));
+            obj.Set(Napi::String::New(env, "Shift"), Napi::Boolean::New(env, value->Shift));
+            obj.Set(Napi::String::New(env, "Control"), Napi::Boolean::New(env, value->Control));
+            obj.Set(Napi::String::New(env, "Alt"), Napi::Boolean::New(env, value->Alt));
 
             jsCallback.Call( {obj} );
 
@@ -241,10 +249,10 @@ CGEventRef eventtap_callback(CGEventTapProxy proxy, CGEventType type, CGEventRef
         auto callback = []( Napi::Env env, Napi::Function jsCallback, JSEvent* value ) {
             Napi::Object obj = Napi::Object::New(env);
 
-            obj.Set(Napi::String::New(env, "meta"), Napi::Boolean::New(env, value->meta));
-            obj.Set(Napi::String::New(env, "shift"), Napi::Boolean::New(env, value->shift));
-            obj.Set(Napi::String::New(env, "ctrl"), Napi::Boolean::New(env, value->ctrl));
-            obj.Set(Napi::String::New(env, "alt"), Napi::Boolean::New(env, value->alt));
+            obj.Set(Napi::String::New(env, "Meta"), Napi::Boolean::New(env, value->Meta));
+            obj.Set(Napi::String::New(env, "Shift"), Napi::Boolean::New(env, value->Shift));
+            obj.Set(Napi::String::New(env, "Control"), Napi::Boolean::New(env, value->Control));
+            obj.Set(Napi::String::New(env, "Alt"), Napi::Boolean::New(env, value->Alt));
 
             obj.Set(Napi::String::New(env, "x"), Napi::Number::New(env, value->x));
             obj.Set(Napi::String::New(env, "y"), Napi::Number::New(env, value->y));
@@ -358,17 +366,21 @@ Napi::Value keyPresser(const Napi::CallbackInfo &info, bool down) {
         }
     }
 
-    CGKeyCode keyCode = (CGKeyCode)macKeycodeMapReverse[info[0].As<Napi::String>()];    
+    std::string s = info[0].As<Napi::String>();
+    CGKeyCode keyCode = (CGKeyCode)macKeycodeMapReverse[s];    
     CGEventFlags flags = (CGEventFlags)0;
     if (info[1].IsObject()) {
         Napi::Object obj = info[1].As<Napi::Object>();
-        if (obj.Has("meta")) {
+        if (obj.Has("Meta")) {
             flags |= kCGEventFlagMaskCommand;
-        } else if (obj.Has("shift")) {
+        }
+        if (obj.Has("Shift")) {
             flags |= kCGEventFlagMaskShift;
-        } else if (obj.Has("alt")) {
+        }
+        if (obj.Has("Alt")) {
             flags |= kCGEventFlagMaskAlternate;
-        } else if (obj.Has("ctrl")) {
+        }
+        if (obj.Has("Control")) {
             flags |= kCGEventFlagMaskControl;
         }
     }

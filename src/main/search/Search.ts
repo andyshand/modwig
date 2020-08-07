@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, screen } from "electron";
 import { url } from "../core/Url";
 import { sendPacketToBitwig, interceptPacket } from "../../connector/shared/WebsocketToSocket";
 import { isFrontmostApplication } from "../core/BitwigUI";
@@ -10,6 +10,8 @@ let windowOpen
 let trackScrollPos: {[trackName: string] : number} = {}
 let currTrack: string | null = null
 let waitingToScroll = false
+const WINDOW_HEIGHT = 400
+const WINDOW_WIDTH = 500
 
 const scrollCurrent = (dX) => {
     if (currTrack) {
@@ -24,8 +26,8 @@ const getScroll = name => {
 
 export function setupNavigation() {
     windowOpen = new BrowserWindow({ 
-        width: 500, 
-        height: 400, 
+        width: WINDOW_WIDTH, 
+        height: WINDOW_HEIGHT, 
         frame: false, 
         show: false,
         // transparent: true,
@@ -47,17 +49,24 @@ export function setupNavigation() {
         cb(event)
     }
     Keyboard.addEventListener('keydown', ifFrontmostListener(event => {
-        const { lowerKey, ctrl } = event
+        const { lowerKey, Control } = event
         if (lowerKey === '-') {
-            if (event.shift) {
+            if (event.Shift) {
                 sendPacketToBitwig({type: 'tracknavigation/forward'})
-            } else if (event.ctrl) {
+            } else if (event.Control) {
                 sendPacketToBitwig({type: 'tracknavigation/back'})
             }
             waitingToScroll = true
         }
-        if (lowerKey === 'Space' && ctrl) {
-            // ctrl + space pressed
+        if (lowerKey === 'Space' && Control) {
+            // Control + space pressed
+            const { width, height } = screen.getPrimaryDisplay().workAreaSize
+            windowOpen.setBounds({   
+                x: width / 2 - WINDOW_WIDTH / 2,
+                y: height - WINDOW_HEIGHT * 2,
+                width: WINDOW_WIDTH,
+                height: WINDOW_HEIGHT
+            }, false)
             windowOpen.show()
             windowOpen.focus()
             // windowOpen.webContents.openDevTools()
@@ -87,7 +96,6 @@ export function setupNavigation() {
     })
     interceptPacket('trackselected', undefined, ({ type, data: { name, selected }}) => {
         if (selected) {
-            console.log('the wait is over! now scroll')
             const targetScroll = getScroll(name)
             if (targetScroll > 0) {
                 doScroll(targetScroll)
@@ -103,12 +111,12 @@ export function setupNavigation() {
             if (event.button === 1) {
                 middleMouseDown = true
                 lastX = event.x
-            } else if (event.button === 0 && event.alt && currTrack && currTrack.toLowerCase() === 'mixing') {
+            } else if (event.button === 0 && event.Alt && currTrack && currTrack.toLowerCase() === 'mixing') {
                 // Alt click to jump to track in name of macro (if current track is "mixing")
                 execSync(`echo "" | pbcopy`)
-                Keyboard.keyPress(0x08, {meta: true}) // select all
-                Keyboard.keyPress(0x08, {meta: true}) // copy!
-                Keyboard.keyPress(0x35) // esc
+                Keyboard.keyPress('a', {Meta: true}) // select all
+                Keyboard.keyPress('c', {Meta: true}) // copy!
+                Keyboard.keyPress('Escape') // esc
                 const output = execSync(`pbpaste`).toString().trim()
                 if (output.length > 0) {
                     sendPacketToBitwig({type: 'tracksearch/confirm', data: output})

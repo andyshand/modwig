@@ -25,7 +25,7 @@ export function setupValueEntry() {
     })
     valueEntryWindow.loadURL(url('/#/value-entry'))
 
-    Keyboard.addEventListener('keydown', async event => {
+    Keyboard.addEventListener('keyup', async event => {
         const { lowerKey } = event
         if (!open && await isFrontmostApplication() && lowerKey === 'F1' || lowerKey === 'F2') {
             // Start value entry
@@ -43,13 +43,12 @@ export function setupValueEntry() {
 
             returnMouseAfter(() => {
                 Mouse.setPosition(clickAt.x, clickAt.y)
-                Keyboard.keyDown('Meta')
-                if (lowerKey === 'F2') {
-                    Mouse.doubleClick(0, { x: clickAt.x, y: clickAt.y })
+
                 } else {
-                    Mouse.click(0, { x: clickAt.x, y: clickAt.y, meta: true })
+                    Keyboard.keyDown('Meta')
+                    Mouse.doubleClick(0, { x: clickAt.x, y: clickAt.y })
+                    Keyboard.keyUp('Meta')
                 }
-                Keyboard.keyUp('Meta')
             })
             valueEntryWindow.webContents.executeJavaScript(`window.updateTypedValue('')`);
             valueEntryWindow.moveTop()

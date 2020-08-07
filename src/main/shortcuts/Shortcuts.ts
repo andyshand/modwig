@@ -9,24 +9,24 @@ const { MainWindow, Keyboard } = require('bindings')('bes')
  */
 export function setupShortcuts() {
     const listenerId = Keyboard.addEventListener('keydown', async event => {
-        const { lowerKey, meta } = event
-        if (lowerKey === '1' && meta) {
+        const { lowerKey, Meta } = event
+        if (lowerKey === '1' && Meta) {
             sendPacketToBitwig({
                 type: 'tracksearch/confirm',
                 data: `mixing`
             })
-        } else if (lowerKey === '9' && meta) {
+        } else if (lowerKey === '9' && Meta) {
             sendPacketToBitwig({
                 type: 'tracksearch/confirm',
                 data: `Master`
             })
-        } else if (lowerKey === 'w' && event.ctrl) {
+        } else if (lowerKey === 'w' && event.Control) {
             Keyboard.keyPress('ArrowUp')
-        } else if (lowerKey === 'a' && event.ctrl) {
+        } else if (lowerKey === 'a' && event.Control) {
             Keyboard.keyPress('ArrowLeft')
-        } else if (lowerKey === 's' && event.ctrl) {
+        } else if (lowerKey === 's' && event.Control) {
             Keyboard.keyPress('ArrowDown')
-        } else if (lowerKey === 'd' && event.ctrl) {
+        } else if (lowerKey === 'd' && event.Control) {
             Keyboard.keyPress('ArrowRight')
         } 
     })

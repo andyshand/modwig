@@ -168,7 +168,7 @@ export class SearchView extends React.Component<SearchProps> {
     }
     render() {
         return <div style={{fontSize: '.9rem'}}>
-            <Input id="theinput" autoFocus onKeyDown={this.onSearchKeyDown} placeholder={this.props.placeholder} 
+            <Input id="theinput" autoComplete={"off"} autoCorrect={"off"} autoCapitalize={"off"} spellCheck={false} autoFocus onKeyDown={this.onSearchKeyDown} placeholder={this.props.placeholder} 
             onChange={this.onInputChange} value={this.props.query} />
             {this.props.results.map(this.renderResult)}
         </div>
