@@ -27,7 +27,7 @@ export function setupValueEntry() {
 
     Keyboard.addEventListener('keyup', async event => {
         const { lowerKey } = event
-        if (!open && await isFrontmostApplication() && (lowerKey === 'F1' || lowerKey === 'F2' || lowerKey === '0')) {
+        if (!open && await isFrontmostApplication() && (lowerKey === 'F1' || lowerKey === 'F2')) {
             // Start value entry
             open = true
             typedSoFar = ''
@@ -44,7 +44,7 @@ export function setupValueEntry() {
             returnMouseAfter(() => {
                 Mouse.setPosition(clickAt.x, clickAt.y)
 
-                if (lowerKey === 'F1' || lowerKey === '0') {
+                if (lowerKey === 'F1') {
                     // Ensure arranger panel is active
                     // TODO we'll need a more reliable way to do this if
                     // someone changes shortcuts. Or require you add this shortcut?
@@ -57,11 +57,6 @@ export function setupValueEntry() {
                     Keyboard.keyDown('Meta')
                     Mouse.click(0, { x: clickAt.x, y: clickAt.y, Meta: true })
                     Keyboard.keyUp('Meta')
-
-                    if (lowerKey === '0') {
-                        Keyboard.keyPress('0')
-                        Keyboard.keyPress('Enter')
-                    }
                 } else {
                     Keyboard.keyDown('Meta')
                     Mouse.doubleClick(0, { x: clickAt.x, y: clickAt.y })

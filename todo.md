@@ -56,6 +56,7 @@ browser management
   - automatic full height for automation
   - open just group automation
   - open automation always for gain w ith separate command
+  - clicking line selects two adjacent points
 
   extra
   - scripting engine for custom actions

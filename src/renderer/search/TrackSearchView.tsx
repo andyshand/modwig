@@ -1,9 +1,20 @@
 import React from 'react'
 import { SearchResult, SearchView, SearchProps } from './SearchView'
 import { send, addPacketListener, getTrackByName } from '../bitwig-api/Bitwig'
+const { BrowserWindow, app} = require('electron').remote
+
+function loadRecent10() {
+    try {
+        return JSON.parse(localStorage.getItem('recent10')) || []
+    } catch (e) { return [] }
+}
 
 let recentCount = 10
-let recent10 = []
+let recent10 = loadRecent10()
+
+function saveRecent10() {
+    localStorage.setItem('recent10', JSON.stringify(recent10))
+}
 
 const FuzzySet = (options) => {
 
@@ -24,8 +35,6 @@ const FuzzySet = (options) => {
         }
     }
 }
-import { debounce } from '../engine/Debounce'
-const { BrowserWindow, app} = require('electron').remote
 
 export class TrackSearchView extends React.Component {
 
@@ -92,6 +101,7 @@ export class TrackSearchView extends React.Component {
         BrowserWindow.getFocusedWindow().hide()
         app.hide()
         recent10 = [name].concat(recent10.slice(0, recentCount).filter(n => n !== name))
+        saveRecent10()
     }
 
     mapTrackItem = (name: string, i: number) : SearchResult => {
@@ -123,7 +133,7 @@ export class TrackSearchView extends React.Component {
                 const t = getTrackByName(name)
                 return t.type === 'Effect'
             }
-            return true
+            return getTrackByName(name) // track actually exists
         })
         const searchProps: SearchProps = {
             onQueryChanged: query => {
