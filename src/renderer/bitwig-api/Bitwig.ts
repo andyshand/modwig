@@ -6,7 +6,7 @@ export namespace Bitwig {
         pan: number,
         name: string,
         color: string,
-        type: 'standard' | 'group',
+        type: 'Effect' | 'Instrument' | 'Audio' | 'Group' | 'Hybrid' | 'Master',
         position: number,
         solo: boolean,
         mute: boolean
@@ -51,6 +51,11 @@ ws.onmessage = (event) => {
   const packet = JSON.parse(event.data)
   const { type } = packet
   ;(packetListeners[type] || []).forEach(listener => listener.cb(packet))
+  if (type === 'tracks') {
+    for (const t of packet.data) {
+      state.tracksByName[t.name] = t
+    }
+  }
 }
 
 export function getTrackByName(name: string) : Bitwig.Track {

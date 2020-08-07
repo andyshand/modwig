@@ -139,9 +139,12 @@ export class SearchView extends React.Component<SearchProps> {
             selected: this.isSelected(result),
             key: result.id
         }
-        return <Result {...props} onDoubleClick={result.onConfirm}>
+        return <Result {...props} onDoubleClick={result.onConfirm} onMouseDown={() => this.setState({selectedId: result.id})}>
             <span>{result.title}</span> {result.isRecent ? <Recent>⭐</Recent> : null}
         </Result>
+    }
+    componentDidUpdate(prevProps) {
+        document.getElementById('theinput').focus()
     }
     onSearchKeyDown = event => {
         // Don't allow up/down arrow keys to navigate input
@@ -151,7 +154,7 @@ export class SearchView extends React.Component<SearchProps> {
     }
     render() {
         return <div style={{fontSize: '.9rem'}}>
-            <Input autoFocus onKeyDown={this.onSearchKeyDown} placeholder={this.props.placeholder} 
+            <Input id="theinput" autoFocus onKeyDown={this.onSearchKeyDown} placeholder={this.props.placeholder} 
             onChange={this.onInputChange} value={this.props.query} />
             {this.props.results.map(this.renderResult)}
         </div>

@@ -150,6 +150,7 @@ class GlobalController extends Controller {
             t.mute().markInterested()
             t.color().markInterested()
             t.position().markInterested()
+            t.trackType().markInterested()
             t.volume().markInterested()
     
             // send all tracks when track name changes
@@ -214,7 +215,8 @@ class GlobalController extends Controller {
                 mute: t.mute().get(),
                 color: t.color().get(),
                 position: t.position().get(),
-                volume: t.volume().get()
+                volume: t.volume().get(),
+                type: t.trackType().get()
             }
         }, true)
         this.deps.packetManager.send({

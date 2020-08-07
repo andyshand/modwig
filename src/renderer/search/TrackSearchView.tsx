@@ -1,6 +1,6 @@
 import React from 'react'
 import { SearchResult, SearchView, SearchProps } from './SearchView'
-import { send, addPacketListener } from '../bitwig-api/Bitwig'
+import { send, addPacketListener, getTrackByName } from '../bitwig-api/Bitwig'
 
 let recentCount = 10
 let recent10 = []
@@ -34,16 +34,17 @@ export class TrackSearchView extends React.Component {
         trackNames: [],
         query: ''
     }
+    trackNames: string[] = []
     fuzzySet = FuzzySet([])
     stopListening: any
 
     componentDidMount() {
         this.stopListening = addPacketListener('tracks', packet => {
-            const trackNames = packet.data.map(t => t.name)
-            this.fuzzySet = FuzzySet(trackNames)
+            this.trackNames = packet.data.map(t => t.name)
+            this.fuzzySet = FuzzySet(this.trackNames)
             this.setState({
                 tracks: packet.data,
-                trackNames
+                trackNames: this.trackNames
             })
         })
         window.addEventListener('keyup', event => {
@@ -109,11 +110,18 @@ export class TrackSearchView extends React.Component {
 
     render() {
         let q = this.state.query.trim()
-        if (q.length > 0) {
-            // stop exact matches from showing only 1 result
-            q += ''
+        let onlySends = false
+        if (q.indexOf(':send') === 0) {
+            q = q.substr(5).trim()
+            onlySends = true
         }
-        const results = this.state.query.trim().length > 0 ? this.fuzzySet.get(q) : recent10
+        const results = (this.state.query.trim().length > 0 ? this.fuzzySet.get(q) : recent10).filter(name => {
+            if (onlySends) {
+                const t = getTrackByName(name)
+                return t.type === 'Effect'
+            }
+            return true
+        })
         const searchProps: SearchProps = {
             onQueryChanged: query => {
                 this.setState({query})
