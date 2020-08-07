@@ -38,11 +38,9 @@ struct CallbackInfo {
     }
 };
 
-struct KeyboardEvent {
+struct JSEvent {
     UInt16 keycode;
-    bool cmdKey, shiftKey, ctrlKey, optionKey;
-};
-struct MouseEvent {
+    bool cmd, shift, ctrl, alt;
     int button, x, y;
 };
 
@@ -63,45 +61,45 @@ CGEventRef eventtap_callback(CGEventTapProxy proxy, CGEventType type, CGEventRef
         return event;
     }
 
+    JSEvent *jsEvent = new JSEvent();
+
     CGEventFlags flags = CGEventGetFlags(event);
-    
+    if ((flags & kCGEventFlagMaskAlphaShift) != 0) {
+        jsEvent->shift = true;
+    } else if ((flags & kCGEventFlagMaskShift) != 0) {
+        jsEvent->shift = true;
+    } else if ((flags & kCGEventFlagMaskControl) != 0) {
+        jsEvent->ctrl = true;
+    } else if ((flags & kCGEventFlagMaskAlternate) != 0) {
+        jsEvent->alt = true;
+    } else if ((flags & kCGEventFlagMaskCommand) != 0) {
+        jsEvent->cmd = true;
+    }
+
     // TODO Check other thread access is 100% ok
     if (type == kCGEventKeyDown || 
-    type == kCGEventKeyUp ||
-    type == kCGEventFlagsChanged) {
+        type == kCGEventKeyUp ||
+        type == kCGEventFlagsChanged) {
         // Keyboard event
-        KeyboardEvent *jsEvent = new KeyboardEvent();
 
-        auto callback = []( Napi::Env env, Napi::Function jsCallback, KeyboardEvent* value ) {
+        auto callback = []( Napi::Env env, Napi::Function jsCallback, JSEvent* value ) {
         Napi::Object obj = Napi::Object::New(env);
 
-        obj.Set(Napi::String::New(env, "keycode"), Napi::Number::New(env, value->keycode));
-        obj.Set(Napi::String::New(env, "cmdKey"), Napi::Boolean::New(env, value->cmdKey));
-        obj.Set(Napi::String::New(env, "shiftKey"), Napi::Boolean::New(env, value->shiftKey));
-        obj.Set(Napi::String::New(env, "ctrlKey"), Napi::Boolean::New(env, value->ctrlKey));
-        obj.Set(Napi::String::New(env, "optionKey"), Napi::Boolean::New(env, value->optionKey));
+            obj.Set(Napi::String::New(env, "keycode"), Napi::Number::New(env, value->keycode));
+            obj.Set(Napi::String::New(env, "cmd"), Napi::Boolean::New(env, value->cmd));
+            obj.Set(Napi::String::New(env, "shift"), Napi::Boolean::New(env, value->shift));
+            obj.Set(Napi::String::New(env, "ctrl"), Napi::Boolean::New(env, value->ctrl));
+            obj.Set(Napi::String::New(env, "alt"), Napi::Boolean::New(env, value->alt));
 
-        delete value;
             jsCallback.Call( {obj} );
-        };
 
-        if ((flags & kCGEventFlagMaskAlphaShift) != 0) {
-            jsEvent->shiftKey = true;
-        } else if ((flags & kCGEventFlagMaskShift) != 0) {
-            jsEvent->shiftKey = true;
-        } else if ((flags & kCGEventFlagMaskControl) != 0) {
-            jsEvent->ctrlKey = true;
-        } else if ((flags & kCGEventFlagMaskAlternate) != 0) {
-            jsEvent->optionKey = true;
-        } else if ((flags & kCGEventFlagMaskCommand) != 0) {
-            jsEvent->cmdKey = true;
-        }
+            delete value;
+        };        
 
         jsEvent->keycode = CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
         e->cb.BlockingCall( jsEvent, callback );  
     } else {
         // Mouse event
-        MouseEvent *jsEvent = new MouseEvent();
         CGPoint point = CGEventGetLocation(event);
         jsEvent->x = (int) point.x;
         jsEvent->y = (int) point.y;
@@ -116,15 +114,21 @@ CGEventRef eventtap_callback(CGEventTapProxy proxy, CGEventType type, CGEventRef
             jsEvent->button = 1;
         }
 
-        auto callback = []( Napi::Env env, Napi::Function jsCallback, MouseEvent* value ) {
+        auto callback = []( Napi::Env env, Napi::Function jsCallback, JSEvent* value ) {
             Napi::Object obj = Napi::Object::New(env);
+
+            obj.Set(Napi::String::New(env, "cmd"), Napi::Boolean::New(env, value->cmd));
+            obj.Set(Napi::String::New(env, "shift"), Napi::Boolean::New(env, value->shift));
+            obj.Set(Napi::String::New(env, "ctrl"), Napi::Boolean::New(env, value->ctrl));
+            obj.Set(Napi::String::New(env, "alt"), Napi::Boolean::New(env, value->alt));
 
             obj.Set(Napi::String::New(env, "x"), Napi::Number::New(env, value->x));
             obj.Set(Napi::String::New(env, "y"), Napi::Number::New(env, value->y));
             obj.Set(Napi::String::New(env, "button"), Napi::Number::New(env, value->button));
 
-            delete value;
             jsCallback.Call( {obj} );
+
+            delete value;
         };
         e->cb.BlockingCall( jsEvent, callback );  
     }
@@ -218,21 +222,41 @@ Napi::Value isEnabled(const Napi::CallbackInfo &info) {
     return Napi::Boolean::New(env, false);
 }
 
-Napi::Value keyPress(const Napi::CallbackInfo &info, bool down) {
+Napi::Value keyPresser(const Napi::CallbackInfo &info, bool down) {
     Napi::Env env = info.Env();
     CGKeyCode keyCode = (CGKeyCode) info[0].As<Napi::Number>().Uint32Value();
+    CGEventFlags flags = (CGEventFlags)0;
+    if (info[1].IsObject()) {
+        Napi::Object obj = info[1].As<Napi::Object>();
+        if (obj.Has("cmd")) {
+            flags |= kCGEventFlagMaskCommand;
+        } else if (obj.Has("shift")) {
+            flags |= kCGEventFlagMaskShift;
+        } else if (obj.Has("alt")) {
+            flags |= kCGEventFlagMaskAlternate;
+        } else if (obj.Has("ctrl")) {
+            flags |= kCGEventFlagMaskControl;
+        }
+    }
     CGEventRef keyevent = CGEventCreateKeyboardEvent(getCGEventSource(), keyCode, down);
+    CGEventSetFlags(keyevent, flags);
     CGEventPost(kCGSessionEventTap, keyevent);
     CFRelease(keyevent);
     return Napi::Boolean::New(env, true);
 }
 
 Napi::Value keyDown(const Napi::CallbackInfo &info) {
-    return keyPress(info, true);
+    return keyPresser(info, true);
 }
 
 Napi::Value keyUp(const Napi::CallbackInfo &info) {
-    return keyPress(info, false);
+    return keyPresser(info, false);
+}
+
+Napi::Value keyPress(const Napi::CallbackInfo &info) {
+    keyDown(info);
+    usleep(2000);
+    return keyUp(info);
 }
 
 Napi::Value InitKeyboard(Napi::Env env, Napi::Object exports)
@@ -243,6 +267,7 @@ Napi::Value InitKeyboard(Napi::Env env, Napi::Object exports)
     obj.Set(Napi::String::New(env, "isEnabled"), Napi::Function::New(env, isEnabled));
     obj.Set(Napi::String::New(env, "keyDown"), Napi::Function::New(env, keyDown));
     obj.Set(Napi::String::New(env, "keyUp"), Napi::Function::New(env, keyUp));
+    obj.Set(Napi::String::New(env, "keyPress"), Napi::Function::New(env, keyPress));
     exports.Set("Keyboard", obj);
     return exports;
 }

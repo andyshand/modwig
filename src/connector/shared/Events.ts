@@ -5,8 +5,8 @@ interface KeyboardEvent extends Event {
     type: 'keydown' | 'keyup'
     keycode: string
     metaKey: boolean
-    shiftKey: boolean
-    optionKey: boolean
+    shift: boolean
+    alt: boolean
 }
 interface MouseEvent extends Event {
     type: 'mouseup' | 'mousedown',

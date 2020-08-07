@@ -2,9 +2,19 @@ import React from 'react'
 import styled from 'styled-components'
 
 const Result = styled.div`
-    background: ${props => props.selected ? `#888` : `transparent`};
+    background: ${props => props.selected ? `#888` : `#444`};
     padding: .7em 1em;
+    font-size: 1em;
     border-bottom: 3px solid #111;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    > * {
+        flex-shrink: 0;
+    }
+`
+const Recent = styled.div`
+    font-size: .8em;
 `
 
 const Input = styled.input`
@@ -14,12 +24,14 @@ const Input = styled.input`
     color: white;
     box-shadow: none;
     border: none;
-    font-size: 1.3rem;
+    font-size: 1.2em;
     padding: 1em;
 `
 export interface SearchResult {
     title: string
     id: string
+
+    isRecent?: boolean
    
 
     description?: string
@@ -124,10 +136,10 @@ export class SearchView extends React.Component<SearchProps> {
     renderResult = (result: SearchResult) => {
         const props = {
             selected: this.isSelected(result),
-            id: result.id
+            key: result.id
         }
         return <Result {...props}>
-            {result.title}
+            <span>{result.title}</span> {result.isRecent ? <Recent>⭐</Recent> : null}
         </Result>
     }
     onSearchKeyDown = event => {
@@ -137,7 +149,7 @@ export class SearchView extends React.Component<SearchProps> {
         }
     }
     render() {
-        return <div>
+        return <div style={{fontSize: '.9rem'}}>
             <Input autoFocus onKeyDown={this.onSearchKeyDown} placeholder={this.props.placeholder} 
             onChange={this.onInputChange} value={this.props.query} />
             {this.props.results.map(this.renderResult)}

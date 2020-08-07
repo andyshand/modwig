@@ -3,12 +3,14 @@ import { url } from "../core/Url";
 import { sendPacketToBitwig, interceptPacket } from "../../connector/shared/WebsocketToSocket";
 import { isFrontmostApplication } from "../core/BitwigUI";
 import { returnMouseAfter } from "../../connector/shared/MouseUtils";
+const { execSync } = require('child_process')
 const { Keyboard, Mouse, MainWindow } = require('bindings')('bes')
 let windowOpen
 
 let trackScrollPos: {[trackName: string] : number} = {}
 let currTrack: string | null = null
-let waitingToScroll: string | null = null
+let waitingToScroll = false
+let lastClick = new Date(0)
 
 const scrollCurrent = (dX) => {
     if (currTrack) {
@@ -24,9 +26,10 @@ const getScroll = name => {
 export function setupNavigation() {
     windowOpen = new BrowserWindow({ 
         width: 500, 
-        height: 600, 
+        height: 400, 
         frame: false, 
         show: false,
+        // transparent: true,
         webPreferences: {
             nodeIntegration: true,
         },
@@ -46,13 +49,14 @@ export function setupNavigation() {
     }
     Keyboard.addEventListener('keydown', ifFrontmostListener(event => {
         if (event.keycode === 27 ) {
-            if (event.shiftKey) {
+            if (event.shift) {
                 sendPacketToBitwig({type: 'tracknavigation/forward'})
-            } else if (event.ctrlKey) {
+            } else if (event.ctrl) {
                 sendPacketToBitwig({type: 'tracknavigation/back'})
             }
+            waitingToScroll = true
         }
-        if (event.keycode === 49 && event.ctrlKey) {
+        if (event.keycode === 49 && event.ctrl) {
             // ctrl + space pressed
             windowOpen.show()
             windowOpen.focus()
@@ -78,33 +82,40 @@ export function setupNavigation() {
     }
 
     interceptPacket('tracksearch/confirm', undefined, ({ type, data: trackName }) => {
-        waitingToScroll = trackName
+        waitingToScroll = true
         console.log('waiting to scroll: ', trackName)
     })
     interceptPacket('trackselected', undefined, ({ type, data: { name, selected }}) => {
         if (selected) {
-            if (waitingToScroll === name) {
-                console.log('the wait is over! now scroll')
-                const targetScroll = getScroll(name)
-                if (targetScroll > 0) {
-                    doScroll(targetScroll)
-                }
-            } else {
-                // reset scroll, navigated to track without track search
-                delete trackScrollPos[name]
+            console.log('the wait is over! now scroll')
+            const targetScroll = getScroll(name)
+            if (targetScroll > 0) {
+                doScroll(targetScroll)
             }
-            waitingToScroll = null
+            waitingToScroll = false
             currTrack = name
         }
     })
 
     // Scroll position tracking
     Keyboard.addEventListener('mousedown', ifFrontmostListener(event => {
-        if (event.button === 1 && event.y >= 1159 && event.x > 170) {
-            console.log('middle mouse down!', event.x, event.y, event.button)
-            middleMouseDown = true
-            lastX = event.x
+        if (event.y >= 1159 && event.x > 170) {
+            if (event.button === 1) {
+                middleMouseDown = true
+                lastX = event.x
+            } else if (event.button === 0 && event.alt && currTrack && currTrack.toLowerCase() === 'mixing') {
+                // Alt click to jump to track in name of macro (if current track is "mixing")
+                execSync(`echo "" | pbcopy`)
+                Keyboard.keyPress(0x08, {cmd: true}) // select all
+                Keyboard.keyPress(0x08, {cmd: true}) // copy!
+                Keyboard.keyPress(0x35) // esc
+                const output = execSync(`pbpaste`).toString().trim()
+                if (output.length > 0) {
+                    sendPacketToBitwig({type: 'tracksearch/confirm', data: output})
+                }
+            }
         }
+        
     }))
     Keyboard.addEventListener('mouseup', ifFrontmostListener(event => {
         // console.log('middle mouse up!', event.x, event.y, event.button)

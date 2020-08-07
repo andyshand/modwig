@@ -84,7 +84,7 @@ export class TrackSearchView extends React.Component {
         app.hide()
     }
 
-    mapTrackItem = (name: string) : SearchResult => {
+    mapTrackItem = (name: string, i: number) : SearchResult => {
         return {
             onConfirm: () => {
                 send({
@@ -93,10 +93,11 @@ export class TrackSearchView extends React.Component {
                 })
                 BrowserWindow.getFocusedWindow().hide()
                 app.hide()
-                recent10 = [name].concat(recent10.slice(0, recentCount))
+                recent10 = [name].concat(recent10.slice(0, recentCount).filter(n => n !== name))
             },
             title: name,
-            id: name,
+            id: i + name,
+            isRecent: recent10.indexOf(name) >= 0,
             description: name,
             onSelected: (selected) => {
                 if (selected) {
@@ -107,12 +108,12 @@ export class TrackSearchView extends React.Component {
     }
 
     render() {
-        let q = this.state.query
+        let q = this.state.query.trim()
         if (q.length > 0) {
             // stop exact matches from showing only 1 result
             q += ''
         }
-        const results = this.fuzzySet.get(q)
+        const results = this.state.query.trim().length > 0 ? this.fuzzySet.get(q) : recent10
         const searchProps: SearchProps = {
             onQueryChanged: query => {
                 this.setState({query})

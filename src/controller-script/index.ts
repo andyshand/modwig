@@ -187,30 +187,36 @@ class GlobalController extends Controller {
         })
     }
 
-    mapTracks<T>(cb: (track, i) => T) {
+    mapTracks<T>(cb: (track, i) => T, filterNull = false) {
         let out = []
+        const processT = (track, i) => {
+            const result = cb(track, i)
+            if (!filterNull || result != null) {
+                out.push(result)
+            }
+        }
         for (let i = 0; i < MAIN_TRACK_BANK_SIZE; i++) {
-            const t = this.trackBank.getItemAt(i)
-            out.push(cb(t, i))
+            processT(this.trackBank.getItemAt(i), i)
         }
         for (let i = 0; i < FX_TRACK_BANK_SIZE; i++) {
-            const t = this.fxBank.getItemAt(i)
-            out.push(cb(t, i + MAIN_TRACK_BANK_SIZE))
+            processT(this.fxBank.getItemAt(i), i + MAIN_TRACK_BANK_SIZE)
         }
         return out
     }
 
     sendAllTracks() {
         const tracks = this.mapTracks((t, i) => {
+            const name = t.name().get()
+            if (name.length === 0) return null
             return {
-                name: t.name().get(),
+                name,
                 solo: t.solo().get(),
                 mute: t.mute().get(),
                 color: t.color().get(),
                 position: t.position().get(),
                 volume: t.volume().get()
             }
-        })
+        }, true)
         this.deps.packetManager.send({
             type: 'tracks',
             data: tracks.concat({

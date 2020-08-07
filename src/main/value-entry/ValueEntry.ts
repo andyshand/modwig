@@ -74,7 +74,7 @@ export function setupValueEntry() {
                     0x13: '2', 
                     0x14: '3',
                     0x15: '4',
-                    0x17: event.shiftKey ? '%' : '5',
+                    0x17: event.shift ? '%' : '5',
                     0x16: '6',
                     0x1A: '7',
                     0x1C: '8',
