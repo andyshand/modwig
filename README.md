@@ -20,13 +20,13 @@ It is currently **Mac only**, but is built with cross-platform support in mind.
 
 ### Automation
 
-- [ ] Type value for selected points (Command+Enter)
+- [-] Type value for selected points (F1)
 
 ### Modulation
 
-- [ ] Type modulation amount for first modulation (Command+Enter)
+- [ ] Type modulation amount for first modulation
 
-# Setup
+# Setup (Coming Soon)
 
 1. Download the latest version of the app from the releases tab and copy it to your Applications folder. 
 
@@ -34,7 +34,7 @@ It is currently **Mac only**, but is built with cross-platform support in mind.
 
 # How It Works
 
-BES in an electron application that uses C++ extensions to listen for global keypresses and communicates with Bitwig via its controller API. For some functions, plain mouse/keyboard automation is used, using native APIs for 
+BES in an electron application that uses C++ extensions to listen for global keypresses and communicates with Bitwig via its controller API. For some functions, plain mouse/keyboard automation is used. Some future features will likely require screenshot analysis.
 
 # Contributing
 
