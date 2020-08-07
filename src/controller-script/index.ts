@@ -163,7 +163,9 @@ class GlobalController extends Controller {
             })
 
             t.addIsSelectedInEditorObserver(selected => {
-                t.makeVisibleInArranger()
+                if (selected) {
+                    t.makeVisibleInArranger()
+                }
                 this.deps.packetManager.send({
                     type: 'trackselected',
                     data: {
