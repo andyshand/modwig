@@ -99,7 +99,7 @@ export class TrackSearchView extends React.Component {
         })
         BrowserWindow.getFocusedWindow().hide()
         app.hide()
-        recent10 = [name].concat(recent10.slice(0, recentCount).filter(n => n !== name))
+        recent10 = [result.id].concat(recent10.slice(0, recentCount).filter(id => id !== result.id))
         saveRecent10()
     }
 
@@ -109,7 +109,7 @@ export class TrackSearchView extends React.Component {
             color: track.color,
             id: track.id,
             track,
-            isRecent: recent10.indexOf(name) >= 0,
+            isRecent: recent10.indexOf(track.id) >= 0,
             selected: this.state.selectedId ? (this.state.selectedId === track.id) : i === 0
         }
     }

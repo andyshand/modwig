@@ -13,7 +13,7 @@ const HoverStyle = css`
 `
 
 const VolumeLevel = styled.div`
-    top: ${props => Math.ceil((1 - props.volume) * 100) - 5 + '%'}
+    top: ${props => Math.ceil((1 - props.volume) * 100) - 5 + '%'};
     bottom: 0;
     left: 0;
     background: #502E13;

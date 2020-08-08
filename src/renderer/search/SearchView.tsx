@@ -83,7 +83,7 @@ type TrackResultProps = {
     onConfirmed: (result: SearchResult) => void, 
     onShouldSelect: (result: SearchResult) => void
 }
-const TrackResult = React.memo(({result, onConfirmed, onShouldSelect}: TrackResultProps) => {
+const TrackResult = ({result, onConfirmed, onShouldSelect}: TrackResultProps) => {
     const [ solo, setSolo] = useState(result.track.solo)
     const [ mute, setMute] = useState(result.track.mute)
     const toggleSolo = () => {
@@ -106,16 +106,19 @@ const TrackResult = React.memo(({result, onConfirmed, onShouldSelect}: TrackResu
         })
         setMute(!mute)
     }
+    const onDoubleClick = event => {
+        event.stopPropagation()
+    }
     return <Result id={result.selected ? 'selectedtrack' : ''} key={result.id} selected={result.selected} onDoubleClick={() => onConfirmed(result)} onMouseDown={() => onShouldSelect(result)}>
         <Color color={result.color} /> 
         <span>{result.title}</span> 
         <FlexGrow /> 
         {result.isRecent ? <Recent>⭐</Recent> : null}
-        <MuteSolo activeColor={`#D0C609`} active={solo} onClick={toggleSolo}>S</MuteSolo>
-        <MuteSolo activeColor={`#F97012`} active={mute} onClick={toggleMute}>M</MuteSolo>
+        <MuteSolo onDoubleClick={onDoubleClick} activeColor={`#D0C609`} active={solo} onClick={toggleSolo}>S</MuteSolo>
+        <MuteSolo onDoubleClick={onDoubleClick} activeColor={`#F97012`} active={mute} onClick={toggleMute}>M</MuteSolo>
         <TrackVolume track={result.track} />
     </Result>
-})
+}
 
 export interface SearchResult {
     title: string
@@ -155,13 +158,15 @@ export class SearchView extends React.Component<SearchProps> {
             // up
             const newSelect = this.props.results[Math.max(0, selectedIndex - 1)]
             this.props.onShouldSelect(newSelect)
+            this.waitingForScroll = true
         } else if (keyCode === 40) {
             // down
             const newSelect = this.props.results[Math.min(this.props.results.length - 1, selectedIndex + 1)]
             this.props.onShouldSelect(newSelect)
+            this.waitingForScroll = true
         }
     }
-    
+    waitingForScroll = false
     getSelected = () => {
         return this.props.results.find(r => r.selected)
     }
@@ -173,7 +178,7 @@ export class SearchView extends React.Component<SearchProps> {
         } else if (event.keyCode === 13) {
             // enter
             const selected = this.getSelected()
-            this.props.onConfirmed(selected)
+            return this.props.onConfirmed(selected)
         }
         const keyCode = event.keyCode
         this.repeatInterval = setInterval(() => {
@@ -193,10 +198,16 @@ export class SearchView extends React.Component<SearchProps> {
         window.removeEventListener('keyup', this.onKeyUp)
     }
     componentDidUpdate(prevProps) {
+        if (this.waitingForScroll) {
+            document.getElementById('selectedtrack')?.scrollIntoView({
+                block: 'end'
+            })
+            this.waitingForScroll = false
+        }
         document.getElementById('theinput').focus()
-        document.getElementById('selectedtrack')?.scrollIntoView({
-            block: 'end'
-        })
+        setTimeout(() => {
+            document.getElementById('theinput').focus()
+        }, 100)
     }
     onSearchKeyDown = event => {
         // Don't allow up/down arrow keys to navigate input
