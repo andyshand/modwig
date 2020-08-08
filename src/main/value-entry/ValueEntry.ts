@@ -1,9 +1,8 @@
-import { BrowserWindow } from "electron";
+import { BrowserWindow, clipboard, app } from "electron";
 import { url } from "../core/Url";
 import { returnMouseAfter } from "../../connector/shared/EventUtils";
 const { MainWindow, Keyboard, Mouse, Bitwig } = require('bindings')('bes')
 let valueEntryWindow
-let typedSoFar = ''
 let open = false
 
 /**
@@ -13,7 +12,7 @@ let open = false
  */
 export function setupValueEntry() {
     valueEntryWindow = new BrowserWindow({ 
-        width: 250, 
+        width: 275, 
         height: 80, 
         webPreferences: {
             nodeIntegration: true
@@ -24,57 +23,72 @@ export function setupValueEntry() {
     })
     valueEntryWindow.loadURL(url('/#/value-entry'))
 
-    Keyboard.addEventListener('keyup', event => {
+    Keyboard.addEventListener('keyup', async event => {
         const { lowerKey } = event
-        if (!open && Bitwig.isActiveApplication() && (lowerKey === 'F1' || lowerKey === 'F2') && !event.Meta) {
-            // Start value entry
-            open = true
-            typedSoFar = ''
+        function getAutomationValueLoc() {
             const frame = MainWindow.getFrame()
-
-            const clickAt = lowerKey === 'F1' ? {
+            return {
                 x: frame.x + 120,
                 y: frame.y + 140
-            } : {
-                x: frame.x + 150, 
-                y: frame.y + 269
-            } // Modulator
+            }
+        }
 
+        if (Bitwig.isActiveApplication() && lowerKey === 'F1' && !event.Meta) {
+            // Start value entry
+            open = true
+            const clickAt = getAutomationValueLoc()
             returnMouseAfter(() => {
                 Mouse.setPosition(clickAt.x, clickAt.y)
 
-                if (lowerKey === 'F1') {
-                    // Ensure arranger panel is active
-                    // TODO we'll need a more reliable way to do this if
-                    // someone changes shortcuts. Or require you add this shortcut?
-                    // First, move focus away from arranger
-                    Keyboard.keyPress('ArrowDown', {Control: true, Shift: true})
-                    Keyboard.keyPress('ArrowLeft', {Control: true, Shift: true})
-                    // Then move it back (because there is only "Toggle/Focus" not "Focus")
-                    // If arranger is already active, it ends up showing the mixer...
-                    Keyboard.keyPress('o', {Alt: true})
-                    Keyboard.keyDown('Meta')
-                    Mouse.click(0, { x: clickAt.x, y: clickAt.y, Meta: true })
-                    Keyboard.keyUp('Meta')
-                } else {
-                    Keyboard.keyDown('Meta')
-                    Mouse.doubleClick(0, { x: clickAt.x, y: clickAt.y })
-                    Keyboard.keyUp('Meta')
-                }
+                // Ensure arranger panel is active
+                // TODO we'll need a more reliable way to do this if
+                // someone changes shortcuts. Or require you add this shortcut?
+                // First, move focus away from arranger
+                Keyboard.keyPress('ArrowDown', {Control: true, Shift: true})
+                Keyboard.keyPress('ArrowLeft', {Control: true, Shift: true})
+                // Then move it back (because there is only "Toggle/Focus" not "Focus")
+                // If arranger is already active, it ends up showing the mixer...
+                Keyboard.keyPress('o', {Alt: true})
+                Keyboard.keyDown('Meta')
+                Mouse.click(0, { x: clickAt.x, y: clickAt.y, Meta: true })
+                
+                // Copy value to clipboard
+                Keyboard.keyPress('c', {Meta: true})
+                
+                valueEntryWindow.show()
+                Keyboard.keyUp('Meta')
             })
-            valueEntryWindow.webContents.executeJavaScript(`window.updateTypedValue('')`);
-            valueEntryWindow.moveTop()
-        } else if (lowerKey === 'Enter' || lowerKey === 'Escape') {
+        } else if (open && (lowerKey === 'Enter' || lowerKey === 'Escape')) {
             // Close value entry
-            valueEntryWindow.hide()
-            open = false
-        } else if (open) {
-            if (lowerKey === 'Backspace') {
-                typedSoFar = typedSoFar.substr(0, typedSoFar.length - 1)
+            if (lowerKey === 'Enter') {
+                try {
+                    const typedValue = await valueEntryWindow.webContents.executeJavaScript(`window.getTypedValue()`);
+                    clipboard.writeText(typedValue)
+                    app.hide()
+                    valueEntryWindow.hide()
+                    
+                    setTimeout(() => {
+                        returnMouseAfter(async () => {
+                            const clickAt = getAutomationValueLoc()
+                        
+                            Keyboard.keyDown('Meta')
+                            Mouse.click(0, { x: clickAt.x, y: clickAt.y, Meta: true })
+                            
+                            // Paste value
+                            Keyboard.keyPress('v', {Meta: true})    
+                            Keyboard.keyUp('Meta')
+
+                            Keyboard.keyPress('Enter')
+                        })
+                    }, 200)                        
+                } catch (e) {
+                    console.error(e)
+                }
             } else {
-                typedSoFar += lowerKey;
+                app.hide()
+                valueEntryWindow.hide()
             }
-            valueEntryWindow.webContents.executeJavaScript(`window.updateTypedValue('${typedSoFar}')`);
+            open = false
         }
     })
 }
