@@ -41,12 +41,12 @@ export function setupNavigation() {
     let lastX = 0
 
     Keyboard.addEventListener('keydown', whenActiveListener(event => {
-        const { lowerKey, Control } = event
-        if (lowerKey === '-') {
-            if (event.Shift) {
-                sendPacketToBitwig({type: 'tracknavigation/forward'})
-            } else if (event.Control) {
+        const { lowerKey, Control, Meta } = event
+        if (Meta) {
+            if (lowerKey === 'F1') {
                 sendPacketToBitwig({type: 'tracknavigation/back'})
+            } else if (lowerKey === 'F2') {
+                sendPacketToBitwig({type: 'tracknavigation/forward'})
             }
             waitingToScroll = true
         }

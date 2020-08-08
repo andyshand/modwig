@@ -26,7 +26,7 @@ export function setupValueEntry() {
 
     Keyboard.addEventListener('keyup', event => {
         const { lowerKey } = event
-        if (!open && Bitwig.isActiveApplication() && (lowerKey === 'F1' || lowerKey === 'F2')) {
+        if (!open && Bitwig.isActiveApplication() && (lowerKey === 'F1' || lowerKey === 'F2') && !event.Meta) {
             // Start value entry
             open = true
             typedSoFar = ''
