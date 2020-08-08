@@ -33,11 +33,25 @@ const ValueEntryWrap = styled.div`
     right:0;
 `
 
+function loadRecent10() {
+    try {
+        return JSON.parse(localStorage.getItem('recent10Values')) || []
+    } catch (e) { return [] }
+}
+
+let recentCount = 10
+let recent10 = loadRecent10()
+
+function saveRecent10() {
+    localStorage.setItem('recent10Values', JSON.stringify(recent10))
+}
+
 export class ValueEntryView extends React.Component<any> {
     inputRef = React.createRef()
     state = {
         typedValue: '',
-        originalValue: 0
+        originalValue: 0,
+        recentIndex: -1
     }
     startedTyping = false
     getEvaled() {
@@ -56,6 +70,7 @@ export class ValueEntryView extends React.Component<any> {
         }
     }
     componentDidMount() {
+        loadRecent10()
         app.on('browser-window-focus', () => {
             if (this.inputRef.current) {
                 this.startedTyping = false
@@ -76,12 +91,42 @@ export class ValueEntryView extends React.Component<any> {
         this.startedTyping = true
         this.setState({typedValue: e.target.value})
     }
+    onKeyUp = e => {
+        if (e.key === 'ArrowUp') {
+            e.preventDefault()
+            let newRecent = Math.min(this.state.recentIndex + 1, recent10.length - 1)
+            if (newRecent >= 0) {
+                this.setState({
+                    recentIndex: newRecent,
+                    typedValue: recent10[newRecent]
+                })
+            }
+        } else if (e.key === 'ArrowDown') {
+            e.preventDefault()
+            let newRecent = Math.max(-1, this.state.recentIndex - 1)
+            if (newRecent >= 0) {
+                this.setState({
+                    recentIndex: newRecent,
+                    typedValue: recent10[newRecent]
+                })
+            } else if (this.state.recentIndex >= 0) {
+                this.setState({
+                    recentIndex: -1,
+                    typedValue: ``
+                })
+            }
+        }
+    }
+
     render() {
         (window as any).getTypedValue = () => {
-            return this.getEvaled()
+            const result = this.getEvaled()
+            recent10 = [this.state.typedValue].concat(recent10).slice(0, recentCount)
+            setTimeout(saveRecent10, 100)
+            return result
         }
         return <ValueEntryWrap>
-            <ValueEntryInput placeholder={`Enter value...`} autoFocus={true} ref={this.inputRef} value={this.state.typedValue} onChange={this.onInputChange} />
+            <ValueEntryInput onKeyUp={this.onKeyUp} placeholder={`Enter value...`} autoFocus={true} ref={this.inputRef} value={this.state.typedValue} onChange={this.onInputChange} />
             <Output>{this.getEvaled() || `Hint: 'x' refers to the current value (${this.state.originalValue})`}</Output>
         </ValueEntryWrap>
     }

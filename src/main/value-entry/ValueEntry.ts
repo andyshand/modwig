@@ -66,7 +66,7 @@ export function setupValueEntry() {
                     clipboard.writeText(typedValue)
                     app.hide()
                     valueEntryWindow.hide()
-                    
+
                     setTimeout(() => {
                         returnMouseAfter(async () => {
                             const clickAt = getAutomationValueLoc()
