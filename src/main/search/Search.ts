@@ -1,10 +1,9 @@
-import { app, BrowserWindow, screen } from "electron";
+import { BrowserWindow, screen } from "electron";
 import { url } from "../core/Url";
 import { sendPacketToBitwig, interceptPacket } from "../../connector/shared/WebsocketToSocket";
-import { isFrontmostApplication } from "../core/BitwigUI";
-import { returnMouseAfter } from "../../connector/shared/MouseUtils";
+import { returnMouseAfter, whenActiveListener } from "../../connector/shared/EventUtils";
 const { execSync } = require('child_process')
-const { Keyboard, Mouse, MainWindow } = require('bindings')('bes')
+const { Keyboard, Mouse, MainWindow, Bitwig } = require('bindings')('bes')
 let windowOpen
 
 let trackScrollPos: {[trackName: string] : number} = {}
@@ -41,14 +40,7 @@ export function setupNavigation() {
     let middleMouseDown = false
     let lastX = 0
 
-    const ifFrontmostListener = cb => async event => {
-        const isFrontmost = await isFrontmostApplication()
-        if (!isFrontmost)  {
-            return
-        }
-        cb(event)
-    }
-    Keyboard.addEventListener('keydown', ifFrontmostListener(event => {
+    Keyboard.addEventListener('keydown', whenActiveListener(event => {
         const { lowerKey, Control } = event
         if (lowerKey === '-') {
             if (event.Shift) {
@@ -77,7 +69,6 @@ export function setupNavigation() {
     }))
     
     function doScroll(dX) {
-        // console.log('doing the scroll: ', dX)
         returnMouseAfter(() => {
             const frame = MainWindow.getFrame()
             const startX = frame.x + frame.w - 50
@@ -106,7 +97,7 @@ export function setupNavigation() {
     })
 
     // Scroll position tracking
-    Keyboard.addEventListener('mousedown', ifFrontmostListener(event => {
+    Keyboard.addEventListener('mousedown', whenActiveListener(event => {
         if (event.y >= 1159 && event.x > 170) {
             if (event.button === 1) {
                 middleMouseDown = true
@@ -123,15 +114,12 @@ export function setupNavigation() {
                 }
             }
         }
-        
     }))
-    Keyboard.addEventListener('mouseup', ifFrontmostListener(event => {
-        // console.log('middle mouse up!', event.x, event.y, event.button)
+    Keyboard.addEventListener('mouseup', whenActiveListener(event => {
         middleMouseDown = false
     }))
-    Keyboard.addEventListener('mousemoved', ifFrontmostListener(event => {
+    Keyboard.addEventListener('mousemoved', whenActiveListener(event => {
         if (middleMouseDown) {
-            // console.log('mouse moved!', event.x, event.y)
             const dX = event.x - lastX
             scrollCurrent(-dX)
             lastX = event.x

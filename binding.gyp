@@ -4,6 +4,7 @@
       "target_name": "bes",
       "sources": [
         "src/connector/native/main.cc",
+        "src/connector/native/string.cc",
         "src/connector/native/mouse.cc",
         "src/connector/native/keyboard.cc",
         "src/connector/native/rect.cc",
@@ -12,6 +13,7 @@
         "src/connector/native/color.cc",
         "src/connector/native/window.cc",
         "src/connector/native/eventsource.cc",
+        "src/connector/native/bitwig.cc",
       ],
       "include_dirs": [
         "<!@(node -p \"require('node-addon-api').include\")"

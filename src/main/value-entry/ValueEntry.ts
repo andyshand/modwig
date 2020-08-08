@@ -1,8 +1,7 @@
 import { BrowserWindow } from "electron";
 import { url } from "../core/Url";
-import { isFrontmostApplication } from "../core/BitwigUI";
-import { returnMouseAfter } from "../../connector/shared/MouseUtils";
-const { MainWindow, Keyboard, Mouse } = require('bindings')('bes')
+import { returnMouseAfter } from "../../connector/shared/EventUtils";
+const { MainWindow, Keyboard, Mouse, Bitwig } = require('bindings')('bes')
 let valueEntryWindow
 let typedSoFar = ''
 let open = false
@@ -25,9 +24,9 @@ export function setupValueEntry() {
     })
     valueEntryWindow.loadURL(url('/#/value-entry'))
 
-    Keyboard.addEventListener('keyup', async event => {
+    Keyboard.addEventListener('keyup', event => {
         const { lowerKey } = event
-        if (!open && await isFrontmostApplication() && (lowerKey === 'F1' || lowerKey === 'F2')) {
+        if (!open && Bitwig.isActiveApplication() && (lowerKey === 'F1' || lowerKey === 'F2')) {
             // Start value entry
             open = true
             typedSoFar = ''

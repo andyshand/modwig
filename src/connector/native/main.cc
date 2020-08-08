@@ -2,6 +2,7 @@
 #include <CoreFoundation/CoreFoundation.h>
 #include <ApplicationServices/ApplicationServices.h>
 
+#include "bitwig.h"
 #include "color.h"
 #include "point.h"
 #include "rect.h"
@@ -17,6 +18,7 @@ Napi::Object InitAll(Napi::Env env, Napi::Object exports) {
   InitKeyboard(env, exports);
   InitMouse(env, exports);
   InitWindow(env, exports);
+  InitBitwig(env, exports);
   return Screenshot::Init(env, exports);
 }
 

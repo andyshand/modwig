@@ -1,5 +1,4 @@
 import { UI } from "./UI";
-import { getActiveApplication } from "../../connector/shared/ActiveApplication";
 
 class State {
 
@@ -42,16 +41,6 @@ export class BitwigState extends State {
         }
         return out
     }
-}
-
-export async function isFrontmostApplication() {
-    return true
-    // const active = (await getActiveApplication()).application
-    // if (active.trim() === '') {
-        // console.log('Applescript has broken... You probably need to restart')
-        // return false
-    // }
-    // return active === "BitwigStudio"
 }
 
 export class BitwigUI extends UI {

@@ -1,6 +1,6 @@
 import { sendPacketToBitwig } from "../../connector/shared/WebsocketToSocket"
-
-const { MainWindow, Keyboard } = require('bindings')('bes')
+import { whenActiveListener } from "../../connector/shared/EventUtils"
+const { Keyboard } = require('bindings')('bes')
 
 /**
  * With value entry we don't actually pass any value to Bitwig, rather we click and focus
@@ -8,7 +8,7 @@ const { MainWindow, Keyboard } = require('bindings')('bes')
  * so as not to require glancing to the top left of the screen.
  */
 export function setupShortcuts() {
-    const listenerId = Keyboard.addEventListener('keydown', async event => {
+    const listenerId = Keyboard.addEventListener('keydown', whenActiveListener(event => {
         const { lowerKey, Meta } = event
         if (lowerKey === '1' && Meta) {
             sendPacketToBitwig({
@@ -29,5 +29,5 @@ export function setupShortcuts() {
         } else if (lowerKey === 'd' && event.Control) {
             Keyboard.keyPress('ArrowRight')
         } 
-    })
+    }))
 }
