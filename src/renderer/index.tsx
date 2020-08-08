@@ -1,10 +1,16 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
+const { app } = require('electron').remote
 import { Switch, Route, HashRouter } from 'react-router-dom'
 import { createGlobalStyle } from 'styled-components'
 import { Settings } from './settings/Settings';
 import { TrackSearchView } from './search/TrackSearchView';
 import { ValueEntryView } from './value-entry/ValueEntryView';
+
+function removeAllListeners() {
+    app.removeAllListeners('browser-window-focus')
+}
+removeAllListeners()
 
 // Disable undo/redo across entire browser. This is because we pass those events (among others) to Bitwig. However
 // we may need to modify this for settings page etc...
@@ -132,3 +138,11 @@ ReactDOM.render(
         </Switch>
     </HashRouter>,
 document.getElementById('root'));
+
+declare const module: any
+
+if(module.hot) {
+	module.hot.accept(() => {
+        removeAllListeners()
+    });
+}

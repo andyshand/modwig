@@ -10,9 +10,13 @@ export class ProjectTrack {
         eager: true,
         cascade: ["insert"]
     })
-    @Index()
+
     @JoinColumn({ name: 'project_id' })
     project: Project
+
+    @Index()
+    @Column()
+    project_id: number
 
     @Column()
     scroll: number
@@ -22,8 +26,8 @@ export class ProjectTrack {
     name: string
 
     @CreateDateColumn()
-    createdAt: Date;
+    created_at: Date;
 
     @UpdateDateColumn()
-    updatedAt: Date;
+    updated_at: Date;
 }

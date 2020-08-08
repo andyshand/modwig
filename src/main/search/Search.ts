@@ -13,6 +13,8 @@ let windowOpen
 let currTrack: string | null = null
 let currProject: string | null = null
 let waitingToScroll = false
+let currTrackScroll = 0
+
 const WINDOW_HEIGHT = 400
 const WINDOW_WIDTH = 500
 
@@ -20,37 +22,35 @@ export async function setupNavigation() {
     const db = await getDb()
     const projectTracks = db.getRepository(ProjectTrack)
     const projects = db.getRepository(Project)
-    const loadScrollForTrack = async name => {
-        if (!currProject) return 0
+    
+    async function loadScrollForTrack(name: string, project: string) {
         const saved = await projectTracks.findOne({
             where: (qb: SelectQueryBuilder<ProjectTrack>) => {
                 qb.where({
                     name
-                }).andWhere('ProjectTrack_project.name = :currProject', { currProject })
+                }).andWhere('ProjectTrack_project.name = :currProject', { project })
             }
         });
         return saved?.scroll || 0
     }
-    const saveScrollForCurrentTrack = async (dX) => {
-        if (currTrack && currProject) {
-            const currScroll = await loadScrollForTrack(currTrack)
-            const newScroll = Math.max(0, currScroll + dX)
-            let {id: projectId} = await projects.findOne({where: {name: currProject}})
-            if (!projectId) {
-                projectId = await projects.save(projects.create({name: currProject }))
-            }
+    async function saveScrollForTrack(scroll, track, project) {
+        console.log('saving', scroll, track, project)
+        const existingProject = await projects.findOne({where: {name: project}})
+        let projectId = existingProject?.id
+        if (!projectId) {
+            projectId = await projects.save(projects.create({name: project }))
+        }
 
-            const existingTrack = await projectTracks.findOne({where: {name: currTrack}})
-            if (existingTrack) {
-                await projectTracks.update(existingTrack.id, {scroll: newScroll});
-            } else {
-                const newTrack = projectTracks.create({ 
-                    name: currTrack,
-                    scroll: newScroll,
-                    project_id: projectId
-                })
-                await projectTracks.save(newTrack);
-            }
+        const existingTrack = await projectTracks.findOne({where: {name: track}})
+        if (existingTrack) {
+            await projectTracks.update(existingTrack.id, {scroll});
+        } else {
+            const newTrack = projectTracks.create({ 
+                name: track,
+                scroll,
+                project_id: projectId
+            })
+            await projectTracks.save(newTrack);
         }
     }
     
@@ -115,15 +115,18 @@ export async function setupNavigation() {
         waitingToScroll = true
         console.log('waiting to scroll: ', trackName)
     })
-    interceptPacket('trackselected', undefined, async ({ type, data: { name, position, selected, project }}) => {
+    interceptPacket('trackselected', undefined, async ({ type, data: { name: newTrackName, position, selected, project }}) => {
         if (selected) {
+            if (currTrack && currProject) {
+                saveScrollForTrack(currTrackScroll, currTrack, currProject)
+            }
             currProject = project.name
-            const targetScroll = await loadScrollForTrack(name)
-            if (targetScroll > 0) {
-                doScroll(targetScroll)
+            currTrackScroll = await loadScrollForTrack(newTrackName, currProject!)
+            if (currTrackScroll > 0) {
+                doScroll(currTrackScroll)
             }
             waitingToScroll = false
-            currTrack = name
+            currTrack = newTrackName
         }
     })
 
@@ -152,7 +155,8 @@ export async function setupNavigation() {
     Keyboard.addEventListener('mousemoved', whenActiveListener(event => {
         if (middleMouseDown) {
             const dX = event.x - lastX
-            saveScrollForCurrentTrack(-dX)
+            currTrackScroll = Math.max(0, currTrackScroll - dX)            
+            console.log(currTrackScroll)
             lastX = event.x
         }
     }))
