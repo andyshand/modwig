@@ -20,7 +20,7 @@ document.body.onkeyup = function(e) {
 }
 
 const GlobalStyle = createGlobalStyle`
-    @import url('https://fonts.googleapis.com/css?family=Montserrat:300,400,500,600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Lato:wght@300;400;900&display=swap');
     * {
         margin: 0;
         box-sizing: border-box;
@@ -28,11 +28,12 @@ const GlobalStyle = createGlobalStyle`
     body {
         background: #424242;
         font-size: 16px;
-        font-family: Montserrat, sans-serif;
+        font-weight: 400;
+        font-family: Lato, sans-serif;
         color: white;
     }
     input {
-        font-family: Montserrat, sans-serif; 
+        font-family: Lato, sans-serif; 
         font-size: inherit;
     }
 a {

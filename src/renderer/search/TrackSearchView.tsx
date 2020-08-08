@@ -1,6 +1,6 @@
 import React from 'react'
 import { SearchResult, SearchView, SearchProps } from './SearchView'
-import { send, addPacketListener, getTrackByName } from '../bitwig-api/Bitwig'
+import { send, addPacketListener, getTrackById, Bitwig } from '../bitwig-api/Bitwig'
 const { BrowserWindow, app} = require('electron').remote
 
 function loadRecent10() {
@@ -16,22 +16,21 @@ function saveRecent10() {
     localStorage.setItem('recent10', JSON.stringify(recent10))
 }
 
-const FuzzySet = (options) => {
-
-    const santizie = str => str.toLowerCase().trim()
-    const similarity = (option: string, query: string) : number => { 
-        option = santizie(option)
+const FuzzySet = (tracks: Bitwig.Track[]) => {
+    const santizie = (str: string) => str.toLowerCase().trim()
+    const similarity = (track: Bitwig.Track, query: string) : number => { 
+        const option = santizie(track.name)
         const indexOfMatch = option.indexOf(query)
         if (indexOfMatch >= 0) {
             let recentI = recent10.indexOf(option)
-            return 1 - (indexOfMatch / options.length) + (recentI >= 0 ? (recent10.length - recentI) * .5 : 0)
+            return 1 - (indexOfMatch / tracks.length) + (recentI >= 0 ? (recent10.length - recentI) * .5 : 0)
         }
         return 0
     }
     return {
-        get(query: string) {
+        get(query: string) : Bitwig.Track[] {
             const sanitizedQ = santizie(query)
-            return options.slice().sort((a, b) => similarity(b, sanitizedQ) - similarity(a, sanitizedQ))
+            return tracks.sort((a, b) => similarity(b, sanitizedQ) - similarity(a, sanitizedQ))
         }
     }
 }
@@ -51,7 +50,7 @@ export class TrackSearchView extends React.Component {
     componentDidMount() {
         this.stopListening = addPacketListener('tracks', packet => {
             this.trackNames = packet.data.map(t => t.name)
-            this.fuzzySet = FuzzySet(this.trackNames)
+            this.fuzzySet = FuzzySet(packet.data)
             this.setState({
                 tracks: packet.data,
                 trackNames: this.trackNames
@@ -104,17 +103,14 @@ export class TrackSearchView extends React.Component {
         saveRecent10()
     }
 
-    mapTrackItem = (name: string, i: number) : SearchResult => {
-        const track = getTrackByName(name)
-        const id = i + name
+    mapTrackItem = (track: Bitwig.Track, i: number) : SearchResult => {
         return {
-            title: name,
+            title: track.name,
             color: track.color,
-            id,
+            id: track.id,
             track,
             isRecent: recent10.indexOf(name) >= 0,
-            description: name,
-            selected: this.state.selectedId ? (this.state.selectedId === id) : i === 0
+            selected: this.state.selectedId ? (this.state.selectedId === track.id) : i === 0
         }
     }
 
@@ -129,13 +125,14 @@ export class TrackSearchView extends React.Component {
             q = q.substr(5).trim()
             onlySends = true
         }
-        const results = (this.state.query.trim().length > 0 ? this.fuzzySet.get(q) : recent10).filter(name => {
-            if (onlySends) {
-                const t = getTrackByName(name)
-                return t.type === 'Effect'
-            }
-            return getTrackByName(name) // track actually exists
-        })
+        let results: Bitwig.Track[]
+        if (q.length > 0) {
+            results = this.fuzzySet.get(q)
+        } else {
+            results = recent10.map(id => getTrackById(id)).filter(t => !!t)
+        }
+        if (onlySends)
+        results = results.filter(t => t.type === 'Effect')
         const searchProps: SearchProps = {
             onQueryChanged: query => {
                 this.setState({

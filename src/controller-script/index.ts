@@ -218,10 +218,10 @@ class GlobalController extends Controller {
         })
     }
 
-    mapTracks<T>(cb: (track, i) => T, filterNull = false) {
+    mapTracks<T>(cb: (track, i: number, isFX: boolean) => T, filterNull = false) {
         let out = []
-        const processT = (track, i) => {
-            const result = cb(track, i)
+        const processT = (track, i, isFX = false) => {
+            const result = cb(track, i, isFX)
             if (!filterNull || result != null) {
                 out.push(result)
             }
@@ -230,13 +230,13 @@ class GlobalController extends Controller {
             processT(this.trackBank.getItemAt(i), i)
         }
         for (let i = 0; i < FX_TRACK_BANK_SIZE; i++) {
-            processT(this.fxBank.getItemAt(i), i + MAIN_TRACK_BANK_SIZE)
+            processT(this.fxBank.getItemAt(i), i + MAIN_TRACK_BANK_SIZE, true)
         }
         return out
     }
 
     sendAllTracks() {
-        const tracks = this.mapTracks((t, i) => {
+        const tracks = this.mapTracks((t, i, isFX) => {
             const name = t.name().get()
             if (name.length === 0) return null
             return {
@@ -244,7 +244,7 @@ class GlobalController extends Controller {
                 color: convertBWColorToHex(t.color()),
                 solo: t.solo().get(),
                 mute: t.mute().get(),
-                position: t.position().get(),
+                position: t.position().get() + (isFX ? MAIN_TRACK_BANK_SIZE : 0),
                 volume: t.volume().get(),
                 type: t.trackType().get()
             }

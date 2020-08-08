@@ -9,14 +9,15 @@ export namespace Bitwig {
         type: 'Effect' | 'Instrument' | 'Audio' | 'Group' | 'Hybrid' | 'Master',
         position: number,
         solo: boolean,
-        mute: boolean
+        mute: boolean,
+        id: string // Added by us on client
     }
 
     export const tracks: Track[] = []
 }
 
 let state = {
-  tracksByName: {}
+  tracksById: {}
 }
 
 let nextId = 0
@@ -52,14 +53,16 @@ ws.onmessage = (event) => {
   const { type } = packet
   ;(packetListeners[type] || []).forEach(listener => listener.cb(packet))
   if (type === 'tracks') {
+    state.tracksById = {}
     for (const t of packet.data) {
-      state.tracksByName[t.name] = t
+      t.id = t.position + t.name 
+      state.tracksById[t.id] = t
     }
   }
 }
 
-export function getTrackByName(name: string) : Bitwig.Track {
-  return state.tracksByName[name]
+export function getTrackById(id: string) : Bitwig.Track {
+  return state.tracksById[id]
 }
 
 export function addPacketListener(type: string, cb: (packet: any) => void) {

@@ -1,12 +1,13 @@
-import React from 'react'
+import React, { useState } from 'react'
 import styled from 'styled-components'
 import { TrackVolume } from './TrackVolume'
+import { send } from '../bitwig-api/Bitwig'
 
 const Result = styled.div`
     user-select: none;
     background: ${props => props.selected ? `#888` : `#444`};
     padding: .3em 1.3em;
-    font-size: .9em;
+    font-size: 1.1em;
     border-bottom: 1px solid #111;
     display: flex;
     align-items: center;
@@ -62,6 +63,60 @@ const FlexScroll = styled.div`
     flex-grow: 1;
     flex-shrink: 1;
 `
+
+const MuteSolo = styled.div`
+    width: 1.8em;
+    height: 1.5em;
+    display: flex;
+    align-items: center;
+    border: 1px solid black;
+    justify-content: center;
+    background: ${props => props.active ? props.activeColor : '#666'};
+    color: ${props => props.active ? 'black' : 'white'};
+    margin-right: .6em;
+    border-radius: 0.3em;
+    cursor: pointer;
+    font-weight: 900;
+`
+type TrackResultProps = {
+    result: SearchResult, 
+    onConfirmed: (result: SearchResult) => void, 
+    onShouldSelect: (result: SearchResult) => void
+}
+const TrackResult = React.memo(({result, onConfirmed, onShouldSelect}: TrackResultProps) => {
+    const [ solo, setSolo] = useState(result.track.solo)
+    const [ mute, setMute] = useState(result.track.mute)
+    const toggleSolo = () => {
+        send({
+            type: 'track/update',
+            data: {
+                name: result.track.name,
+                solo: !solo
+            }
+        })
+        setSolo(!solo)
+    }
+    const toggleMute = () => {
+        send({
+            type: 'track/update',
+            data: {
+                name: result.track.name,
+                mute: !mute
+            }
+        })
+        setMute(!mute)
+    }
+    return <Result id={result.selected ? 'selectedtrack' : ''} key={result.id} selected={result.selected} onDoubleClick={() => onConfirmed(result)} onMouseDown={() => onShouldSelect(result)}>
+        <Color color={result.color} /> 
+        <span>{result.title}</span> 
+        <FlexGrow /> 
+        {result.isRecent ? <Recent>⭐</Recent> : null}
+        <MuteSolo activeColor={`#D0C609`} active={solo} onClick={toggleSolo}>S</MuteSolo>
+        <MuteSolo activeColor={`#F97012`} active={mute} onClick={toggleMute}>M</MuteSolo>
+        <TrackVolume track={result.track} />
+    </Result>
+})
+
 export interface SearchResult {
     title: string
     id: string
@@ -71,7 +126,6 @@ export interface SearchResult {
     isRecent?: boolean
     color: string
 
-    description?: string
     icon?: React.ElementType
 
     selected: boolean
@@ -138,19 +192,6 @@ export class SearchView extends React.Component<SearchProps> {
         window.removeEventListener('keydown', this.onKeyDown)
         window.removeEventListener('keyup', this.onKeyUp)
     }
-    renderResult = (result: SearchResult) => {
-        const props = {
-            key: result.id,
-            selected: result.selected
-        }
-        return <Result id={result.selected ? 'selectedtrack' : ''} {...props} onDoubleClick={() => this.props.onConfirmed(result)} onMouseDown={() => this.props.onShouldSelect(result)}>
-            <Color color={result.color} /> 
-            <span>{result.title}</span> 
-            <FlexGrow /> 
-            {result.isRecent ? <Recent>⭐</Recent> : null}
-            <TrackVolume track={result.track} />
-        </Result>
-    }
     componentDidUpdate(prevProps) {
         document.getElementById('theinput').focus()
         document.getElementById('selectedtrack')?.scrollIntoView({
@@ -168,7 +209,7 @@ export class SearchView extends React.Component<SearchProps> {
             <Input id="theinput" autoComplete={"off"} autoCorrect={"off"} autoCapitalize={"off"} spellCheck={false} autoFocus onKeyDown={this.onSearchKeyDown} placeholder={this.props.placeholder} 
             onChange={this.onInputChange} value={this.props.query} />
             <FlexScroll>
-                {this.props.results.map(this.renderResult)}
+                {this.props.results.map(result => <TrackResult key={result.id} result={result} onConfirmed={this.props.onConfirmed} onShouldSelect={this.props.onShouldSelect} />)}
             </FlexScroll>
         </FlexContainer>
     }
