@@ -171,6 +171,14 @@ export class SearchView extends React.Component<SearchProps> {
         return this.props.results.find(r => r.selected)
     }
     onKeyDown = (event) => {
+        if (event.key === ' ' && this.props.query === '') {
+            event.preventDefault()
+            send({
+                type: 'transport/play'
+            })
+            return
+        }
+
         clearInterval(this.repeatInterval)
         if (event.keyCode === 27) {
             // escape

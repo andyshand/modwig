@@ -57,7 +57,7 @@ export class TrackSearchView extends React.Component {
             })
         })
         window.addEventListener('keyup', event => {
-            if (event.keyCode === 27) {
+            if (event.key === 'Escape') {
                 // escape
                 send({
                     type: 'tracksearch/cancel'

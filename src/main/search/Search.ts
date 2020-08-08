@@ -2,28 +2,58 @@ import { BrowserWindow, screen } from "electron";
 import { url } from "../core/Url";
 import { sendPacketToBitwig, interceptPacket } from "../../connector/shared/WebsocketToSocket";
 import { returnMouseAfter, whenActiveListener } from "../../connector/shared/EventUtils";
+import { getDb } from "../db";
+import { ProjectTrack } from "../db/entities/ProjectTrack";
+import { SelectQueryBuilder } from "typeorm";
+import { Project } from "../db/entities/Project";
 const { execSync } = require('child_process')
 const { Keyboard, Mouse, MainWindow, Bitwig } = require('bindings')('bes')
 let windowOpen
 
-let trackScrollPos: {[trackName: string] : number} = {}
 let currTrack: string | null = null
+let currProject: string | null = null
 let waitingToScroll = false
 const WINDOW_HEIGHT = 400
 const WINDOW_WIDTH = 500
 
-const scrollCurrent = (dX) => {
-    if (currTrack) {
-        trackScrollPos[currTrack] = Math.max(0, (trackScrollPos[currTrack] || 0) + dX)
-        const plusOrMinus = dX >= 0 ? `+${dX}` : `-${dX}`
-        console.log(`Scroll of ${currTrack} is now: ${trackScrollPos[currTrack]} (${plusOrMinus})`)
+export async function setupNavigation() {
+    const db = await getDb()
+    const projectTracks = db.getRepository(ProjectTrack)
+    const projects = db.getRepository(Project)
+    const loadScrollForTrack = async name => {
+        if (!currProject) return 0
+        const saved = await projectTracks.findOne({
+            where: (qb: SelectQueryBuilder<ProjectTrack>) => {
+                qb.where({
+                    name
+                }).andWhere('ProjectTrack_project.name = :currProject', { currProject })
+            }
+        });
+        return saved?.scroll || 0
     }
-}
-const getScroll = name => {
-    return trackScrollPos[name] || 0
-}
+    const saveScrollForCurrentTrack = async (dX) => {
+        if (currTrack && currProject) {
+            const currScroll = await loadScrollForTrack(currTrack)
+            const newScroll = Math.max(0, currScroll + dX)
+            let {id: projectId} = await projects.findOne({where: {name: currProject}})
+            if (!projectId) {
+                projectId = await projects.save(projects.create({name: currProject }))
+            }
 
-export function setupNavigation() {
+            const existingTrack = await projectTracks.findOne({where: {name: currTrack}})
+            if (existingTrack) {
+                await projectTracks.update(existingTrack.id, {scroll: newScroll});
+            } else {
+                const newTrack = projectTracks.create({ 
+                    name: currTrack,
+                    scroll: newScroll,
+                    project_id: projectId
+                })
+                await projectTracks.save(newTrack);
+            }
+        }
+    }
+    
     windowOpen = new BrowserWindow({ 
         width: WINDOW_WIDTH, 
         height: WINDOW_HEIGHT, 
@@ -85,9 +115,10 @@ export function setupNavigation() {
         waitingToScroll = true
         console.log('waiting to scroll: ', trackName)
     })
-    interceptPacket('trackselected', undefined, ({ type, data: { name, selected }}) => {
+    interceptPacket('trackselected', undefined, async ({ type, data: { name, position, selected, project }}) => {
         if (selected) {
-            const targetScroll = getScroll(name)
+            currProject = project.name
+            const targetScroll = await loadScrollForTrack(name)
             if (targetScroll > 0) {
                 doScroll(targetScroll)
             }
@@ -121,7 +152,7 @@ export function setupNavigation() {
     Keyboard.addEventListener('mousemoved', whenActiveListener(event => {
         if (middleMouseDown) {
             const dX = event.x - lastX
-            scrollCurrent(-dX)
+            saveScrollForCurrentTrack(-dX)
             lastX = event.x
         }
     }))

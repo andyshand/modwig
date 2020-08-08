@@ -157,6 +157,8 @@ class GlobalController extends Controller {
                 track.mute().set(mute)
             }
         })
+        this.app.projectName().markInterested()
+
         packetManager.listen('application/undo', () => this.app.undo())
         packetManager.listen('application/redo', () => this.app.redo())
 
@@ -166,7 +168,7 @@ class GlobalController extends Controller {
             this.selectedTrackChanged.emit(value)
         })
 
-        this.mapTracks((t, i) => {
+        this.mapTracks((t, i, isFX) => {
             t.name().markInterested()
             t.solo().markInterested()
             t.arm().markInterested()
@@ -198,8 +200,9 @@ class GlobalController extends Controller {
                 this.deps.packetManager.send({
                     type: 'trackselected',
                     data: {
-                        name: t.name().get(),
-                        selected
+                        selected,
+                        ...this.createTrackInfo(t, isFX),
+                        project: {name: this.app.projectName().get()}
                     }
                 })
             })
@@ -235,20 +238,35 @@ class GlobalController extends Controller {
         return out
     }
 
+    createTrackInfo(t, isFX: boolean = false) {
+        const name = t.name().get()
+        return {
+            name,
+            color: convertBWColorToHex(t.color()),
+            solo: t.solo().get(),
+            mute: t.mute().get(),
+            position: t.position().get() + (isFX ? MAIN_TRACK_BANK_SIZE : 0),
+            volume: t.volume().get(),
+            type: t.trackType().get()
+        }
+    }
+
+    sendProject() {
+        this.deps.packetManager.send({
+            type: 'project',
+            data: {
+                name: this.app.projectName().get()
+            }
+        })
+    }
+
     sendAllTracks() {
         const tracks = this.mapTracks((t, i, isFX) => {
             const name = t.name().get()
             if (name.length === 0) return null
-            return {
-                name,
-                color: convertBWColorToHex(t.color()),
-                solo: t.solo().get(),
-                mute: t.mute().get(),
-                position: t.position().get() + (isFX ? MAIN_TRACK_BANK_SIZE : 0),
-                volume: t.volume().get(),
-                type: t.trackType().get()
-            }
+            return this.createTrackInfo(t)
         }, true)
+        this.sendProject()
         this.deps.packetManager.send({
             type: 'tracks',
             data: tracks.concat({
@@ -411,4 +429,7 @@ function init() {
     
     new TrackSearchController(deps)    
     new BackForwardController(deps)    
+
+    deps.packetManager.listen('transport/play', () => transport.togglePlay())
+    deps.packetManager.listen('transport/stop', () => transport.stop())
 }
