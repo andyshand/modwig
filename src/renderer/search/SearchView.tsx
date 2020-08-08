@@ -120,12 +120,15 @@ export class SearchView extends React.Component<SearchProps> {
             key: result.id,
             selected: result.selected
         }
-        return <Result {...props} onDoubleClick={() => this.props.onConfirmed(result)} onMouseDown={() => this.props.onShouldSelect(result)}>
+        return <Result id={result.selected ? 'selectedtrack' : ''} {...props} onDoubleClick={() => this.props.onConfirmed(result)} onMouseDown={() => this.props.onShouldSelect(result)}>
             <Color color={result.color} /> <span>{result.title}</span> <FlexGrow /> {result.isRecent ? <Recent>⭐</Recent> : null}
         </Result>
     }
     componentDidUpdate(prevProps) {
         document.getElementById('theinput').focus()
+        document.getElementById('selectedtrack')?.scrollIntoView({
+            block: 'end'
+        })
     }
     onSearchKeyDown = event => {
         // Don't allow up/down arrow keys to navigate input
