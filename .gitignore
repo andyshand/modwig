@@ -2,3 +2,4 @@ node_modules
 dist
 build
 extraResources/controller-script/bes.control.js
+scripts/install
