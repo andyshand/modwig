@@ -1,5 +1,5 @@
 import React from 'react'
-import styled from 'styled-components'
+import styled, { css } from 'styled-components'
 import { send } from '../bitwig-api/Bitwig'
 import { clamp } from '../../connector/shared/Math'
 const { app } = require('electron').remote
@@ -7,6 +7,10 @@ const { app } = require('electron').remote
 interface TrackVolumeProps extends React.ComponentProps<any> {
     track: any
 }
+
+const HoverStyle = css`
+    box-shadow: inset 0 3px 0 0 #EA6A10;
+`
 
 const VolumeLevel = styled.div`
     top: ${props => Math.ceil((1 - props.volume) * 100) - 5 + '%'}
@@ -25,6 +29,16 @@ const VolumeWrap = styled.div`
     cursor: ns-resize;
     border-radius: .2em;
     background: #222;
+    &:hover {
+        ${VolumeLevel} {
+            ${HoverStyle}
+        }
+    }
+    ${props => props.mouseDown ? css`
+        ${VolumeLevel} {
+            ${HoverStyle}
+        }    
+    ` : css``}
 `
 const globalMouseMove = {
     target: null,
@@ -50,9 +64,9 @@ app.on('browser-window-blur', () => {
 
 export class TrackVolume extends React.Component<TrackVolumeProps> {
     state = {
-        localVolume: 0
+        localVolume: 0,
+        mouseDown: false
     }
-    mouseDown = false      
     currTrack = null 
 
     componentWillReceiveProps(nextProps) {
@@ -65,14 +79,14 @@ export class TrackVolume extends React.Component<TrackVolumeProps> {
         this.componentWillReceiveProps(this.props)
     }
     onMouseDown = event => {
-        this.mouseDown = true
+        this.setState({mouseDown: true})
         globalMouseMove.setActiveTarget(this)
     }
     onGlobalMouseUp = event => {
-        this.mouseDown = false
+        this.setState({mouseDown: false})
     }
     onGlobalMouseMove = event => {
-        if (!this.mouseDown) {
+        if (!this.state.mouseDown) {
             return
         }
         const { movementY, shiftKey } = event
@@ -101,7 +115,7 @@ export class TrackVolume extends React.Component<TrackVolumeProps> {
         })
     }
     render() {
-        return <VolumeWrap onMouseDown={this.onMouseDown} onDoubleClick={this.onDoubleClick}>
+        return <VolumeWrap mouseDown={this.state.mouseDown} onMouseDown={this.onMouseDown} onDoubleClick={this.onDoubleClick}>
             <VolumeLevel volume={this.state.localVolume} />
         </VolumeWrap>
     }

@@ -138,7 +138,7 @@ class GlobalController extends Controller {
      */
     selectedTrackChanged = new EventEmitter<string>()
 
-    constructor(public readonly deps: Deps) {
+    constructor(public readonly deps: Deps, public readonly app) {
         super(deps)
 
         const { packetManager } = deps
@@ -157,6 +157,8 @@ class GlobalController extends Controller {
                 track.mute().set(mute)
             }
         })
+        packetManager.listen('application/undo', () => this.app.undo())
+        packetManager.listen('application/redo', () => this.app.redo())
 
         this.cursorTrack.name().markInterested();
         this.cursorTrack.name().addValueObserver(value => {
@@ -405,7 +407,7 @@ function init() {
 
     let deps: Deps = {} as any
     deps.packetManager = new PacketManager({app})
-    deps.globalController = new GlobalController(deps)
+    deps.globalController = new GlobalController(deps, app)
     
     new TrackSearchController(deps)    
     new BackForwardController(deps)    

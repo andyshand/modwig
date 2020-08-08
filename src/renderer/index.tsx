@@ -6,6 +6,19 @@ import { Settings } from './settings/Settings';
 import { TrackSearchView } from './search/TrackSearchView';
 import { ValueEntryView } from './value-entry/ValueEntryView';
 
+// Disable undo/redo across entire browser. This is because we pass those events (among others) to Bitwig. However
+// we may need to modify this for settings page etc...
+document.body.onkeydown = function(e) {
+    if (e.key === 'z' && e.metaKey) {
+        e.preventDefault();
+    }
+}
+document.body.onkeyup = function(e) {
+    if (e.key === 'z' && e.metaKey) {
+        e.preventDefault();
+    }
+}
+
 const GlobalStyle = createGlobalStyle`
     @import url('https://fonts.googleapis.com/css?family=Montserrat:300,400,500,600&display=swap');
     * {
