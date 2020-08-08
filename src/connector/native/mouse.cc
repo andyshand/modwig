@@ -159,6 +159,17 @@ Napi::Value DoubleClick(const Napi::CallbackInfo &info)
     return Napi::Value();
 }
 
+Napi::Value SetCursorVisibility(const Napi::CallbackInfo &info) 
+{
+    auto visible = info[0].As<Napi::Boolean>();
+    if (visible) {
+        CGDisplayShowCursor(CGMainDisplayID());
+    } else {
+        CGDisplayHideCursor(CGMainDisplayID());
+    }    
+    return visible;
+}
+
 Napi::Object InitMouse(Napi::Env env, Napi::Object exports)
 {
     Napi::Object obj = Napi::Object::New(env);
@@ -168,6 +179,7 @@ Napi::Object InitMouse(Napi::Env env, Napi::Object exports)
     obj.Set(Napi::String::New(env, "down"), Napi::Function::New(env, MouseDown));
     obj.Set(Napi::String::New(env, "click"), Napi::Function::New(env, Click));
     obj.Set(Napi::String::New(env, "doubleClick"), Napi::Function::New(env, DoubleClick));
+    obj.Set(Napi::String::New(env, "setCursorVisibility"), Napi::Function::New(env, SetCursorVisibility));
     exports.Set("Mouse", obj);
     return exports;
 }

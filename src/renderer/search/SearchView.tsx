@@ -1,12 +1,13 @@
 import React from 'react'
 import styled from 'styled-components'
+import { TrackVolume } from './TrackVolume'
 
 const Result = styled.div`
     user-select: none;
     background: ${props => props.selected ? `#888` : `#444`};
-    padding: .7em 1em;
-    font-size: 1em;
-    border-bottom: 3px solid #111;
+    padding: .3em 1em;
+    font-size: .9em;
+    border-bottom: 1px solid #111;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -29,6 +30,7 @@ const Color = styled.div`
 `
 const Recent = styled.div`
     font-size: .8em;
+    margin-right: 1em;
 `
 
 const Input = styled.input`
@@ -44,6 +46,8 @@ const Input = styled.input`
 export interface SearchResult {
     title: string
     id: string
+
+    track: any
 
     isRecent?: boolean
     color: string
@@ -121,7 +125,11 @@ export class SearchView extends React.Component<SearchProps> {
             selected: result.selected
         }
         return <Result id={result.selected ? 'selectedtrack' : ''} {...props} onDoubleClick={() => this.props.onConfirmed(result)} onMouseDown={() => this.props.onShouldSelect(result)}>
-            <Color color={result.color} /> <span>{result.title}</span> <FlexGrow /> {result.isRecent ? <Recent>⭐</Recent> : null}
+            <Color color={result.color} /> 
+            <span>{result.title}</span> 
+            <FlexGrow /> 
+            {result.isRecent ? <Recent>⭐</Recent> : null}
+            <TrackVolume track={result.track} />
         </Result>
     }
     componentDidUpdate(prevProps) {

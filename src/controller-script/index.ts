@@ -21,6 +21,10 @@ type Packet = {
     type: string
 } & any
 
+class PacketError {
+    constructor(public readonly code: number, public readonly message?: string) {}
+}
+
 class EventEmitter<T> {
     nextId = 0
     listenersById: {[id: number]: (data: T) => void} = {}
@@ -127,6 +131,7 @@ class GlobalController extends Controller {
     cursorTrack = host.createCursorTrack("selectedTrack", "selectedTrack", 0, 0, true)
     lastSelectedTrack: string = ''
     masterTrack = host.createMasterTrack( 0 );
+    nameCache: {[trackName: string]: any} = {}
 
     /**
      * Will get called whenever the name of the current track changes (most reliable way I know of)
@@ -135,6 +140,23 @@ class GlobalController extends Controller {
 
     constructor(public readonly deps: Deps) {
         super(deps)
+
+        const { packetManager } = deps
+        packetManager.listen('track/update', ({ data: { name, volume, solo, mute }}) => {
+            const track = this.findTrackByName(name)
+            if (!track) {
+                throw new PacketError(404, "Track not found")
+            }
+            if (volume !== undefined) {
+                track.volume().set(volume)
+            }
+            if (solo !== undefined) {
+                track.solo().set(solo)
+            }
+            if (mute !== undefined) {
+                track.mute().set(mute)
+            }
+        })
 
         this.cursorTrack.name().markInterested();
         this.cursorTrack.name().addValueObserver(value => {
@@ -155,10 +177,12 @@ class GlobalController extends Controller {
             // send all tracks when track name changes
             // hopefully this runs when new tracks are added
             t.name().addValueObserver(name => {
+                this.nameCache = {}
                 if (Controller.get(TrackSearchController).active) {
                     // Don't send track changes whilst highlighting search results
                     return
                 }
+                // Clear the name cache, could now be wrong
                 this.sendAllTracks()
             })
 
@@ -236,28 +260,37 @@ class GlobalController extends Controller {
         })
     }
 
-    selectTrackWithName(name) {
-        if (name === 'Master') {
-            this.masterTrack.selectInMixer()
-            this.masterTrack.makeVisibleInArranger()
-            return
-        }
+    addTrackToCache(name) {
         for (let i = 0; i < MAIN_TRACK_BANK_SIZE; i++) {
             const t = this.trackBank.getItemAt(i)
             if (t.name().get() == name) {
-                t.selectInMixer()
-                t.makeVisibleInArranger()
+                this.nameCache[name] = t
                 return
             }
         }
         for (let i = 0; i < FX_TRACK_BANK_SIZE; i++) {
             const t = this.fxBank.getItemAt(i)
             if (t.name().get() == name) {
-                t.selectInMixer()
-                t.makeVisibleInArranger()
+                this.nameCache[name] = t
                 return
             }
         }
+    }
+
+    findTrackByName(name) {
+        if (name === 'Master') {
+            return this.masterTrack
+        }
+        if (!this.nameCache[name]) {
+            this.addTrackToCache(name)
+        }
+        return this.nameCache[name]
+    }
+
+    selectTrackWithName(name) {
+        const t = this.findTrackByName(name)
+        t.selectInMixer()
+        t.makeVisibleInArranger()
     }
 }
 

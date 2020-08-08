@@ -111,6 +111,7 @@ export class TrackSearchView extends React.Component {
             title: name,
             color: track.color,
             id,
+            track,
             isRecent: recent10.indexOf(name) >= 0,
             description: name,
             selected: this.state.selectedId ? (this.state.selectedId === id) : i === 0
