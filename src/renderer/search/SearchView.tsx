@@ -43,6 +43,25 @@ const Input = styled.input`
     font-size: 1.2em;
     padding: 1em;
 `
+
+const FlexContainer = styled.div`
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    > input {
+        flex-grow: 0;
+        flex-shrink: 0;
+    }
+`
+const FlexScroll = styled.div`
+    overflow: auto;
+    flex-grow: 1;
+    flex-shrink: 1;
+`
 export interface SearchResult {
     title: string
     id: string
@@ -145,10 +164,12 @@ export class SearchView extends React.Component<SearchProps> {
         }
     }
     render() {
-        return <div style={{fontSize: '.9rem'}}>
+        return <FlexContainer style={{fontSize: '.9rem'}}>
             <Input id="theinput" autoComplete={"off"} autoCorrect={"off"} autoCapitalize={"off"} spellCheck={false} autoFocus onKeyDown={this.onSearchKeyDown} placeholder={this.props.placeholder} 
             onChange={this.onInputChange} value={this.props.query} />
-            {this.props.results.map(this.renderResult)}
-        </div>
+            <FlexScroll>
+                {this.props.results.map(this.renderResult)}
+            </FlexScroll>
+        </FlexContainer>
     }
 }
