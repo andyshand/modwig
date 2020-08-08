@@ -24,11 +24,13 @@ export async function setupNavigation() {
     const projects = db.getRepository(Project)
     
     async function loadScrollForTrack(name: string, project: string) {
+        const existingProject = await projects.findOne({where: {name: project}})
+        if (!existingProject) return 0
+
         const saved = await projectTracks.findOne({
-            where: (qb: SelectQueryBuilder<ProjectTrack>) => {
-                qb.where({
-                    name
-                }).andWhere('ProjectTrack_project.name = :currProject', { project })
+            where: {
+                project_id: existingProject.id,
+                name
             }
         });
         return saved?.scroll || 0
