@@ -5,13 +5,13 @@ import { TrackVolume } from './TrackVolume'
 const Result = styled.div`
     user-select: none;
     background: ${props => props.selected ? `#888` : `#444`};
-    padding: .3em 1em;
+    padding: .3em 1.3em;
     font-size: .9em;
     border-bottom: 1px solid #111;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding-left: 1.8em;
+    padding-left: 2.1em;
     > * {
         flex-shrink: 0;
     }
