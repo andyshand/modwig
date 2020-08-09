@@ -8,10 +8,10 @@ const { Keyboard, Bitwig } = require('bindings')('bes')
  */
 export function setupShortcuts() {
     const listenerId = Keyboard.addEventListener('keydown', event => {
-        const { lowerKey, Meta } = event
+        const { lowerKey, nativeKeyCode, Meta } = event
 
         if (Bitwig.isActiveApplication()) {
-            if (lowerKey === '1' && Meta) {
+            if (nativeKeyCode === 10 && Meta) {
                 sendPacketToBitwig({
                     type: 'tracksearch/confirm',
                     data: `mixing`

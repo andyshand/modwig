@@ -134,10 +134,20 @@ export interface SearchResult {
     selected: boolean
 }
 
+const RecentsHeader = styled.div`
+    font-size: 0.9em;
+    padding: 0.3rem 1.2rem;
+    background: #222;
+    color: #AAA;
+    border-top: 1px solid #444;
+    border-bottom: 1px solid #444;
+`
+
 export interface SearchProps {
     onQueryChanged: (query: string) => void,
     onCancelled: () => void,
     results: SearchResult[],
+    isRecents: boolean,
     query: string,
     onShouldSelect: (result: SearchResult) => void,
     onConfirmed: (result: SearchResult) => void,
@@ -227,6 +237,7 @@ export class SearchView extends React.Component<SearchProps> {
         return <FlexContainer style={{fontSize: '.9rem'}}>
             <Input id="theinput" autoComplete={"off"} autoCorrect={"off"} autoCapitalize={"off"} spellCheck={false} autoFocus onKeyDown={this.onSearchKeyDown} placeholder={this.props.placeholder} 
             onChange={this.onInputChange} value={this.props.query} />
+            {this.props.isRecents ? <RecentsHeader>Recently Accessed</RecentsHeader> : null}
             <FlexScroll>
                 {this.props.results.map(result => <TrackResult key={result.id} result={result} onConfirmed={this.props.onConfirmed} onShouldSelect={this.props.onShouldSelect} />)}
             </FlexScroll>

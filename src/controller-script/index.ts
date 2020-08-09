@@ -191,11 +191,13 @@ class GlobalController extends Controller {
             })
 
             t.addIsSelectedInEditorObserver(selected => {
-                if (selected && t.trackType().get() !== "Group") {
-                    // Group tracks bug out when you make them visible,
-                    // vertically centering on their child content and not 
-                    // actually showing the group
-                    t.makeVisibleInArranger()
+                if (selected) {
+                    if (t.trackType().get() !== "Group") {
+                        // Group tracks bug out when you make them visible,
+                        // vertically centering on their child content and not 
+                        // actually showing the group
+                        t.makeVisibleInArranger()
+                    }
                 }
                 this.deps.packetManager.send({
                     type: 'trackselected',
@@ -354,14 +356,18 @@ class BackForwardController extends Controller {
             if (this.historyIndex > 0) {
                 this.ignoreSelectionChangesOnce = true
                 this.historyIndex--
-                globalController.selectTrackWithName(this.trackHistory[this.historyIndex].name)
+                const name = this.trackHistory[this.historyIndex].name
+                globalController.selectTrackWithName(name)
+                host.showPopupNotification(name)
             }
         })
         packetManager.listen('tracknavigation/forward', () => {
             if (this.historyIndex < this.trackHistory.length - 1) {
                 this.ignoreSelectionChangesOnce = true
                 this.historyIndex++
-                globalController.selectTrackWithName(this.trackHistory[this.historyIndex].name)
+                const name = this.trackHistory[this.historyIndex].name
+                globalController.selectTrackWithName(name)
+                host.showPopupNotification(name)
             }
         })
     }

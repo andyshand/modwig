@@ -140,6 +140,7 @@ export class TrackSearchView extends React.Component {
                     selectedId: null
                 })
             },
+            isRecents: q.length === 0,
             onConfirmed: this.onConfirmed,
             onShouldSelect: this.onShouldSelect,
             query: this.state.query,
