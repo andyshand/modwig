@@ -1,8 +1,19 @@
 import React, { useState, useEffect } from 'react'
-import styled from 'styled-components'
+import styled, { css } from 'styled-components'
 import { TrackVolume } from './TrackVolume'
 import { send } from '../bitwig-api/Bitwig'
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faShare, faFolder, faMusic, faWaveSquare, faCircle, faStar } from "@fortawesome/free-solid-svg-icons";
 
+const TrackTitle = styled.span`
+
+`
+const TrackIconWrap = styled.div`
+    margin-right: .5em;
+    width: 1.2em;
+    flex-shrink: 0;
+    color: #888;
+`
 const Result = styled.div`
     user-select: none;
     background: ${props => props.selected ? `#888` : `#444`};
@@ -10,6 +21,7 @@ const Result = styled.div`
     font-size: .9em;
     border-bottom: 2px solid #111;
     display: flex;
+    color: #D3D3D3;
     align-items: center;
     justify-content: space-between;
     padding-left: 2.1em;
@@ -17,6 +29,14 @@ const Result = styled.div`
         flex-shrink: 0;
     }
     position: relative;
+    ${props => props.selected ? css`
+        ${TrackIconWrap} {
+            color: #444;
+        }
+        ${TrackTitle} {
+            color: white;
+        }
+    ` : css``}
 `
 const FlexGrow = styled.div`
     flex-grow: 1;
@@ -80,6 +100,26 @@ const MuteSolo = styled.div`
     text-shadow: ${props => props.active ? `` : `0 -2px #222`};
 
 `
+
+
+const TrackIcon = ({track}) => {
+    const type = track.type
+    function getIcon() {
+        if (type === 'Audio' || type === 'Hybrid') {
+            return faWaveSquare
+        } else if (type === 'Instrument') {
+            return faMusic
+        } else if (type === 'Effect') {
+            return faShare
+        } else if (type === 'Group' || type === 'Master') {
+            return faFolder
+        }
+    }
+    return <TrackIconWrap>
+        <FontAwesomeIcon icon={getIcon()} />
+    </TrackIconWrap>
+}
+
 type TrackResultProps = {
     result: SearchResult, 
     onConfirmed: (result: SearchResult) => void, 
@@ -116,10 +156,11 @@ const TrackResult = ({result, onConfirmed, onShouldSelect}: TrackResultProps) =>
         event.stopPropagation()
     }
     return <Result id={result.selected ? 'selectedtrack' : ''} key={result.id} selected={result.selected} onDoubleClick={() => onConfirmed(result)} onMouseDown={() => onShouldSelect(result)}>
-        <Color color={result.color} /> 
-        <span>{result.title}</span> 
+        <Color color={result.color} />
+        <TrackIcon track={result.track} /> 
+        <TrackTitle>{result.title}</TrackTitle> 
         <FlexGrow /> 
-        {result.isRecent ? <Recent>⭐</Recent> : null}
+        {result.isRecent ? <Recent><FontAwesomeIcon icon={faStar} /></Recent> : null}
         <MuteSolo onDoubleClick={onDoubleClick} activeColor={`#D0C609`} active={solo} onClick={toggleSolo}>S</MuteSolo>
         <MuteSolo onDoubleClick={onDoubleClick} activeColor={`#F97012`} active={mute} onClick={toggleMute}>M</MuteSolo>
         <TrackVolume track={result.track} />
@@ -243,7 +284,7 @@ export class SearchView extends React.Component<SearchProps> {
         return <FlexContainer style={{fontSize: '.9rem'}}>
             <Input id="theinput" autoComplete={"off"} autoCorrect={"off"} autoCapitalize={"off"} spellCheck={false} autoFocus onKeyDown={this.onSearchKeyDown} placeholder={this.props.placeholder} 
             onChange={this.onInputChange} value={this.props.query} />
-            {this.props.isRecents ? <RecentsHeader>Recently Accessed</RecentsHeader> : null}
+            {this.props.isRecents ? <RecentsHeader>Most Recent First</RecentsHeader> : null}
             <FlexScroll>
                 {this.props.results.map(result => <TrackResult key={result.id} result={result} onConfirmed={this.props.onConfirmed} onShouldSelect={this.props.onShouldSelect} />)}
             </FlexScroll>

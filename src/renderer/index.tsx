@@ -9,6 +9,7 @@ import { ValueEntryView } from './value-entry/ValueEntryView';
 
 function removeAllListeners() {
     app.removeAllListeners('browser-window-focus')
+    app.removeAllListeners('browser-window-blur')
 }
 removeAllListeners()
 
