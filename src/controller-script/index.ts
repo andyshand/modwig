@@ -78,7 +78,13 @@ class PacketManager {
                     let errors = []
                     for (const listener of listeners) {
                         try {
-                            listener(packet)
+                            const response = listener(packet) as any
+                            if (response) {
+                                this.send({
+                                    id: packet.id,
+                                    ...response
+                                })
+                            }
                         } catch (e) {
                             errors.push(e)
                             println(e)
@@ -156,6 +162,10 @@ class GlobalController extends Controller {
             if (mute !== undefined) {
                 track.mute().set(mute)
             }
+            return {
+                type: 'track/update',
+                data: this.createTrackInfo(track)
+            }
         })
         this.app.projectName().markInterested()
 
@@ -177,6 +187,7 @@ class GlobalController extends Controller {
             t.position().markInterested()
             t.trackType().markInterested()
             t.volume().markInterested()
+            t.volume().displayedValue().markInterested()
     
             // send all tracks when track name changes
             // hopefully this runs when new tracks are added
@@ -237,6 +248,7 @@ class GlobalController extends Controller {
         for (let i = 0; i < FX_TRACK_BANK_SIZE; i++) {
             processT(this.fxBank.getItemAt(i), i + MAIN_TRACK_BANK_SIZE, true)
         }
+        processT(this.masterTrack, MAIN_TRACK_BANK_SIZE + FX_TRACK_BANK_SIZE, false)
         return out
     }
 
@@ -247,8 +259,9 @@ class GlobalController extends Controller {
             color: convertBWColorToHex(t.color()),
             solo: t.solo().get(),
             mute: t.mute().get(),
-            position: t.position().get() + (isFX ? MAIN_TRACK_BANK_SIZE : 0),
+            position: t === this.masterTrack ? -1 : (t.position().get() + (isFX ? MAIN_TRACK_BANK_SIZE : 0)),
             volume: t.volume().get(),
+            volumeString: t.volume().displayedValue().get(),
             type: t.trackType().get()
         }
     }
@@ -271,14 +284,7 @@ class GlobalController extends Controller {
         this.sendProject()
         this.deps.packetManager.send({
             type: 'tracks',
-            data: tracks.concat({
-                name: 'Master',
-                solo: false,
-                mute: false,
-                color: '#000',
-                position: '-1',
-                volume: 1
-            })
+            data: tracks
         })
     }
 

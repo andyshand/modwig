@@ -15,8 +15,8 @@ let currProject: string | null = null
 let waitingToScroll = false
 let currTrackScroll = 0
 
-const WINDOW_HEIGHT = 400
-const WINDOW_WIDTH = 500
+const WINDOW_HEIGHT = 390
+const WINDOW_WIDTH = 360
 
 export async function setupNavigation() {
     const db = await getDb()

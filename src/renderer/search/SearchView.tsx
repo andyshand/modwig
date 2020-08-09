@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import styled from 'styled-components'
 import { TrackVolume } from './TrackVolume'
 import { send } from '../bitwig-api/Bitwig'
@@ -6,9 +6,9 @@ import { send } from '../bitwig-api/Bitwig'
 const Result = styled.div`
     user-select: none;
     background: ${props => props.selected ? `#888` : `#444`};
-    padding: .3em 1.3em;
-    font-size: 1.1em;
-    border-bottom: 1px solid #111;
+    padding: .5em 1.3em;
+    font-size: .9em;
+    border-bottom: 2px solid #111;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -77,6 +77,8 @@ const MuteSolo = styled.div`
     border-radius: 0.3em;
     cursor: pointer;
     font-weight: 900;
+    text-shadow: ${props => props.active ? `` : `0 -2px #222`};
+
 `
 type TrackResultProps = {
     result: SearchResult, 
@@ -84,8 +86,12 @@ type TrackResultProps = {
     onShouldSelect: (result: SearchResult) => void
 }
 const TrackResult = ({result, onConfirmed, onShouldSelect}: TrackResultProps) => {
-    const [ solo, setSolo] = useState(result.track.solo)
-    const [ mute, setMute] = useState(result.track.mute)
+    const [solo, setSolo] = useState(result.track.solo)
+    const [mute, setMute] = useState(result.track.mute)
+    useEffect( () => {
+        setSolo(result.track.solo)
+        setMute(result.track.mute)
+    }, [result.track.mute, result.track.solo])
     const toggleSolo = () => {
         send({
             type: 'track/update',
@@ -222,9 +228,9 @@ export class SearchView extends React.Component<SearchProps> {
             })
             this.waitingForScroll = false
         }
-        document.getElementById('theinput').focus()
+        document.getElementById('theinput')?.focus()
         setTimeout(() => {
-            document.getElementById('theinput').focus()
+            document.getElementById('theinput')?.focus()
         }, 100)
     }
     onSearchKeyDown = event => {

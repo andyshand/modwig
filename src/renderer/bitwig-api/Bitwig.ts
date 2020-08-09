@@ -58,6 +58,10 @@ ws.onmessage = (event) => {
       t.id = t.position + t.name 
       state.tracksById[t.id] = t
     }
+  } else if (type === 'track/update') {
+    const t = packet.data
+    t.id = t.position + t.name 
+    state.tracksById[t.id] = t
   }
 }
 

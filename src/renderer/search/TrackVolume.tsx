@@ -1,6 +1,6 @@
 import React from 'react'
 import styled, { css } from 'styled-components'
-import { send } from '../bitwig-api/Bitwig'
+import { send, getTrackById } from '../bitwig-api/Bitwig'
 import { clamp } from '../../connector/shared/Math'
 const { app } = require('electron').remote
 
@@ -11,7 +11,25 @@ interface TrackVolumeProps extends React.ComponentProps<any> {
 const HoverStyle = css`
     box-shadow: inset 0 3px 0 0 #EA6A10;
 `
-
+const TooltipWrap = styled.div`
+    opacity: ${props => props.visible ? 1 : 0};
+    position: absolute;
+    right: 113%;
+    top: 50%;
+    font-size: .9em;
+    background: #444;
+    border: 1px solid #CCC;
+    white-space: nowrap;
+    padding: .4em .5em;
+    transform: translateY(-50%);
+    pointer-events: none;
+    user-select: none;
+`
+const Tooltip = ({volume, ...rest}) => {
+    return <TooltipWrap {...rest}>
+        {volume}
+    </TooltipWrap>
+}
 const VolumeLevel = styled.div`
     top: ${props => Math.ceil((1 - props.volume) * 100) - 5 + '%'};
     bottom: 0;
@@ -24,7 +42,7 @@ const VolumeLevel = styled.div`
 const VolumeWrap = styled.div`
     position: relative;
     border: 1px solid #222;
-    height: 2rem;
+    height: 1.4rem;
     width: 1.3rem;
     cursor: ns-resize;
     border-radius: .2em;
@@ -91,7 +109,7 @@ export class TrackVolume extends React.Component<TrackVolumeProps> {
         }
         const { movementY, shiftKey } = event
         const { track } = this.props
-        const newVol = clamp(this.state.localVolume + (-movementY * (shiftKey ? 0.0025 : 0.01)), 0, 1)
+        const newVol = clamp(this.state.localVolume + (-movementY * (shiftKey ? 0.0015 : 0.005)), 0, 1)
         this.setState({localVolume: newVol})
         send({
             type: 'track/update',
@@ -115,7 +133,9 @@ export class TrackVolume extends React.Component<TrackVolumeProps> {
         })
     }
     render() {
+        const latestTrack = getTrackById(this.props.track.id)
         return <VolumeWrap mouseDown={this.state.mouseDown} onMouseDown={this.onMouseDown} onDoubleClick={this.onDoubleClick}>
+            <Tooltip visible={this.state.mouseDown} volume={latestTrack.volumeString} />
             <VolumeLevel volume={this.state.localVolume} />
         </VolumeWrap>
     }
