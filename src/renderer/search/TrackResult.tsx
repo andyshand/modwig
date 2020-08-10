@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react'
 import { send, getCueMarkerAtPosition } from '../bitwig-api/Bitwig'
 import { styled } from 'linaria/react'
-import { faWaveSquare, faMusic, faShare, faFolder, faStar, faTrash } from '@fortawesome/free-solid-svg-icons'
+import { faWaveSquare, faMusic, faShare, faFolder, faStar, faTrash, faPlus } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { TrackVolume } from './TrackVolume'
 import { SearchResult, TrackSearchOptions } from './TrackSearchView'
@@ -33,13 +33,14 @@ const MuteSolo = styled.div`
     text-shadow: ${(props: any) => props.active ? `` : `0 -2px #222`};
 
 `
-const TrackIcon = ({track, selected, allowDeleting, onClick}) => {
+const TrackIcon = ({track, selected, allowDeleting, allowAdding, onClick}) => {
     const type = track.type
     function getIcon() {
         if (allowDeleting) {
             return faTrash
-        }
-        if (type === 'Audio' || type === 'Hybrid') {
+        } else if (allowAdding) {
+            return faPlus
+        } else if (type === 'Audio' || type === 'Hybrid') {
             return faWaveSquare
         } else if (type === 'Instrument') {
             return faMusic
@@ -59,7 +60,7 @@ const TrackTitle = styled.span`
 
 const Result = styled.div`
     user-select: none;
-    background: ${(props: any) => props.selected ? `#888` : `#444`};
+    background: ${(props: any) => props.selected ? `#888` : (props.inCue ? `#333` : `#444`)};
     padding: .5em 1.3em;
     font-size: .9em;
     border-bottom: 2px solid #111;
@@ -92,11 +93,10 @@ type TrackResultProps = {
     onShouldSelect: (result: SearchResult) => void,
     selected: boolean,
     options: TrackSearchOptions,
-    refreshSearch: Function,
-    isInCue: boolean
+    refreshSearch: Function
 }
-export const TrackResult = ({result, selected, onConfirmed, onShouldSelect, options, isInCue, refreshSearch}: TrackResultProps) => {
-    const { track } = result
+export const TrackResult = ({result, selected, onConfirmed, onShouldSelect, options, refreshSearch}: TrackResultProps) => {
+    const { track, isInCue } = result
 
     const wrapRef = useRef(null);
     const [solo, setSolo] = useState(track.solo)
@@ -161,9 +161,13 @@ export const TrackResult = ({result, selected, onConfirmed, onShouldSelect, opti
 
     const onIconClick = event => {
         if (mouseOverWithAlt) {
-            const after = track.data.afterCues
             const cue = getCueMarkerAtPosition(options.transportPosition)
-            delete after[cue.name]
+            const after = track.data?.afterCues ?? {}
+            if (isInCue) {
+                delete after[cue.name]
+            } else {
+                after[cue.name] = true
+            }
             send({
                 type: 'track/save',
                 data: {
@@ -177,9 +181,9 @@ export const TrackResult = ({result, selected, onConfirmed, onShouldSelect, opti
         }
     }
 
-    return <Result ref={wrapRef} id={selected ? 'selectedtrack' : ''} key={track.id} selected={selected} onDoubleClick={() => onConfirmed(result)} onMouseDown={() => onShouldSelect(result)}>
+    return <Result inCue={isInCue} ref={wrapRef} id={selected ? 'selectedtrack' : ''} key={track.id} selected={selected} onDoubleClick={() => onConfirmed(result)} onMouseDown={() => onShouldSelect(result)}>
         <Color color={track.color} />
-        <TrackIcon selected={selected} track={track} onClick={onIconClick} allowDeleting={mouseOverWithAlt && isInCue} /> 
+        <TrackIcon selected={selected} track={track} onClick={onIconClick} allowAdding={mouseOverWithAlt && !isInCue} allowDeleting={mouseOverWithAlt && isInCue} /> 
         <TrackTitle selected={selected}>{track.name}</TrackTitle> 
         <FlexGrow /> 
         {result.isRecent ? <Recent><FontAwesomeIcon icon={faStar} /></Recent> : null}

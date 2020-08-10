@@ -45,6 +45,12 @@ const Input = styled.input`
     border-bottom: 1px solid #444;
     -webkit-app-region: ${(props: any) => props.hasQuery ? `no-drag` : `drag`}; 
 `
+const CueIndicator = styled.div`
+    position: fixed;
+    top: 1.4rem;
+    right: 1rem;
+    color: #666;
+`
 const Flex = styled.div`
     display: flex;
     >:nth-child(2) {
@@ -142,6 +148,7 @@ export class SearchPanel extends React.Component {
             onChange={this.onInputChange} value={this.state.query} />
             <Flex>
                 <SidebarWrap>
+                    <CueIndicator>{cueStart.name}</CueIndicator>
                     <SidebarButton {...this.optionProps("onlyNamed")} title="Only show tracks with non-default names" icon={faFont} />
                     <FlexGrow />
                     <SidebarButton {...this.optionProps('lockQuery')} title="Lock search query" icon={faLock} />

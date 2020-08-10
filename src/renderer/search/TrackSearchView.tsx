@@ -6,7 +6,7 @@ import { TrackResult } from './TrackResult'
 export interface SearchResult {
     track: BitwigTrack
     isRecent: boolean,
-    inCurrentCue?: boolean
+    isInCue?: boolean
 }
 
 const { BrowserWindow, app} = require('electron').remote
@@ -42,6 +42,7 @@ const ignoreMap = {
     "Chain": true
 }
 const TrackSearchImpl = (tracks: BitwigTrack[], options: TrackSearchOptions) => {
+    const [cue] = getCueMarkersAtPosition(options.transportPosition)
     const filtered = tracks.filter((track) => {
         const { name, data } = track
         let remove = false
@@ -56,7 +57,6 @@ const TrackSearchImpl = (tracks: BitwigTrack[], options: TrackSearchOptions) => 
         }
         if (options.onlyInCueMarker) {
             // Get the current cue marker
-            const [cue, endCue] = getCueMarkersAtPosition(options.transportPosition)
             const trackCueData = data?.afterCues ?? {}
             if (cue && !trackCueData[cue.name]) {
                 remove = true
@@ -69,8 +69,10 @@ const TrackSearchImpl = (tracks: BitwigTrack[], options: TrackSearchOptions) => 
         const option = santizie(track.name)
         const indexOfMatch = option.indexOf(query)
         if (indexOfMatch >= 0) {
+            const trackCueData = track.data?.afterCues ?? {}
+            const inCue = cue && trackCueData[cue.name]
             let recentI = recentTracks.indexOf(option)
-            return 1 - (indexOfMatch / filtered.length) + (recentI >= 0 ? (recentTracks.length - recentI) * .5 : 0)
+            return 1 - (indexOfMatch / filtered.length) + (inCue ? 1 : 0) + (recentI >= 0 ? (recentTracks.length - recentI) * .5 : 0)
         }
         return 0
     }
@@ -335,23 +337,15 @@ export class TrackSearchView extends React.Component<SearchProps> {
         }
 
         const cue = getCueMarkerAtPosition(this.props.options.transportPosition)
-
         let resultsInCue = []
         let resultsOutCue = []
         let mappedResults = results.map((track, i) => {
             const searchRes = this.trackItemToSearchResult(track, i)
             const trackCueData = track.data?.afterCues ?? {}
-            if (cue && trackCueData[cue.name]) {
-                resultsInCue.push(searchRes)
-            } else {
-                resultsOutCue.push(searchRes)
-            }
+            searchRes.isInCue = trackCueData[cue.name]
             return searchRes
         })
-        mappedResults = resultsInCue.concat(resultsOutCue)
-
         const selectedTrackId = mappedResults.length > 0 ? mappedResults[0].track.id : null
-
         this.setState({
             loading: false, 
             results: mappedResults,
@@ -363,30 +357,29 @@ export class TrackSearchView extends React.Component<SearchProps> {
     renderNoResults() {
         return <NoResultsStyle>No results found for "{this.props.query}".</NoResultsStyle>
     }
-    mapToTrackResult = (result: SearchResult, isInCue = false) => {
+    mapToTrackResult = (result: SearchResult) => {
         return <TrackResult 
             selected={this.isSelected(result)} 
             key={result.track.id} 
             result={result}
-            isInCue={isInCue}
             options={this.props.options}
             onConfirmed={this.onConfirmed} 
             refreshSearch={this.recreateSearcher}
             onShouldSelect={this.onShouldSelect} />   
     }
     renderResults() {
-        if (this.props.query.length === 0 || this.state.resultsInCue.length === 0) {
+        // if (this.props.query.length === 0 || this.state.resultsInCue.length === 0) {
             return <><RecentsHeader large>{this.props.query.length === 0 ? "Recent Tracks" : "Results"}</RecentsHeader>
             {this.state.results.map(res => this.mapToTrackResult(res))} </>
-        } else {
-            const [startCue, endCue] = getCueMarkersAtPosition(this.props.options.transportPosition)
-            return <>
-                <RecentsHeader large>In <CueStyle color={startCue.color}>{startCue.name}</CueStyle></RecentsHeader>
-                {this.state.resultsInCue.map(res => this.mapToTrackResult(res, true))}
-                {this.state.resultsOutCue.length ? <><RecentsHeader large>From other sections</RecentsHeader>
-                {this.state.resultsOutCue.map(res => this.mapToTrackResult(res))} </> : null}
-            </>
-        }
+        // } else {
+        //     const [startCue, endCue] = getCueMarkersAtPosition(this.props.options.transportPosition)
+        //     return <>
+        //         <RecentsHeader large>In <CueStyle color={startCue.color}>{startCue.name}</CueStyle></RecentsHeader>
+        //         {this.state.resultsInCue.map(res => this.mapToTrackResult(res, true))}
+        //         {this.state.resultsOutCue.length ? <><RecentsHeader large>From other sections</RecentsHeader>
+        //         {this.state.resultsOutCue.map(res => this.mapToTrackResult(res))} </> : null}
+        //     </>
+        // }
     }
     render() {
         return this.state.results.length > 0 ? <FlexContainer style={{fontSize: '.9rem'}}>
