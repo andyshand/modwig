@@ -92,9 +92,10 @@ type TrackResultProps = {
     onShouldSelect: (result: SearchResult) => void,
     selected: boolean,
     options: TrackSearchOptions,
-    refreshSearch: Function
+    refreshSearch: Function,
+    isInCue: boolean
 }
-export const TrackResult = ({result, selected, onConfirmed, onShouldSelect, options, refreshSearch}: TrackResultProps) => {
+export const TrackResult = ({result, selected, onConfirmed, onShouldSelect, options, isInCue, refreshSearch}: TrackResultProps) => {
     const { track } = result
 
     const wrapRef = useRef(null);
@@ -178,7 +179,7 @@ export const TrackResult = ({result, selected, onConfirmed, onShouldSelect, opti
 
     return <Result ref={wrapRef} id={selected ? 'selectedtrack' : ''} key={track.id} selected={selected} onDoubleClick={() => onConfirmed(result)} onMouseDown={() => onShouldSelect(result)}>
         <Color color={track.color} />
-        <TrackIcon selected={selected} track={track} onClick={onIconClick} allowDeleting={mouseOverWithAlt && options.onlyInCueMarker} /> 
+        <TrackIcon selected={selected} track={track} onClick={onIconClick} allowDeleting={mouseOverWithAlt && isInCue} /> 
         <TrackTitle selected={selected}>{track.name}</TrackTitle> 
         <FlexGrow /> 
         {result.isRecent ? <Recent><FontAwesomeIcon icon={faStar} /></Recent> : null}

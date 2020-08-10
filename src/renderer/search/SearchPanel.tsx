@@ -76,7 +76,9 @@ const SidebarButton = ({icon, ...rest}) => {
 export class SearchPanel extends React.Component {
     state = {
         query: '',
-        options: {}
+        options: {
+            onlyNamed: true
+        }
     }
     searchViewRef = React.createRef<TrackSearchView>()
     componentDidMount() {
@@ -141,9 +143,7 @@ export class SearchPanel extends React.Component {
             <Flex>
                 <SidebarWrap>
                     <SidebarButton {...this.optionProps("onlyNamed")} title="Only show tracks with non-default names" icon={faFont} />
-                    <SidebarButton {...this.optionProps("onlyInCueMarker")} title={`Only show tracks between "${cueStart.name}" and "${cueEnd.name}"`} icon={faMapPin} />
                     <FlexGrow />
-                    {/* <SidebarButton {...this.stateProps('inspectorOpen')} title="Show inspector" icon={faInfo} /> */}
                     <SidebarButton {...this.optionProps('lockQuery')} title="Lock search query" icon={faLock} />
                 </SidebarWrap>
                 <div style={{position: "relative"}}>

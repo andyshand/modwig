@@ -5,7 +5,8 @@ import { TrackResult } from './TrackResult'
 
 export interface SearchResult {
     track: BitwigTrack
-    isRecent: boolean
+    isRecent: boolean,
+    inCurrentCue?: boolean
 }
 
 const { BrowserWindow, app} = require('electron').remote
@@ -83,7 +84,13 @@ const TrackSearchImpl = (tracks: BitwigTrack[], options: TrackSearchOptions) => 
         }
     }
 }
-
+const CueStyle = styled.span`
+    background: ${(props: any) => props.color};
+    padding: .2em .4em;
+    color: black;
+    border-radius: .3em;
+    margin: .5em;
+`
 const FlexContainer = styled.div`
     position: absolute;
     top: 0;
@@ -144,6 +151,8 @@ const RecentsHeader = styled.div`
     background: #222;
     color: #AAA;
     border-bottom: 1px solid #444;
+    padding-top: ${(props: any) => props.large ? `1.2rem` : `0.3rem`};
+    padding-bottom: ${(props: any) => props.large ? `.7rem` : `0.3rem`};
 `
 
 interface SearchProps {
@@ -156,11 +165,14 @@ export class TrackSearchView extends React.Component<SearchProps> {
     state = {
         selectedTrackId: null,
         results: [],
+        resultsInCue: [],
+        resultsOutCue: [],
         loading: false
     }
     trackSearch
     recentSearch
     stopListening: any
+    resultWrapRef = React.createRef<HTMLDivElement>()
 
     onKey = (key: string) => {
         const selectedIndex = this.state.results.findIndex(this.isSelected)
@@ -322,31 +334,64 @@ export class TrackSearchView extends React.Component<SearchProps> {
             results = this.recentSearch.get(q)
         }
 
-        const mappedResults = results.map(this.trackItemToSearchResult)
+        const cue = getCueMarkerAtPosition(this.props.options.transportPosition)
+
+        let resultsInCue = []
+        let resultsOutCue = []
+        let mappedResults = results.map((track, i) => {
+            const searchRes = this.trackItemToSearchResult(track, i)
+            const trackCueData = track.data?.afterCues ?? {}
+            if (cue && trackCueData[cue.name]) {
+                resultsInCue.push(searchRes)
+            } else {
+                resultsOutCue.push(searchRes)
+            }
+            return searchRes
+        })
+        mappedResults = resultsInCue.concat(resultsOutCue)
+
         const selectedTrackId = mappedResults.length > 0 ? mappedResults[0].track.id : null
 
         this.setState({
             loading: false, 
             results: mappedResults,
+            resultsInCue,
+            resultsOutCue,
             selectedTrackId
         })
     }
     renderNoResults() {
         return <NoResultsStyle>No results found for "{this.props.query}".</NoResultsStyle>
     }
+    mapToTrackResult = (result: SearchResult, isInCue = false) => {
+        return <TrackResult 
+            selected={this.isSelected(result)} 
+            key={result.track.id} 
+            result={result}
+            isInCue={isInCue}
+            options={this.props.options}
+            onConfirmed={this.onConfirmed} 
+            refreshSearch={this.recreateSearcher}
+            onShouldSelect={this.onShouldSelect} />   
+    }
+    renderResults() {
+        if (this.props.query.length === 0 || this.state.resultsInCue.length === 0) {
+            return <><RecentsHeader large>{this.props.query.length === 0 ? "Recent Tracks" : "Results"}</RecentsHeader>
+            {this.state.results.map(res => this.mapToTrackResult(res))} </>
+        } else {
+            const [startCue, endCue] = getCueMarkersAtPosition(this.props.options.transportPosition)
+            return <>
+                <RecentsHeader large>In <CueStyle color={startCue.color}>{startCue.name}</CueStyle></RecentsHeader>
+                {this.state.resultsInCue.map(res => this.mapToTrackResult(res, true))}
+                {this.state.resultsOutCue.length ? <><RecentsHeader large>From other sections</RecentsHeader>
+                {this.state.resultsOutCue.map(res => this.mapToTrackResult(res))} </> : null}
+            </>
+        }
+    }
     render() {
         return this.state.results.length > 0 ? <FlexContainer style={{fontSize: '.9rem'}}>
-            {this.props.query.length === 0 ? <RecentsHeader>Recent Tracks</RecentsHeader> : null}
-            <ResultsWrap>
-                {this.state.results.map(result => <TrackResult 
-                    selected={this.isSelected(result)} 
-                    key={result.track.id} 
-                    result={result}
-                    options={this.props.options}
-                    onConfirmed={this.onConfirmed} 
-                    refreshSearch={this.recreateSearcher}
-                    onShouldSelect={this.onShouldSelect} />
-                )}
+            <ResultsWrap ref={this.resultWrapRef}>
+                {this.renderResults()}
             </ResultsWrap> 
         </FlexContainer> : this.renderNoResults()
     }
