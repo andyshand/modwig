@@ -1,7 +1,8 @@
 import React from 'react'
 const { app } = require('electron').remote
 const { clipboard } = require('electron')
-import styled from 'styled-components'
+import { styled } from 'linaria/react'
+
 const w = window as any
 const ValueEntryInput = styled.input`
     color: white;
@@ -13,7 +14,7 @@ const ValueEntryInput = styled.input`
     background: transparent;
     flex-grow: 1;
     text-align: center;
-`
+` as any
 const Output = styled.div`
     border-top: 1px solid black;
     background: #222;

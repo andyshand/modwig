@@ -21,6 +21,9 @@ export class ProjectTrack {
     @Column()
     scroll: number
     
+    @Column({type: 'simple-json'})
+    data: string
+
     @Column()
     @Index()
     name: string
@@ -29,5 +32,5 @@ export class ProjectTrack {
     created_at: Date;
 
     @UpdateDateColumn()
-    updated_at: Date;
+    updated_at: Date;    
 }

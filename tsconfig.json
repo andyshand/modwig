@@ -14,5 +14,8 @@
         "types": [
             "node"
         ]
-    }
+    },
+    "include": [
+        "src/renderer/**/*"
+    ]
 }

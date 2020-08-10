@@ -1,23 +1,27 @@
 const w = window as any
-export namespace Bitwig {
-    export interface Track {
-        volume: number,
-        volumeString: string,
-        pan: number,
-        name: string,
-        color: string,
-        type: 'Effect' | 'Instrument' | 'Audio' | 'Group' | 'Hybrid' | 'Master',
-        position: number,
-        solo: boolean,
-        mute: boolean,
-        id: string // Added by us on client
-    }
 
-    export const tracks: Track[] = []
+export interface BitwigTrack {
+  volume: number,
+  volumeString: string,
+  pan: number,
+  name: string,
+  color: string,
+  type: 'Effect' | 'Instrument' | 'Audio' | 'Group' | 'Hybrid' | 'Master',
+  position: number,
+  solo: boolean,
+  mute: boolean,
+  data?: {
+    afterCues?: {[markerName: string] : boolean}
+  },
+  id: string // Added by us on client
 }
 
 let state = {
-  tracksById: {}
+  tracksById: {},
+  cueMarkers: [],
+  transport: {
+    position: 0
+  }
 }
 
 let nextId = 0
@@ -62,10 +66,14 @@ ws.onmessage = (event) => {
     const t = packet.data
     t.id = t.position + t.name 
     state.tracksById[t.id] = t
+  } else if (type === 'cue-markers') {
+    state.cueMarkers = packet.data
+  } else if (type === 'transport') {
+    state.transport = packet.data
   }
 }
 
-export function getTrackById(id: string) : Bitwig.Track {
+export function getTrackById(id: string) : BitwigTrack {
   return state.tracksById[id]
 }
 
@@ -82,6 +90,44 @@ export function addPacketListener(type: string, cb: (packet: any) => void) {
       delete packetListeners[type]
     }
   }
+}
+
+export function getTracks() : BitwigTrack[] {
+  return Object.values(state.tracksById)
+}
+
+export function getTransportPosition() {
+  return state.transport.position
+}
+
+export const DUMMY_START_MARKER = { name: 'Project Start', position: 0, color: '#ccc' }
+export const DUMMY_END_MARKER = { name: 'Project End', position: Number.MAX_SAFE_INTEGER, color: '#ccc' }
+/**
+ * Returns the last cue marker _before_ "pos". If the position is before any cue marker,
+ * (and if there are no cue markers) the returned value will be DUMMY_START_MARKER
+ */
+export function getCueMarkerAtPosition(pos) {
+  let i = 0;
+  for (; i < state.cueMarkers.length; i++) {
+    const marker = state.cueMarkers[i]
+    if (marker.position > pos) {
+      return i === 0 ? DUMMY_START_MARKER : state.cueMarkers[i - 1] 
+    }
+  }
+  return state.cueMarkers[i] || DUMMY_START_MARKER
+}
+
+export function getCueMarkersAtPosition(pos) {
+  let i = 0;
+  for (; i < state.cueMarkers.length; i++) {
+    const marker = state.cueMarkers[i]
+    if (marker.position > pos) {
+      return i === 0 
+        ? [DUMMY_START_MARKER, state.cueMarkers[i]] 
+        : [state.cueMarkers[i - 1], state.cueMarkers[i]]
+    }
+  }
+  return [state.cueMarkers[i] || DUMMY_START_MARKER, DUMMY_END_MARKER]
 }
 
 w.onclose = () => {

@@ -1,4 +1,5 @@
 import { WEBSOCKET_PORT, SOCKET_PORT } from "./Constants";
+const async = require('async')
 const logInOut = true
 const RECONNECT_IN = 1000 * 3;
 
@@ -6,6 +7,7 @@ let waiting = 0
 let partialMsg = ''
 let bitwigClient: any = null
 let bitwigConnected = false;
+let activeWebsocket;
 
 const logWithTime = (...args) => {
     const d = new Date()
@@ -13,23 +15,69 @@ const logWithTime = (...args) => {
     console.log(`${d.getHours()}:${pad0(d.getMinutes())}:${pad0(d.getSeconds())}:`, ...args)
 }
 
-let toBWInterceptors: {[type: string]: Function[]} = {}
-let fromBWInterceptors: {[type: string]: Function[]} = {}
-
-function processInterceptors(packetStr, ceptors: {[type: string]: Function[]}) {
-    const packet = JSON.parse(packetStr)
-    if ((ceptors[packet.type] || []).length) {
-        for (const cept of fromBWInterceptors[packet.type]) {
-            cept(packet)
+/**
+ * We have to have a queue here because our interceptors can be async, which means our
+ * data processor could end up out of order (as we process multiple packets in one function call)
+ */
+const bitwigToClientQueue = async.queue(async function ({data}, callback) {
+    let leftToParse = data.toString()
+    while (leftToParse.length > 0) {
+        if (waiting === 0) {
+            waiting = parseInt(leftToParse, 10)
+            partialMsg = ''
+            leftToParse = leftToParse.substr(String(waiting).length)
+            // logWithTime("waiting on " + waiting)
+        }
+        let thisTime = leftToParse.substr(0, waiting)
+        leftToParse = leftToParse.substr(waiting)
+        partialMsg += thisTime
+        waiting -= thisTime.length 
+        if (waiting === 0) {
+            if (activeWebsocket) {
+                if (logInOut) logWithTime('Bitwig sent: ' + partialMsg.substr(0, 50));
+                try {
+                    partialMsg = await processInterceptors(partialMsg, fromBWInterceptors)
+                } catch (e) {
+                    console.error("Error intercepting packet", e)
+                }
+                activeWebsocket.send(partialMsg);
+            } else {
+                logWithTime('Websocket not active, packet lost')
+            }
+            partialMsg = ''
         }
     }
+    callback();
+}, 1);
+
+type BitwigToClientInterceptorResponse = {modified: boolean} | void
+type BitwigToClientInterceptor = (packet: any) => BitwigToClientInterceptorResponse | Promise<BitwigToClientInterceptorResponse>
+let toBWInterceptors: {[type: string]: Function[]} = {}
+let fromBWInterceptors: {[type: string]: BitwigToClientInterceptor[]} = {}
+
+async function processInterceptors(packetStr, ceptors: {[type: string]: Function[]}) {
+    const packet = JSON.parse(packetStr)
+    let didIntercept = false
+    if ((ceptors[packet.type] || []).length) {
+        const ceptorsForPacket = ceptors[packet.type]
+        for (const cept of ceptorsForPacket) {
+            let out = cept(packet)
+            // If our cb was async, wait for it to finish
+            if (out && (out as any).then) {
+                out = await out
+            }
+            didIntercept = didIntercept || (out as any)?.modified
+        }
+    }
+    // Don't waste time re-stringifying if nothing changed
+    return didIntercept ? JSON.stringify(packet) : packetStr
 }
 
 export function runWebsocketToSocket() {
     const WebSocket = require('ws');
     const net = require('net');
     const wss = new WebSocket.Server({ port: WEBSOCKET_PORT });
-    let activeWebsocket;
+    
 
     function connectBitwig() {
         logWithTime('Connecting to Bitwig...');
@@ -39,34 +87,7 @@ export function runWebsocketToSocket() {
                 logWithTime('Connected to Bitwig');
                 bitwigConnected = true;
             });
-            bitwigClient!.on('data', function (data) {
-                let leftToParse = data.toString()
-                while (leftToParse.length > 0) {
-                    if (waiting === 0) {
-                        waiting = parseInt(leftToParse, 10)
-                        partialMsg = ''
-                        leftToParse = leftToParse.substr(String(waiting).length)
-                        // logWithTime("waiting on " + waiting)
-                    }
-                    let thisTime = leftToParse.substr(0, waiting)
-                    leftToParse = leftToParse.substr(waiting)
-                    partialMsg += thisTime
-                    waiting -= thisTime.length 
-                    if (waiting === 0) {
-                        if (activeWebsocket) {
-                            if (logInOut) logWithTime('Bitwig sent: ' + partialMsg.substr(0, 50));
-                            try {
-                                processInterceptors(partialMsg, fromBWInterceptors)
-                            } catch (e) {
-                                console.error("Error intercepting packet", e)
-                            }
-                            console.log('Sending to browser')
-                            activeWebsocket.send(partialMsg);
-                        }
-                        partialMsg = ''
-                    }
-                }
-            });
+            bitwigClient!.on('data', data => bitwigToClientQueue.push({data}))
             bitwigClient!.on('close', function () {
                 logWithTime('Connection to Bitwig closed, reconnecting...');
                 bitwigConnected = false;
@@ -124,7 +145,11 @@ export function sendPacketToBitwig(packet) {
   return sendToBitwig(JSON.stringify(packet))
 }
 
-export function interceptPacket(type: string, toBitwig?: Function, fromBitwig?: Function) {
+/**
+ * Bitwig->Client interceptors may modify the packet in any way before it reaches the browser, but must
+ * return {modified: true} from their handler function. Otherwise changes will not be registered.
+ */
+export function interceptPacket(type: string, toBitwig?: Function, fromBitwig?: BitwigToClientInterceptor) {
     if (toBitwig) {
         toBWInterceptors[type] = (toBWInterceptors[type] || []).concat(toBitwig)
     } else if (fromBitwig) {

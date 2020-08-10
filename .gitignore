@@ -3,3 +3,4 @@ dist
 build
 extraResources/controller-script/bes.control.js
 scripts/install
+.linaria-cache

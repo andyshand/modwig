@@ -1,5 +1,5 @@
 import React from 'react'
-import styled, { css } from 'styled-components'
+import { styled } from 'linaria/react'
 import { send, getTrackById } from '../bitwig-api/Bitwig'
 import { clamp } from '../../connector/shared/Math'
 const { app } = require('electron').remote
@@ -8,11 +8,11 @@ interface TrackVolumeProps extends React.ComponentProps<any> {
     track: any
 }
 
-const HoverStyle = css`
+const HoverStyle = `
     box-shadow: inset 0 3px 0 0 #EA6A10;
 `
 const TooltipWrap = styled.div`
-    opacity: ${props => props.visible ? 1 : 0};
+    opacity: ${(props: any) => props.visible ? 1 : 0};
     position: absolute;
     right: 113%;
     top: 50%;
@@ -31,7 +31,7 @@ const Tooltip = ({volume, ...rest}) => {
     </TooltipWrap>
 }
 const VolumeLevel = styled.div`
-    top: ${props => Math.ceil((1 - props.volume) * 100) - 5 + '%'};
+    top: ${(props: any) => Math.ceil((1 - props.volume) * 100) - 5 + '%'};
     bottom: 0;
     left: 0;
     background: #502E13;
@@ -47,17 +47,18 @@ const VolumeWrap = styled.div`
     cursor: ns-resize;
     border-radius: .2em;
     background: #222;
+    -webkit-app-region: no-drag;
     &:hover {
-        ${VolumeLevel} {
+        ${VolumeLevel as any} {
             ${HoverStyle}
         }
     }
-    ${props => props.mouseDown ? css`
-        ${VolumeLevel} {
-            ${HoverStyle}
-        }    
-    ` : css``}
 `
+    // ${(props: any) => props.mouseDown ? `
+    //     ${VolumeLevel} {
+    //         ${HoverStyle}
+    //     }    
+    // ` : ``}
 const globalMouseMove = {
     target: null,
     setActiveTarget(target: {onGlobalMouseMove: Function, onGlobalMouseUp: Function}) {
@@ -133,9 +134,9 @@ export class TrackVolume extends React.Component<TrackVolumeProps> {
         })
     }
     render() {
-        const latestTrack = getTrackById(this.props.track.id)
+        const latestTrack = getTrackById(this.props.track.id) // TODO check why this is null sometimes
         return <VolumeWrap mouseDown={this.state.mouseDown} onMouseDown={this.onMouseDown} onDoubleClick={this.onDoubleClick}>
-            <Tooltip visible={this.state.mouseDown} volume={latestTrack.volumeString} />
+            <Tooltip visible={this.state.mouseDown} volume={latestTrack?.volumeString ?? 0} />
             <VolumeLevel volume={this.state.localVolume} />
         </VolumeWrap>
     }

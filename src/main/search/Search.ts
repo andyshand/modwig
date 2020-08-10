@@ -1,4 +1,4 @@
-import { BrowserWindow, screen } from "electron";
+import { BrowserWindow, screen, app } from "electron";
 import { url } from "../core/Url";
 import { sendPacketToBitwig, interceptPacket } from "../../connector/shared/WebsocketToSocket";
 import { returnMouseAfter, whenActiveListener } from "../../connector/shared/EventUtils";
@@ -8,6 +8,7 @@ import { SelectQueryBuilder } from "typeorm";
 import { Project } from "../db/entities/Project";
 const { execSync } = require('child_process')
 const { Keyboard, Mouse, MainWindow, Bitwig } = require('bindings')('bes')
+
 let windowOpen
 
 let currTrack: string | null = null
@@ -35,8 +36,8 @@ export async function setupNavigation() {
         });
         return saved?.scroll || 0
     }
-    async function saveScrollForTrack(scroll, track, project) {
-        console.log('saving', scroll, track, project)
+    const defaultFields = {scroll: 0, data: {}}
+    async function createOrUpdateTrack(track: string, project: string, fields: Partial<typeof defaultFields> = {scroll: 0, data: {}}) {
         const existingProject = await projects.findOne({where: {name: project}})
         let projectId = existingProject?.id
         if (!projectId) {
@@ -45,27 +46,34 @@ export async function setupNavigation() {
 
         const existingTrack = await projectTracks.findOne({where: {name: track}})
         if (existingTrack) {
-            await projectTracks.update(existingTrack.id, {scroll});
+            console.log(`updating track (${existingTrack.name}) with fields: ` + fields)
+            await projectTracks.update(existingTrack.id, fields);
         } else {
             const newTrack = projectTracks.create({ 
                 name: track,
-                scroll,
-                project_id: projectId
+                project_id: projectId,
+                ...defaultFields, 
+                ...fields
             })
             await projectTracks.save(newTrack);
         }
+    }
+    async function saveScrollForTrack(scroll, track, project) {
+        return createOrUpdateTrack(track, project, {
+            scroll
+        })
     }
     
     windowOpen = new BrowserWindow({ 
         width: WINDOW_WIDTH, 
         height: WINDOW_HEIGHT, 
         frame: false, 
-        show: false,
+        show: true,
         // transparent: true,
         webPreferences: {
             nodeIntegration: true,
-        },
-        alwaysOnTop: process.env.NODE_ENV !== 'dev'
+        }
+        // alwaysOnTop: true
     })
     windowOpen.loadURL(url('/#/search'))
 
@@ -84,19 +92,18 @@ export async function setupNavigation() {
         }
         if (lowerKey === 'Space' && Control) {
             // Control + space pressed
-            const { width, height } = screen.getPrimaryDisplay().workAreaSize
-            windowOpen.setBounds({   
-                x: width / 2 - WINDOW_WIDTH / 2,
-                y: height - WINDOW_HEIGHT * 2,
-                width: WINDOW_WIDTH,
-                height: WINDOW_HEIGHT
-            }, false)
+            // const { width, height } = screen.getPrimaryDisplay().workAreaSize
+            // windowOpen.setBounds({   
+            //     x: width / 2 - WINDOW_WIDTH / 2,
+            //     y: height - WINDOW_HEIGHT * 2,
+            //     width: WINDOW_WIDTH,
+            //     height: WINDOW_HEIGHT
+            // }, false)
             windowOpen.show()
             windowOpen.focus()
             // windowOpen.webContents.openDevTools()
         } else if (windowOpen && lowerKey === "Escape") {
-            // escape pressed
-            // but we quit from client atm
+            // escape pressed, but we quit from client atm
         }
     }))
     
@@ -113,11 +120,11 @@ export async function setupNavigation() {
         })
     }
 
-    interceptPacket('tracksearch/confirm', undefined, ({ type, data: trackName }) => {
+    interceptPacket('tracksearch/confirm', undefined, ({ data: trackName }) => {
         waitingToScroll = true
         console.log('waiting to scroll: ', trackName)
     })
-    interceptPacket('trackselected', undefined, async ({ type, data: { name: newTrackName, position, selected, project }}) => {
+    interceptPacket('trackselected', undefined, async ({ data: { name: newTrackName, selected, project }}) => {
         if (selected) {
             if (currTrack && currProject) {
                 saveScrollForTrack(currTrackScroll, currTrack, currProject)
@@ -129,6 +136,28 @@ export async function setupNavigation() {
             }
             waitingToScroll = false
             currTrack = newTrackName
+        }
+    })
+    interceptPacket('project', undefined, async ({ data: { name: projectName } }) => {
+        currProject = projectName
+    })
+    interceptPacket('tracks', undefined, async ({ data: tracks}) => {
+        const existingProject = await projects.findOne({where: {name: currProject }})
+        console.log('Sending tracks for project ', existingProject.id)
+        if (existingProject) {
+            // We might have save-data to add to each track
+            for (const t of tracks) {
+                const savedTrack = await projectTracks.findOne({where: {project_id: existingProject.id, name: t.name}})
+                if (savedTrack) {
+                    t.data = savedTrack.data
+                }
+            }
+            return { modified: true }
+        }
+    })
+    interceptPacket('track/save', ({ data: { name: trackName, data }}) => {
+        if (typeof currProject === 'string') {
+            createOrUpdateTrack(trackName, currProject, { data })
         }
     })
 

@@ -11,6 +11,7 @@ load('Object2.js')
 
 const FX_TRACK_BANK_SIZE = 16
 const MAIN_TRACK_BANK_SIZE = 128
+const CUE_MARKER_BANK_SIZE = 32
 
 host.setShouldFailOnDeprecatedUse(true);
 host.defineController("andy shand", "Bitwig Enhancement Suite", "0.1", "b90a4894-b89c-40b9-b372-e1e8659699df", "andy shand");
@@ -118,7 +119,10 @@ class PacketManager {
 
 type Deps = {
     packetManager: PacketManager
-    globalController: Controller
+    globalController: Controller,
+    app: any,
+    arranger: any,
+    transport: any
 }
 
 class Controller {
@@ -135,6 +139,7 @@ class GlobalController extends Controller {
     trackBank = host.createMainTrackBank(MAIN_TRACK_BANK_SIZE, 0, 0)
     fxBank = host.createEffectTrackBank(FX_TRACK_BANK_SIZE, 0)
     cursorTrack = host.createCursorTrack("selectedTrack", "selectedTrack", 0, 0, true)
+    cueMarkerBank: any
     lastSelectedTrack: string = ''
     masterTrack = host.createMasterTrack( 0 );
     nameCache: {[trackName: string]: any} = {}
@@ -144,7 +149,7 @@ class GlobalController extends Controller {
      */
     selectedTrackChanged = new EventEmitter<string>()
 
-    constructor(public readonly deps: Deps, public readonly app) {
+    constructor(public readonly deps: Deps) {
         super(deps)
 
         const { packetManager } = deps
@@ -167,10 +172,10 @@ class GlobalController extends Controller {
                 data: this.createTrackInfo(track)
             }
         })
-        this.app.projectName().markInterested()
+        this.deps.app.projectName().markInterested()
 
-        packetManager.listen('application/undo', () => this.app.undo())
-        packetManager.listen('application/redo', () => this.app.redo())
+        packetManager.listen('application/undo', () => this.deps.app.undo())
+        packetManager.listen('application/redo', () => this.deps.app.redo())
 
         this.cursorTrack.name().markInterested();
         this.cursorTrack.name().addValueObserver(value => {
@@ -215,7 +220,7 @@ class GlobalController extends Controller {
                     data: {
                         selected,
                         ...this.createTrackInfo(t, isFX),
-                        project: {name: this.app.projectName().get()}
+                        project: {name: this.deps.app.projectName().get()}
                     }
                 })
             })
@@ -232,6 +237,40 @@ class GlobalController extends Controller {
                 }
             })
         })
+
+        this.cueMarkerBank = this.deps.arranger.createCueMarkerBank(CUE_MARKER_BANK_SIZE)
+        this.mapCueMarkers(marker => {
+            marker.getName().markInterested()
+            marker.getColor().markInterested()
+            marker.position().markInterested()
+
+            marker.getName().addValueObserver(name => {
+                this.sendAllCueMarkers()
+            })
+        })
+
+        deps.transport.getPosition().addValueObserver(position => {
+            this.deps.packetManager.send({
+                type: 'transport',
+                data: {
+                    position
+                }
+            })
+        })
+    }
+
+    mapCueMarkers<T>(cb: (cueMarker, i: number) => T, filterNull = false) {
+        let out = []
+        const processC = (cm, i) => {
+            const result = cb(cm, i)
+            if (!filterNull || result != null) {
+                out.push(result)
+            }
+        }
+        for (let i = 0; i < CUE_MARKER_BANK_SIZE; i++) {
+            processC(this.cueMarkerBank.getItemAt(i), i)
+        }
+        return out
     }
 
     mapTracks<T>(cb: (track, i: number, isFX: boolean) => T, filterNull = false) {
@@ -266,11 +305,19 @@ class GlobalController extends Controller {
         }
     }
 
+    createCueMarkerInfo(cueMarker) {
+        return {
+            name: cueMarker.getName().get(),
+            position: cueMarker.position().get(),
+            color: convertBWColorToHex(cueMarker.getColor())
+        }
+    }
+
     sendProject() {
         this.deps.packetManager.send({
             type: 'project',
             data: {
-                name: this.app.projectName().get()
+                name: this.deps.app.projectName().get()
             }
         })
     }
@@ -285,6 +332,18 @@ class GlobalController extends Controller {
         this.deps.packetManager.send({
             type: 'tracks',
             data: tracks
+        })
+    }
+
+    sendAllCueMarkers() {
+        const cueMarkers = this.mapCueMarkers((cm, i) => {
+            const name = cm.getName().get()
+            if (name.length === 0) return null
+            return this.createCueMarkerInfo(cm)
+        }, true)
+        this.deps.packetManager.send({
+            type: 'cue-markers',
+            data: cueMarkers
         })
     }
 
@@ -332,6 +391,7 @@ class TrackSearchController extends Controller {
             this.trackSelectedWhenStarted = globalController.lastSelectedTrack
             this.active = true
             globalController.sendAllTracks()
+            globalController.sendAllCueMarkers()
         })
         packetManager.listen('tracksearch/cancel', () => {
             if (this.trackSelectedWhenStarted.length > 0) {
@@ -419,6 +479,8 @@ function init() {
     // var app = host.createApplication()
     const transport = host.createTransport()
     const app = host.createApplication()
+    const arranger = host.createArranger()
+
     connection = host.createRemoteConnection("name", 8888)
     println("Created the host")
 
@@ -435,9 +497,13 @@ function init() {
         }
     })
 
-    let deps: Deps = {} as any
+    let deps: Deps = {
+        app,
+        arranger,
+        transport
+    } as any
     deps.packetManager = new PacketManager({app})
-    deps.globalController = new GlobalController(deps, app)
+    deps.globalController = new GlobalController(deps)
     
     new TrackSearchController(deps)    
     new BackForwardController(deps)    
