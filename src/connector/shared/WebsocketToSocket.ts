@@ -1,6 +1,6 @@
 import { WEBSOCKET_PORT, SOCKET_PORT } from "./Constants";
 const async = require('async')
-const logInOut = true
+const logInOut = false
 const RECONNECT_IN = 1000 * 3;
 
 let waiting = 0

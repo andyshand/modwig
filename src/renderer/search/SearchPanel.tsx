@@ -76,8 +76,7 @@ const SidebarButton = ({icon, ...rest}) => {
 export class SearchPanel extends React.Component {
     state = {
         query: '',
-        options: {},
-        lockQuery: false
+        options: {}
     }
     searchViewRef = React.createRef<TrackSearchView>()
     componentDidMount() {
@@ -94,22 +93,20 @@ export class SearchPanel extends React.Component {
         // The component is kept around so we need a way
         // to detect when to clear the search field
         app.on('browser-window-focus', () => {
-            if (!this.state.lockQuery) {
-                this.setState({query: '', selectedId: null})
-            }
             const input = document.getElementById('theinput') as HTMLInputElement
             if (input) {
                 input.focus()
                 // input.select()
             }
-            send({
-                type: 'tracksearch/start'
-            })
+            if (!(this.state.options as any).lockQuery) {
+                this.setState({
+                    query: ''
+                })
+            }
         })
     }
     onInputChange = event => {
         this.setState({query: event.target.value})
-        this.searchViewRef.current.onQueryChanged(event.target.value)
     }
     onSearchKeyDown = event => {
         // Don't allow up/down arrow keys to navigate input
@@ -147,10 +144,10 @@ export class SearchPanel extends React.Component {
                     <SidebarButton {...this.optionProps("onlyInCueMarker")} title={`Only show tracks between "${cueStart.name}" and "${cueEnd.name}"`} icon={faMapPin} />
                     <FlexGrow />
                     {/* <SidebarButton {...this.stateProps('inspectorOpen')} title="Show inspector" icon={faInfo} /> */}
-                    <SidebarButton {...this.stateProps('lockQuery')} title="Lock search query" icon={faLock} />
+                    <SidebarButton {...this.optionProps('lockQuery')} title="Lock search query" icon={faLock} />
                 </SidebarWrap>
                 <div style={{position: "relative"}}>
-                    <TrackSearchView ref={this.searchViewRef} {...searchProps} /> 
+                    <TrackSearchView query={this.state.query} ref={this.searchViewRef} {...searchProps} /> 
                 </div>
             </Flex>
         </SearchPanelWrap>

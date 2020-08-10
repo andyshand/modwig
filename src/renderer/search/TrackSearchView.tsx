@@ -26,6 +26,7 @@ function saveRecent10() {
 export interface TrackSearchOptions {
     onlyNamed?: boolean,
     onlyInCueMarker?: boolean,
+    lockQuery?: boolean
 
     /**
      * Hardcode the transport position at the time of opening the panel
@@ -146,13 +147,13 @@ const RecentsHeader = styled.div`
 `
 
 interface SearchProps {
-    options: TrackSearchOptions
+    options: TrackSearchOptions,
+    query: string
 }
 
 export class TrackSearchView extends React.Component<SearchProps> {
     repeatInterval: any
     state = {
-        query: '',
         selectedTrackId: null,
         results: [],
         loading: false
@@ -177,7 +178,7 @@ export class TrackSearchView extends React.Component<SearchProps> {
         }
     }
     onKeyDown = (event) => {
-        if (event.key === ' ' && this.state.query === '') {
+        if (event.key === ' ' && this.props.query === '') {
             event.preventDefault()
             send({
                 type: 'transport/play'
@@ -204,20 +205,28 @@ export class TrackSearchView extends React.Component<SearchProps> {
     onKeyUp = () => {
         clearInterval(this.repeatInterval)
     }
-    recreateSearcher(tracks?: BitwigTrack[], options = this.props.options) {
-        this.trackSearch = TrackSearchImpl(tracks || getTracks(), options)
+    recreateSearcher(tracks?: BitwigTrack[], options = this.props.options, recalculate = true) {
+        this.trackSearch = TrackSearchImpl(getTracks(), options)
         this.recentSearch = TrackSearchImpl(recentTracks.map(id => getTrackById(id)).filter(t => !!t), options)
-        this.calculateResults()
+        if (recalculate) {
+            this.calculateResults()
+        }
     }
     componentDidMount() {
         this.stopListening = addPacketListener('tracks', packet => {
-            this.recreateSearcher(packet.data)
-            if (this.state.query === '') {
-                this.calculateResults('')
-            }
+            this.recreateSearcher(packet.data, this.props.options, !this.props.options.lockQuery)
         })       
         window.addEventListener('keydown', this.onKeyDown)
         window.addEventListener('keyup', this.onKeyUp)
+
+        app.on('browser-window-focus', event => {
+            if (!this.props.options.lockQuery) {
+                this.setState({query: '', selectedId: null})
+            }
+            send({
+                type: 'tracksearch/start'
+            })
+        })
     }
 
     componentWillUnmount() {
@@ -244,7 +253,9 @@ export class TrackSearchView extends React.Component<SearchProps> {
     componentWillReceiveProps(nextProps) {
         if (JSON.stringify(nextProps.options) !== JSON.stringify(this.props.options)) {
             this.recreateSearcher(null, nextProps.options)
-            this.calculateResults(this.state.query)
+            this.calculateResults(nextProps.query)
+        } else if (nextProps.query !== this.props.query) {
+            this.calculateResults(nextProps.query)
         }
     }
 
@@ -297,18 +308,7 @@ export class TrackSearchView extends React.Component<SearchProps> {
         this.setState({selectedTrackId: result.track.id})
     }
 
-    /**
-     * Called by parent using ref
-     */
-    onQueryChanged = query => {
-        this.setState({
-            query: query.trim(),
-            loading: true
-        })
-        this.calculateResults(query)
-    }
-
-    calculateResults = async (query: string = this.state.query) => {
+    calculateResults = async (query: string = this.props.query) => {
         if (!this.trackSearch) {
             return
         }
@@ -323,8 +323,8 @@ export class TrackSearchView extends React.Component<SearchProps> {
         }
 
         const mappedResults = results.map(this.trackItemToSearchResult)
-        const selectedTrackId = mappedResults[0]?.track.id ?? null
-       
+        const selectedTrackId = mappedResults.length > 0 ? mappedResults[0].track.id : null
+
         this.setState({
             loading: false, 
             results: mappedResults,
@@ -332,11 +332,11 @@ export class TrackSearchView extends React.Component<SearchProps> {
         })
     }
     renderNoResults() {
-        return <NoResultsStyle>No results found for "{this.state.query}".</NoResultsStyle>
+        return <NoResultsStyle>No results found for "{this.props.query}".</NoResultsStyle>
     }
     render() {
         return this.state.results.length > 0 ? <FlexContainer style={{fontSize: '.9rem'}}>
-            {this.state.query.length === 0 ? <RecentsHeader>Recent Tracks</RecentsHeader> : null}
+            {this.props.query.length === 0 ? <RecentsHeader>Recent Tracks</RecentsHeader> : null}
             <ResultsWrap>
                 {this.state.results.map(result => <TrackResult 
                     selected={this.isSelected(result)} 

@@ -18,6 +18,7 @@ export interface BitwigTrack {
 
 let state = {
   tracksById: {},
+  tracks: [],
   cueMarkers: [],
   transport: {
     position: 0
@@ -52,15 +53,15 @@ export function send(newPacket: any) {
 }
 
 ws.onmessage = (event) => {
-  console.log("Received: ", event.data)
   const packet = JSON.parse(event.data)
+  console.log("Received: ", packet)
   const { type } = packet
-  ;(packetListeners[type] || []).forEach(listener => listener.cb(packet))
   if (type === 'tracks') {
     state.tracksById = {}
     for (const t of packet.data) {
       t.id = t.position + t.name 
       state.tracksById[t.id] = t
+      state.tracks = packet.data
     }
   } else if (type === 'track/update') {
     const t = packet.data
@@ -71,6 +72,8 @@ ws.onmessage = (event) => {
   } else if (type === 'transport') {
     state.transport = packet.data
   }
+  
+  ;(packetListeners[type] || []).forEach(listener => listener.cb(packet))
 }
 
 export function getTrackById(id: string) : BitwigTrack {
@@ -93,7 +96,7 @@ export function addPacketListener(type: string, cb: (packet: any) => void) {
 }
 
 export function getTracks() : BitwigTrack[] {
-  return Object.values(state.tracksById)
+  return state.tracks
 }
 
 export function getTransportPosition() {
