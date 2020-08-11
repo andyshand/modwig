@@ -95,7 +95,7 @@ type TrackResultProps = {
     options: TrackSearchOptions,
     refreshSearch: Function
 }
-export const TrackResult = ({result, selected, onConfirmed, onShouldSelect, options, refreshSearch}: TrackResultProps) => {
+export const TrackResult = React.memo(({result, selected, onConfirmed, onShouldSelect, options}: TrackResultProps) => {
     const { track, isInCue } = result
 
     const wrapRef = useRef(null);
@@ -191,4 +191,10 @@ export const TrackResult = ({result, selected, onConfirmed, onShouldSelect, opti
         <MuteSolo onDoubleClick={onDoubleClick} activeColor={`#F97012`} active={mute} onClick={toggleMute}>M</MuteSolo>
         <TrackVolume track={track} />
     </Result>
-}
+}, (prevProps, nextProps) => {
+    const sameField = cb => cb(prevProps) === cb(nextProps)
+    return sameField(p => p.result.track.id) 
+        && sameField(p => p.selected) 
+        && sameField(p => p.isInCue)
+        && sameField(p => p.options.transportPosition)
+})

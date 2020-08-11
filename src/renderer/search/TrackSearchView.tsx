@@ -8,7 +8,7 @@ export interface SearchResult {
     isRecent: boolean,
     isInCue?: boolean
 }
-
+const ScrollChunk = 20
 const { BrowserWindow, app} = require('electron').remote
 
 function loadRecent10() {
@@ -169,7 +169,8 @@ export class TrackSearchView extends React.Component<SearchProps> {
         results: [],
         resultsInCue: [],
         resultsOutCue: [],
-        loading: false
+        loading: false,
+        resultsLimit: ScrollChunk
     }
     trackSearch
     recentSearch
@@ -351,7 +352,8 @@ export class TrackSearchView extends React.Component<SearchProps> {
             results: mappedResults,
             resultsInCue,
             resultsOutCue,
-            selectedTrackId
+            selectedTrackId,
+            resultsLimit: ScrollChunk
         })
     }
     renderNoResults() {
@@ -368,22 +370,28 @@ export class TrackSearchView extends React.Component<SearchProps> {
             onShouldSelect={this.onShouldSelect} />   
     }
     renderResults() {
-        // if (this.props.query.length === 0 || this.state.resultsInCue.length === 0) {
-            return <><RecentsHeader large>{this.props.query.length === 0 ? "Recent Tracks" : "Results"}</RecentsHeader>
-            {this.state.results.map(res => this.mapToTrackResult(res))} </>
-        // } else {
-        //     const [startCue, endCue] = getCueMarkersAtPosition(this.props.options.transportPosition)
-        //     return <>
-        //         <RecentsHeader large>In <CueStyle color={startCue.color}>{startCue.name}</CueStyle></RecentsHeader>
-        //         {this.state.resultsInCue.map(res => this.mapToTrackResult(res, true))}
-        //         {this.state.resultsOutCue.length ? <><RecentsHeader large>From other sections</RecentsHeader>
-        //         {this.state.resultsOutCue.map(res => this.mapToTrackResult(res))} </> : null}
-        //     </>
-        // }
+       
+        return <>
+            <RecentsHeader large>{this.props.query.length === 0 ? "Recent Tracks" : "Results"}</RecentsHeader>
+            {this.state.results.slice(0, this.state.resultsLimit).map(res => this.mapToTrackResult(res))} 
+        </>
+    }
+    onResultsScroll = (event: React.UIEvent<HTMLDivElement>) => {
+        const div = event.target as any
+        const scrollTop = div.scrollTop
+        const scrollHeight = div.scrollHeight
+        const visibleHeight = div.clientHeight
+        const maxScroll = scrollHeight - visibleHeight
+        if (maxScroll - scrollTop < 5) {
+            // within 5 pixels of bottom
+            this.setState({
+                resultsLimit: this.state.resultsLimit + ScrollChunk
+            })
+        }
     }
     render() {
         return this.state.results.length > 0 ? <FlexContainer style={{fontSize: '.9rem'}}>
-            <ResultsWrap ref={this.resultWrapRef}>
+            <ResultsWrap ref={this.resultWrapRef} onScroll={this.onResultsScroll}>
                 {this.renderResults()}
             </ResultsWrap> 
         </FlexContainer> : this.renderNoResults()

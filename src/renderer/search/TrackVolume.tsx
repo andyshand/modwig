@@ -79,6 +79,9 @@ window.addEventListener('mouseup', event => {
 app.on('browser-window-blur', () => {
     // Ensure we don't receive any mouse move events while BES is hidden
     delete globalMouseMove.target
+
+    // Also just hide the whole app
+    app.hide()
 })
 
 export class TrackVolume extends React.Component<TrackVolumeProps> {
