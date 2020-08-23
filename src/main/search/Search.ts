@@ -1,11 +1,11 @@
 import { BrowserWindow, screen, app } from "electron";
 import { url } from "../core/Url";
-import { sendPacketToBitwig, interceptPacket } from "../../connector/shared/WebsocketToSocket";
 import { returnMouseAfter, whenActiveListener } from "../../connector/shared/EventUtils";
 import { getDb } from "../db";
 import { ProjectTrack } from "../db/entities/ProjectTrack";
 import { SelectQueryBuilder } from "typeorm";
 import { Project } from "../db/entities/Project";
+import { sendPacketToBitwig, interceptPacket } from "../core/WebsocketToSocket";
 const { execSync } = require('child_process')
 const { Keyboard, Mouse, MainWindow, Bitwig } = require('bindings')('bes')
 
@@ -143,7 +143,6 @@ export async function setupNavigation() {
     })
     interceptPacket('tracks', undefined, async ({ data: tracks}) => {
         const existingProject = await projects.findOne({where: {name: currProject }})
-        console.log('Sending tracks for project ', existingProject.id)
         if (existingProject) {
             // We might have save-data to add to each track
             for (const t of tracks) {

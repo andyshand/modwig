@@ -159,7 +159,8 @@ const RecentsHeader = styled.div`
 
 interface SearchProps {
     options: TrackSearchOptions,
-    query: string
+    query: string,
+    onConfirmed: Function
 }
 
 export class TrackSearchView extends React.Component<SearchProps> {
@@ -235,9 +236,9 @@ export class TrackSearchView extends React.Component<SearchProps> {
         window.addEventListener('keyup', this.onKeyUp)
 
         app.on('browser-window-focus', event => {
-            if (!this.props.options.lockQuery) {
-                this.setState({query: '', selectedId: null})
-            }
+            // if (!this.props.options.lockQuery) {
+            //     this.setState({query: '', selectedId: null})
+            // }
             send({
                 type: 'tracksearch/start'
             })
@@ -289,7 +290,6 @@ export class TrackSearchView extends React.Component<SearchProps> {
             data: track.name
         })
         BrowserWindow.getFocusedWindow().hide()
-        app.hide()
         recentTracks = [track.id].concat(recentTracks.slice(0, recentCount).filter(id => id !== track.id))
         saveRecent10()
 
@@ -310,6 +310,8 @@ export class TrackSearchView extends React.Component<SearchProps> {
                 }
             })
         }
+
+        this.props.onConfirmed()
     }
 
     trackItemToSearchResult = (track: BitwigTrack, i: number) : SearchResult => {
@@ -357,7 +359,7 @@ export class TrackSearchView extends React.Component<SearchProps> {
         })
     }
     renderNoResults() {
-        return <NoResultsStyle>No results found for "{this.props.query}".</NoResultsStyle>
+        return <NoResultsStyle>No tracks found.</NoResultsStyle>
     }
     mapToTrackResult = (result: SearchResult) => {
         return <TrackResult 

@@ -1,4 +1,5 @@
-import { sendPacketToBitwig } from "../../connector/shared/WebsocketToSocket"
+import { sendPacketToBitwig } from "../core/WebsocketToSocket"
+
 const { Keyboard, Bitwig } = require('bindings')('bes')
 
 /**

@@ -87,6 +87,13 @@ export class SearchPanel extends React.Component {
         }
     }
     searchViewRef = React.createRef<TrackSearchView>()
+    reset() {
+        if (!(this.state.options as any).lockQuery) {
+            this.setState({
+                query: ''
+            })
+        }
+    }
     componentDidMount() {
         window.addEventListener('keyup', event => {
             if (event.key === 'Escape') {
@@ -94,7 +101,7 @@ export class SearchPanel extends React.Component {
                 send({
                     type: 'tracksearch/cancel'
                 })
-                app.hide()
+                this.onConfirmedOrCancelled()
             }
         })
         
@@ -104,14 +111,12 @@ export class SearchPanel extends React.Component {
             const input = document.getElementById('theinput') as HTMLInputElement
             if (input) {
                 input.focus()
-                // input.select()
-            }
-            if (!(this.state.options as any).lockQuery) {
-                this.setState({
-                    query: ''
-                })
             }
         })
+    }
+    onConfirmedOrCancelled = () => {
+        this.reset()
+        app.hide()
     }
     onInputChange = event => {
         this.setState({query: event.target.value})
@@ -154,7 +159,7 @@ export class SearchPanel extends React.Component {
                     <SidebarButton {...this.optionProps('lockQuery')} title="Lock search query" icon={faLock} />
                 </SidebarWrap>
                 <div style={{position: "relative"}}>
-                    <TrackSearchView query={this.state.query} ref={this.searchViewRef} {...searchProps} /> 
+                    <TrackSearchView onConfirmed={this.onConfirmedOrCancelled} query={this.state.query} ref={this.searchViewRef} {...searchProps} /> 
                 </div>
             </Flex>
         </SearchPanelWrap>

@@ -1,4 +1,5 @@
-import { WEBSOCKET_PORT, SOCKET_PORT } from "./Constants";
+import { BESService, makeEvent } from "./Service";
+import { WEBSOCKET_PORT, SOCKET_PORT } from '../../connector/shared/constants'
 const async = require('async')
 const logInOut = false
 const RECONNECT_IN = 1000 * 3;
@@ -73,57 +74,66 @@ async function processInterceptors(packetStr, ceptors: {[type: string]: Function
     return didIntercept ? JSON.stringify(packet) : packetStr
 }
 
-export function runWebsocketToSocket() {
-    const WebSocket = require('ws');
-    const net = require('net');
-    const wss = new WebSocket.Server({ port: WEBSOCKET_PORT });
-    
+export class SocketMiddlemanService extends BESService {
+    events = {
+        connected: makeEvent<boolean>()
+    }
 
-    function connectBitwig() {
-        logWithTime('Connecting to Bitwig...');
-        try {
-            bitwigClient = new net.Socket();
-            bitwigClient!.connect(SOCKET_PORT, '127.0.0.1', function () {
-                logWithTime('Connected to Bitwig');
-                bitwigConnected = true;
-            });
-            bitwigClient!.on('data', data => bitwigToClientQueue.push({data}))
-            bitwigClient!.on('close', function () {
-                logWithTime('Connection to Bitwig closed, reconnecting...');
-                bitwigConnected = false;
-                bitwigClient = null
-                waiting = 0
+    activate() {
+        const WebSocket = require('ws');
+        const net = require('net');
+        const wss = new WebSocket.Server({ port: WEBSOCKET_PORT });
+
+        const connectBitwig = () => {
+            logWithTime('Connecting to Bitwig...');
+            try {
+                bitwigClient = new net.Socket();
+                bitwigClient.connect(SOCKET_PORT, '127.0.0.1', () => {
+                    logWithTime('Connected to Bitwig');
+                    this.events.connected.emit(true)
+                    bitwigConnected = true;
+                });
+                bitwigClient.on('data', data => bitwigToClientQueue.push({data}))
+                bitwigClient.on('error', err => {
+                    console.error(err)
+                })
+                bitwigClient.on('close', () => {
+                    logWithTime('Connection to Bitwig closed, reconnecting...');
+                    bitwigConnected = false;
+                    bitwigClient = null
+                    this.events.connected.emit(false)
+                    waiting = 0
+                    setTimeout(() => {
+                        connectBitwig();
+                    }, RECONNECT_IN);
+                });
+            } catch (e) {
+                console.error(e);
                 setTimeout(() => {
                     connectBitwig();
                 }, RECONNECT_IN);
+            }
+        }
+        connectBitwig();
+        
+        wss.on('connection', ws => {
+            activeWebsocket = ws;
+            logWithTime('Browser connected');
+            ws.on('message', messageFromBrowser => {
+                if (logInOut) logWithTime('Browser sent: ', messageFromBrowser);
+                try {
+                    processInterceptors(messageFromBrowser, toBWInterceptors)
+                    sendToBitwig(messageFromBrowser)
+                } catch (e) {
+                    console.error("Invalid packet from browser", e)
+                } 
             });
-        }
-        catch (e) {
-            console.error(e);
-            setTimeout(() => {
-                connectBitwig();
-            }, RECONNECT_IN);
-        }
+            ws.on('close', () => {
+                logWithTime('Connection to browser lost. Waiting for reconnection...');
+                activeWebsocket = null;
+            });
+        });
     }
-    connectBitwig();
-    
-    wss.on('connection', ws => {
-        activeWebsocket = ws;
-        logWithTime('Browser connected');
-        ws.on('message', messageFromBrowser => {
-            if (logInOut) logWithTime('Browser sent: ', messageFromBrowser);
-            try {
-                processInterceptors(messageFromBrowser, toBWInterceptors)
-                sendToBitwig(messageFromBrowser)
-            } catch (e) {
-                console.error("Invalid packet from browser", e)
-            } 
-        });
-        ws.on('close', () => {
-            logWithTime('Connection to browser lost. Waiting for reconnection...');
-            activeWebsocket = null;
-        });
-    });
 }
 
 function sendToBitwig(str) {
