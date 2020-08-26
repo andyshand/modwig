@@ -3,7 +3,8 @@
 #include <CoreGraphics/CoreGraphics.h>
 #include <ApplicationServices/ApplicationServices.h>
 
-AXUIElementRef cachedRef;
+AXUIElementRef cachedBitwigRef;
+AXUIElementRef cachedPluginHostRef;
 
 bool AccessibilityEnabled() {
     auto dict = CFDictionaryCreate(NULL, 
@@ -18,14 +19,14 @@ bool AccessibilityEnabled() {
     return trusted;
 }
 
-pid_t GetPID() {
+pid_t GetPID(std::string name) {
     // Go through all on screen windows, find BW
     CFArrayRef array = CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements, kCGNullWindowID);
     CFIndex count = CFArrayGetCount(array);
     for (CFIndex i = 0; i < count; i++) {
         CFDictionaryRef dict = (CFDictionaryRef)CFArrayGetValueAtIndex(array, i);
         auto str = CFStringToString((CFStringRef)CFDictionaryGetValue(dict, kCGWindowOwnerName));
-        if (str == "Bitwig Studio") {
+        if (str == name) {
             CFNumberRef ownerPidRef = (CFNumberRef) CFDictionaryGetValue(dict, kCGWindowOwnerPID);
             pid_t ownerPid;
             CFNumberGetValue(ownerPidRef, kCFNumberSInt32Type, &ownerPid);
@@ -35,29 +36,46 @@ pid_t GetPID() {
     return -1;
 }
 
-AXUIElementRef GetAXUIElement() {
+AXUIElementRef GetAXUIElement(std::string name) {
+    auto pid = GetPID(name);
+    if (pid == -1) {
+        return NULL;
+    }
+    return AXUIElementCreateApplication(pid);
+}
+
+bool refIsValidOrRelease(AXUIElementRef cachedRef) {
     if (cachedRef != NULL) {
         // Try to get a property so we can check if our ref is invalid
         CFBooleanRef isFrontmost;
         AXError result = AXUIElementCopyAttributeValue(cachedRef, kAXFrontmostAttribute, (CFTypeRef*) &isFrontmost);
         if (result != kAXErrorInvalidUIElement) {
-            return cachedRef;
+            return true;
         } else {
             CFRelease(cachedRef);
+            return false;
         }
     }
+    return false;
+}
 
-    auto pid = GetPID();
-    if (pid == -1) {
-        return NULL;
+AXUIElementRef GetBitwigAXUIElement() {
+    if (!refIsValidOrRelease(cachedBitwigRef)) {
+        cachedBitwigRef = GetAXUIElement("Bitwig Studio");
     }
-    cachedRef = AXUIElementCreateApplication(pid);
-    return cachedRef;
+    return cachedBitwigRef;
+}
+
+AXUIElementRef GetPluginAXUIElement() {
+    if (!refIsValidOrRelease(cachedPluginHostRef)) {
+        cachedPluginHostRef = GetAXUIElement("Bitwig Plug-in Host 64");
+    }
+    return cachedPluginHostRef;
 }
 
 Napi::Value IsActiveApplication(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
-    auto element = GetAXUIElement();
+    auto element = GetBitwigAXUIElement();
     if (!element) {
         return Napi::Boolean::New(env, false);
     }
@@ -66,10 +84,34 @@ Napi::Value IsActiveApplication(const Napi::CallbackInfo &info) {
     return Napi::Boolean::New(env, isFrontmost == kCFBooleanTrue);
 }
 
+Napi::Value CloseFloatingWindows(const Napi::CallbackInfo &info) {
+    Napi::Env env = info.Env();
+    auto elementRef = GetPluginAXUIElement();
+    if (elementRef) {     
+        CFArrayRef windowArray = nil;
+        AXUIElementCopyAttributeValue(elementRef, kAXWindowsAttribute, (CFTypeRef*)&windowArray);
+        if (windowArray != nil) { 
+            CFIndex nItems = CFArrayGetCount(windowArray);
+            for (int i = 0; i < nItems; i++) {
+                AXUIElementRef itemRef = (AXUIElementRef) CFArrayGetValueAtIndex(windowArray, i);
+                AXUIElementRef buttonRef = nil;
+
+                AXUIElementCopyAttributeValue(itemRef, kAXCloseButtonAttribute, (CFTypeRef*)&buttonRef);
+                AXUIElementPerformAction(buttonRef, kAXPressAction);
+                CFRelease(buttonRef);
+            }
+
+            CFRelease(windowArray);
+        }
+    }
+    return Napi::Boolean::New(env, true);
+}
+
 Napi::Value InitBitwig(Napi::Env env, Napi::Object exports)
 {
     Napi::Object obj = Napi::Object::New(env);
     obj.Set(Napi::String::New(env, "isActiveApplication"), Napi::Function::New(env, IsActiveApplication));
+    obj.Set(Napi::String::New(env, "closeFloatingWindows"), Napi::Function::New(env, CloseFloatingWindows));
     exports.Set("Bitwig", obj);
     return exports;
 }

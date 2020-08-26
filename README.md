@@ -16,11 +16,12 @@ It is currently **Mac only**, but is built with cross-platform support in mind.
 ### Global
 
 - [x] Track Search (Ctrl+Space)
-- [x] Track Back/Forward (Ctrl+'-'/Shift+'-')
+- [x] Track Back/Forward (F1/F2)
+- [x] Close All Plugin Windows (Double-tap Escape)
 
 ### Automation
 
-- [-] Type value for selected points (F1)
+- [ ] Type value for selected points (F1)
 
 ### Modulation
 

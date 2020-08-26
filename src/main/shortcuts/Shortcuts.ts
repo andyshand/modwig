@@ -1,7 +1,8 @@
 import { sendPacketToBitwig } from "../core/WebsocketToSocket"
 
-const { Keyboard, Bitwig } = require('bindings')('bes')
+const { Keyboard, MainWindow, Bitwig } = require('bindings')('bes')
 
+let lastEscape = new Date()
 /**
  * With value entry we don't actually pass any value to Bitwig, rather we click and focus
  * a Bitwig field for input, and then relay the typed keys to our own view in the center of the screen -
@@ -22,6 +23,14 @@ export function setupShortcuts() {
                     type: 'tracksearch/confirm',
                     data: `Master`
                 })
+            } else if (lowerKey === 'Escape') {
+                if (new Date().getTime() - lastEscape.getTime() < 250) {
+                    // Double-tapped escape
+                    Bitwig.closeFloatingWindows()
+                    lastEscape = new Date(0)
+                } else {
+                    lastEscape = new Date()
+                }
             } else if (lowerKey === 'w' && event.Control) {
                 Keyboard.keyPress('ArrowUp')
             } else if (lowerKey === 'a' && event.Control) {
