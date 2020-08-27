@@ -73,21 +73,8 @@ AXUIElementRef GetPluginAXUIElement() {
     return cachedPluginHostRef;
 }
 
-Napi::Value IsActiveApplication(const Napi::CallbackInfo &info) {
-    Napi::Env env = info.Env();
-    auto element = GetBitwigAXUIElement();
-    if (!element) {
-        return Napi::Boolean::New(env, false);
-    }
-    CFBooleanRef isFrontmost;
-    AXUIElementCopyAttributeValue(element, kAXFrontmostAttribute, (CFTypeRef*) &isFrontmost);
-    return Napi::Boolean::New(env, isFrontmost == kCFBooleanTrue);
-}
-
-Napi::Value CloseFloatingWindows(const Napi::CallbackInfo &info) {
-    Napi::Env env = info.Env();
-    auto elementRef = GetPluginAXUIElement();
-    if (elementRef) {     
+void closeWindowsForAXUIElement(AXUIElementRef elementRef) {
+    if (elementRef != NULL) {
         CFArrayRef windowArray = nil;
         AXUIElementCopyAttributeValue(elementRef, kAXWindowsAttribute, (CFTypeRef*)&windowArray);
         if (windowArray != nil) { 
@@ -104,6 +91,28 @@ Napi::Value CloseFloatingWindows(const Napi::CallbackInfo &info) {
             CFRelease(windowArray);
         }
     }
+}
+
+bool isAXUIElementActiveApp(AXUIElementRef element) {
+    if (!element) {
+        return false;
+    }
+    CFBooleanRef isFrontmost;
+    AXUIElementCopyAttributeValue(element, kAXFrontmostAttribute, (CFTypeRef*) &isFrontmost);
+    return isFrontmost == kCFBooleanTrue;
+}
+
+Napi::Value IsActiveApplication(const Napi::CallbackInfo &info) {
+    Napi::Env env = info.Env();
+    return Napi::Boolean::New(
+        env, 
+        isAXUIElementActiveApp(GetBitwigAXUIElement()) || isAXUIElementActiveApp(GetPluginAXUIElement())
+    );
+}
+
+Napi::Value CloseFloatingWindows(const Napi::CallbackInfo &info) {
+    Napi::Env env = info.Env();
+    closeWindowsForAXUIElement(GetPluginAXUIElement());
     return Napi::Boolean::New(env, true);
 }
 
