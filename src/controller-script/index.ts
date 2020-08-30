@@ -212,7 +212,7 @@ class GlobalController extends Controller {
                         // Group tracks bug out when you make them visible,
                         // vertically centering on their child content and not 
                         // actually showing the group
-                        t.makeVisibleInArranger()
+                        // t.makeVisibleInArranger()
                     }
                 }
                 this.deps.packetManager.send({

@@ -41,15 +41,15 @@ export function setupShortcuts() {
                 Keyboard.keyPress('ArrowRight')
             }
         } else {
-            if (lowerKey === 'z' && event.Meta && !event.Shift) {
-                sendPacketToBitwig({
-                    type: 'application/undo'
-                })
-            } else if (lowerKey === 'z' && event.Meta && event.Shift) {
-                sendPacketToBitwig({
-                    type: 'application/redo'
-                })
-            }
+            // if (lowerKey === 'z' && event.Meta && !event.Shift) {
+            //     sendPacketToBitwig({
+            //         type: 'application/undo'
+            //     })
+            // } else if (lowerKey === 'z' && event.Meta && event.Shift) {
+            //     sendPacketToBitwig({
+            //         type: 'application/redo'
+            //     })
+            // }
         }
     })
 }

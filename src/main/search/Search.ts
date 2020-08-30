@@ -126,15 +126,20 @@ export async function setupNavigation() {
     })
     interceptPacket('trackselected', undefined, async ({ data: { name: newTrackName, selected, project }}) => {
         if (selected) {
-            if (currTrack && currProject) {
-                saveScrollForTrack(currTrackScroll, currTrack, currProject)
+            if (newTrackName === 'Master') {
+                // Fix for timeline click bug
+                sendPacketToBitwig({type: 'tracknavigation/back'})
+            } else {
+                if (currTrack && currProject) {
+                    saveScrollForTrack(currTrackScroll, currTrack, currProject)
+                }
+                currProject = project.name
+                currTrackScroll = await loadScrollForTrack(newTrackName, currProject!)
+                if (currTrackScroll > 0) {
+                    doScroll(currTrackScroll)
+                }
+                waitingToScroll = false
             }
-            currProject = project.name
-            currTrackScroll = await loadScrollForTrack(newTrackName, currProject!)
-            if (currTrackScroll > 0) {
-                doScroll(currTrackScroll)
-            }
-            waitingToScroll = false
             currTrack = newTrackName
         }
     })
