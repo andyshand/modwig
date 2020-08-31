@@ -432,6 +432,12 @@ class BrowserController extends Controller {
         pb.exists().markInterested()
         pb.exists().addValueObserver(exists => {
             this.isOpen = exists
+            packetManager.send({
+                type: "browser/state", 
+                data: {
+                    isOpen: exists
+                }
+            })
         })
         pb.selectedContentTypeIndex().markInterested()
         const filterColumns = [
@@ -445,6 +451,10 @@ class BrowserController extends Controller {
             pb.creatorColumn(),
             // pb.resultsColumn()
         ]
+        const resultsItemBank = pb.resultsColumn().createItemBank(1)
+        const resultsCursorItem = pb.resultsColumn().createCursorItem()
+        resultsCursorItem.isSelected().markInterested()
+        
         this.columnData = filterColumns.map(col => {
             const wildCard = col.getWildcardItem()
             wildCard.isSelected().markInterested()
@@ -453,13 +463,17 @@ class BrowserController extends Controller {
                 reset: () =>  wildCard.isSelected().set(true)
             }
         })
-
         packetManager.listen('browser/confirm', isOpenCb(() => this.popupBrowser.commit()))
+        packetManager.listen('browser/select-and-confirm', isOpenCb(() => {
+            if (!resultsCursorItem.isSelected().get()) {
+                this.popupBrowser.selectNextFile()
+            }
+            this.popupBrowser.commit()
+        }))
         packetManager.listen('browser/filters/clear', isOpenCb(() => {
             for (const col of this.columnData) {
                 col.reset()
             }
-            pb.selectFirstFile()
             runAction('focus_browser_search_field')
         }))
         packetManager.listen('browser/tabs/next', isOpenCb(() => {
