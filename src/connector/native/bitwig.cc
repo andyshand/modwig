@@ -5,6 +5,7 @@
 
 AXUIElementRef cachedBitwigRef;
 AXUIElementRef cachedPluginHostRef;
+pid_t pluginHostPID = -1;
 
 bool AccessibilityEnabled() {
     auto dict = CFDictionaryCreate(NULL, 
@@ -66,9 +67,20 @@ AXUIElementRef GetBitwigAXUIElement() {
     return cachedBitwigRef;
 }
 
+bool pidIsAlive(pid_t pid)  {
+    return 0 == kill(pid, 0);
+}
+
 AXUIElementRef GetPluginAXUIElement() {
-    if (!refIsValidOrRelease(cachedPluginHostRef)) {
-        cachedPluginHostRef = GetAXUIElement("Bitwig Plug-in Host 64");
+    if (pluginHostPID == -1 || !pidIsAlive(pluginHostPID)) {
+        if (cachedPluginHostRef != NULL) {
+            CFRelease(cachedPluginHostRef);
+            cachedPluginHostRef = NULL;
+        }
+        pluginHostPID = GetPID("Bitwig Plug-in Host 64");
+        if (pluginHostPID != -1) {
+            cachedPluginHostRef = AXUIElementCreateApplication(pluginHostPID);
+        }
     }
     return cachedPluginHostRef;
 }
