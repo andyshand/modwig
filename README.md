@@ -24,6 +24,7 @@ It is currently **Mac only**, but is built with cross-platform support in mind.
 ### Browser
 
 - [x] Open Popup Browser (regardless of panel focus): B
+- [x] Auto-select first result when confirming
 - [x] Next/Previous Tab (regardless of focus): Ctrl+ArrowLeft/ArrowRight
 - [x] Select Specific Tab: Meta+1/2/3/4/5
 - [x] Clear All Filters: Meta+Escape
