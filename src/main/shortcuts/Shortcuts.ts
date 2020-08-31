@@ -51,7 +51,6 @@ export class ShortcutsService extends BESService {
                             `Select All`
                         ]
                     })
-                    
                 } else if (lowerKey === 'Enter' && noMods) {
                     sendPacketToBitwig({
                         type: this.browserText.length > 0 ? 'browser/select-and-confirm' : 'browser/confirm'

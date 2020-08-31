@@ -429,9 +429,17 @@ class BrowserController extends Controller {
         const isOpenCb = cb => (...args) => {
             if (this.isOpen) cb(...args)
         }
+        const clearFilters = () => {
+            for (const col of this.columnData) {
+                col.reset()
+            }
+        }
         pb.exists().markInterested()
         pb.exists().addValueObserver(exists => {
             this.isOpen = exists
+            if (exists) {
+                clearFilters()
+            }
             packetManager.send({
                 type: "browser/state", 
                 data: {
@@ -454,7 +462,12 @@ class BrowserController extends Controller {
         const resultsItemBank = pb.resultsColumn().createItemBank(1)
         const resultsCursorItem = pb.resultsColumn().createCursorItem()
         resultsCursorItem.isSelected().markInterested()
-        
+        const selectIfNone = () => {
+            if (!resultsCursorItem.isSelected().get()) {
+                this.popupBrowser.selectNextFile()
+            }
+        }
+       
         this.columnData = filterColumns.map(col => {
             const wildCard = col.getWildcardItem()
             wildCard.isSelected().markInterested()
@@ -463,29 +476,32 @@ class BrowserController extends Controller {
                 reset: () =>  wildCard.isSelected().set(true)
             }
         })
+        
         packetManager.listen('browser/confirm', isOpenCb(() => this.popupBrowser.commit()))
         packetManager.listen('browser/select-and-confirm', isOpenCb(() => {
-            if (!resultsCursorItem.isSelected().get()) {
-                this.popupBrowser.selectNextFile()
-            }
+            selectIfNone()
             this.popupBrowser.commit()
         }))
         packetManager.listen('browser/filters/clear', isOpenCb(() => {
-            for (const col of this.columnData) {
-                col.reset()
-            }
+            clearFilters()
             runAction('focus_browser_search_field')
         }))
         packetManager.listen('browser/tabs/next', isOpenCb(() => {
             pb.selectedContentTypeIndex().inc(1)
+            clearFilters()
+            selectIfNone()
             runAction('focus_browser_search_field')
         }))
         packetManager.listen('browser/tabs/set', isOpenCb(({ data }) => {
             pb.selectedContentTypeIndex().set(data)
+            clearFilters()
+            selectIfNone()
             runAction('focus_browser_search_field')
         }))
         packetManager.listen('browser/tabs/previous', isOpenCb(() => {
             pb.selectedContentTypeIndex().inc(-1)
+            clearFilters()
+            selectIfNone()
             runAction('focus_browser_search_field')
         }))
     }
