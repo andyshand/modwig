@@ -41,7 +41,7 @@ export class ShortcutsService extends BESService {
                     } else {
                         lastEscape = new Date()
                     }
-                } else if (lowerKey === 'b') {
+                } else if (lowerKey === 'b' && !this.browserIsOpen) {
                     sendPacketToBitwig({
                         type: 'action',
                         data: [
