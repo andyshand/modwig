@@ -10,7 +10,9 @@ let lastEscape = new Date()
  */
 export function setupShortcuts() {
     const listenerId = Keyboard.addEventListener('keydown', event => {
-        const { lowerKey, nativeKeyCode, Meta } = event
+        const { lowerKey, nativeKeyCode, Meta, Control, Alt } = event
+        // console.log(lowerKey, event.Meta, event.Control)
+        const noMods = !(Meta || Control || Alt)
 
         if (Bitwig.isActiveApplication()) {
             if (nativeKeyCode === 10 && Meta) {
@@ -23,7 +25,7 @@ export function setupShortcuts() {
                     type: 'tracksearch/confirm',
                     data: `Master`
                 })
-            } else if (lowerKey === 'Escape') {
+            } else if (lowerKey === 'Escape' && !event.Meta) {
                 if (new Date().getTime() - lastEscape.getTime() < 250) {
                     // Double-tapped escape
                     Bitwig.closeFloatingWindows()
@@ -39,6 +41,47 @@ export function setupShortcuts() {
                         `focus_or_toggle_device_panel`,
                         `show_insert_popup_browser`
                     ]
+                })
+            } else if (lowerKey === 'Enter' && noMods) {
+                sendPacketToBitwig({
+                    type: 'browser/confirm'
+                })
+            } else if (lowerKey === 'Escape' && event.Meta) {
+                sendPacketToBitwig({
+                    type: 'browser/filters/clear'
+                })
+            } else if (lowerKey === 'ArrowLeft' && event.Control) {
+                sendPacketToBitwig({
+                    type: 'browser/tabs/previous'
+                })
+            } else if (lowerKey === '1' && event.Meta) {
+                sendPacketToBitwig({
+                    type: 'browser/tabs/set',
+                    data: 0
+                })
+            } else if (lowerKey === '2' && event.Meta) {
+                sendPacketToBitwig({
+                    type: 'browser/tabs/set',
+                    data: 1
+                })
+            } else if (lowerKey === '3' && event.Meta) {
+                sendPacketToBitwig({
+                    type: 'browser/tabs/set',
+                    data: 2
+                })
+            } else if (lowerKey === '4' && event.Meta) {
+                sendPacketToBitwig({
+                    type: 'browser/tabs/set',
+                    data: 3
+                })
+            } else if (lowerKey === '5' && event.Meta) {
+                sendPacketToBitwig({
+                    type: 'browser/tabs/set',
+                    data: 4
+                })
+            } else if (lowerKey === 'ArrowRight' && event.Control) {
+                sendPacketToBitwig({
+                    type: 'browser/tabs/next'
                 })
             } else if (lowerKey === 'w' && event.Control) {
                 Keyboard.keyPress('ArrowUp')

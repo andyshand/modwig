@@ -16,6 +16,7 @@ const CUE_MARKER_BANK_SIZE = 32
 host.setShouldFailOnDeprecatedUse(true);
 host.defineController("andy shand", "Bitwig Enhancement Suite", "0.1", "b90a4894-b89c-40b9-b372-e1e8659699df", "andy shand");
 
+let app: any
 let connection: any
 
 type Packet = {
@@ -37,6 +38,15 @@ class EventEmitter<T> {
         for (const listener of Object2.values(this.listenersById)) {
             listener(value)
         }
+    }
+}
+
+function runAction(actionName: string) {
+    const action = app.getAction(actionName)
+    if (action) {
+        action.invoke()
+    } else {
+        host.showPopupNotification(`Action ${actionName} not found`)
     }
 }
 
@@ -69,12 +79,7 @@ class PacketManager {
                     if (packet.type === 'action') {
                         const actions = typeof packet.data === 'object' ? packet.data : [packet.data]
                         for (const actionName of actions) {
-                            const action = app.getAction(actionName)
-                            if (action) {
-                                action.invoke()
-                            } else {
-                                host.showPopupNotification(`Action ${packet.data} not found`)
-                            }
+                            runAction(actionName)
                         }
                     }
                     // host.showPopupNotification(packet.type)
@@ -412,6 +417,66 @@ class TrackSearchController extends Controller {
     }
 }
 
+class BrowserController extends Controller {
+    popupBrowser: any
+    isOpen = false
+    columnData = []
+    constructor(deps) {
+        super(deps)
+        const { packetManager, globalController } = deps
+        this.popupBrowser = host.createPopupBrowser()
+        const pb = this.popupBrowser
+        const isOpenCb = cb => (...args) => {
+            if (this.isOpen) cb(...args)
+        }
+        pb.exists().markInterested()
+        pb.exists().addValueObserver(exists => {
+            this.isOpen = exists
+        })
+        pb.selectedContentTypeIndex().markInterested()
+        const filterColumns = [
+            pb.smartCollectionColumn(),
+            pb.locationColumn(),
+            pb.deviceColumn(),
+            pb.categoryColumn(),
+            pb.tagColumn(),
+            pb.deviceTypeColumn(),
+            pb.fileTypeColumn(),
+            pb.creatorColumn(),
+            // pb.resultsColumn()
+        ]
+        this.columnData = filterColumns.map(col => {
+            const wildCard = col.getWildcardItem()
+            wildCard.isSelected().markInterested()
+            return {
+                wildCard,
+                reset: () =>  wildCard.isSelected().set(true)
+            }
+        })
+
+        packetManager.listen('browser/confirm', isOpenCb(() => this.popupBrowser.commit()))
+        packetManager.listen('browser/filters/clear', isOpenCb(() => {
+            for (const col of this.columnData) {
+                col.reset()
+            }
+            pb.selectFirstFile()
+            runAction('focus_browser_search_field')
+        }))
+        packetManager.listen('browser/tabs/next', isOpenCb(() => {
+            pb.selectedContentTypeIndex().inc(1)
+            runAction('focus_browser_search_field')
+        }))
+        packetManager.listen('browser/tabs/set', isOpenCb(({ data }) => {
+            pb.selectedContentTypeIndex().set(data)
+            runAction('focus_browser_search_field')
+        }))
+        packetManager.listen('browser/tabs/previous', isOpenCb(() => {
+            pb.selectedContentTypeIndex().inc(-1)
+            runAction('focus_browser_search_field')
+        }))
+    }
+}
+
 class BackForwardController extends Controller {
     trackHistory: {name: string}[] = []
     historyIndex = -1
@@ -481,7 +546,7 @@ function convertBWColorToHex(color) {
 function init() {
     // var app = host.createApplication()
     const transport = host.createTransport()
-    const app = host.createApplication()
+    app = host.createApplication()
     const arranger = host.createArranger()
 
     connection = host.createRemoteConnection("name", 8888)
@@ -510,7 +575,10 @@ function init() {
     
     new TrackSearchController(deps)    
     new BackForwardController(deps)    
+    new BrowserController(deps)    
 
     deps.packetManager.listen('transport/play', () => transport.togglePlay())
     deps.packetManager.listen('transport/stop', () => transport.stop())
+
+    host.showPopupNotification("BES Connecting...");
 }
