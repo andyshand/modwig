@@ -18,6 +18,8 @@ It is currently **Mac only**, but is built with cross-platform support in mind.
 - [x] Track Search: Ctrl+Space
 - [x] Track Back/Forward: Meta+F1/F2
 - [x] Close All Plugin Windows: Double-tap Escape
+- [ ] Pass-through of keyboard shortcuts when plugin windows up front
+- [x] Exclusive-arm support
 
 ### Browser
 
@@ -30,6 +32,10 @@ It is currently **Mac only**, but is built with cross-platform support in mind.
 ### Automation
 
 - [x] Type value for selected points (F1)
+
+### Bitwig Bug Fixes
+
+- [x] Incorrect automation state on playback stop (playback position not reset)
 
 # Setup (Coming Soon)
 
