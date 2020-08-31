@@ -67,11 +67,14 @@ class PacketManager {
                         return this.send({type: 'pong'})
                     }
                     if (packet.type === 'action') {
-                        const action = app.getAction(packet.data)
-                        if (action) {
-                            action.invoke()
-                        } else {
-                            host.showPopupNotification(`Action ${packet.data} not found`)
+                        const actions = typeof packet.data === 'object' ? packet.data : [packet.data]
+                        for (const actionName of actions) {
+                            const action = app.getAction(actionName)
+                            if (action) {
+                                action.invoke()
+                            } else {
+                                host.showPopupNotification(`Action ${packet.data} not found`)
+                            }
                         }
                     }
                     // host.showPopupNotification(packet.type)

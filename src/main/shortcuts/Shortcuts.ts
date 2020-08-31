@@ -31,6 +31,15 @@ export function setupShortcuts() {
                 } else {
                     lastEscape = new Date()
                 }
+            } else if (lowerKey === 'b') {
+                sendPacketToBitwig({
+                    type: 'action',
+                    data: [
+                        `focus_or_toggle_detail_editor`,
+                        `focus_or_toggle_device_panel`,
+                        `show_insert_popup_browser`
+                    ]
+                })
             } else if (lowerKey === 'w' && event.Control) {
                 Keyboard.keyPress('ArrowUp')
             } else if (lowerKey === 'a' && event.Control) {

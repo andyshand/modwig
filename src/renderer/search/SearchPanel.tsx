@@ -5,6 +5,11 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faFont, faMapPin, faInfo, faLock } from '@fortawesome/free-solid-svg-icons'
 import { send, getTrackById, getTransportPosition, getCueMarkerAtPosition, getCueMarkersAtPosition } from '../bitwig-api/Bitwig'
 const { app } = require('electron').remote
+const w = window as any
+w.runAction = function(action) {
+    send({type: 'action', data: action})
+}
+
 const SearchPanelWrap = styled.div`
     position: fixed;
     top: 0;
