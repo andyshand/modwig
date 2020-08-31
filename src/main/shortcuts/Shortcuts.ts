@@ -104,17 +104,15 @@ export class ShortcutsService extends BESService {
                     // Typing in browser
                     this.browserText += lowerKey
                 }
-            } else {
-                // if (lowerKey === 'z' && event.Meta && !event.Shift) {
-                //     sendPacketToBitwig({
-                //         type: 'application/undo'
-                //     })
-                // } else if (lowerKey === 'z' && event.Meta && event.Shift) {
-                //     sendPacketToBitwig({
-                //         type: 'application/redo'
-                //     })
-                // }
-            }
+                if (Bitwig.isPluginWindowActive()) {
+                    if (lowerKey === 'r' && noMods) {
+                        sendPacketToBitwig({
+                            type: 'action',
+                            data: 'Toggle Record'
+                        })
+                    }
+                }
+            } 
         })
     }
 }

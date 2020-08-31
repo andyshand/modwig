@@ -110,6 +110,14 @@ Napi::Value IsActiveApplication(const Napi::CallbackInfo &info) {
     );
 }
 
+Napi::Value IsPluginWindowActive(const Napi::CallbackInfo &info) {
+    Napi::Env env = info.Env();
+    return Napi::Boolean::New(
+        env, 
+        isAXUIElementActiveApp(GetPluginAXUIElement())
+    );
+}
+
 Napi::Value CloseFloatingWindows(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
     closeWindowsForAXUIElement(GetPluginAXUIElement());
@@ -120,6 +128,7 @@ Napi::Value InitBitwig(Napi::Env env, Napi::Object exports)
 {
     Napi::Object obj = Napi::Object::New(env);
     obj.Set(Napi::String::New(env, "isActiveApplication"), Napi::Function::New(env, IsActiveApplication));
+    obj.Set(Napi::String::New(env, "isPluginWindowActive"), Napi::Function::New(env, IsPluginWindowActive));
     obj.Set(Napi::String::New(env, "closeFloatingWindows"), Napi::Function::New(env, CloseFloatingWindows));
     exports.Set("Bitwig", obj);
     return exports;
