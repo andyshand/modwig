@@ -47,9 +47,11 @@ export class ShortcutsService extends BESService {
                         data: [
                             `focus_or_toggle_detail_editor`,
                             `focus_or_toggle_device_panel`,
-                            `show_insert_popup_browser`
+                            `show_insert_popup_browser`,
+                            `Select All`
                         ]
                     })
+                    
                 } else if (lowerKey === 'Enter' && noMods) {
                     sendPacketToBitwig({
                         type: this.browserText.length > 0 ? 'browser/select-and-confirm' : 'browser/confirm'
