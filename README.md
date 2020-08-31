@@ -15,17 +15,20 @@ It is currently **Mac only**, but is built with cross-platform support in mind.
 
 ### Global
 
-- [x] Track Search (Ctrl+Space)
-- [x] Track Back/Forward (F1/F2)
-- [x] Close All Plugin Windows (Double-tap Escape)
+- [x] Track Search: Ctrl+Space
+- [x] Track Back/Forward: Meta+F1/F2
+- [x] Close All Plugin Windows: Double-tap Escape
+
+### Browser
+
+- [x] Next/Previous Tab (regardless of focus): Ctrl+ArrowLeft/ArrowRight
+- [x] Select Specific Tab: Meta+1/2/3/4/5
+- [x] Clear All Filters: Meta+Escape
+- [x] Confirm Selection (including empty selection): Enter
 
 ### Automation
 
-- [ ] Type value for selected points (F1)
-
-### Modulation
-
-- [ ] Type modulation amount for first modulation
+- [x] Type value for selected points (F1)
 
 # Setup (Coming Soon)
 
