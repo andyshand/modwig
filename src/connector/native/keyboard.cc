@@ -29,6 +29,7 @@ std::map<int,std::string> macKeycodeMap = {
   {0x07, "x"},
   {0x08, "c"},
   {0x09, "v"},
+  {0x0A, "§"},
   {0x0B, "b"},
   {0x0C, "q"},
   {0x0D, "w"},

@@ -19,18 +19,17 @@ export class ShortcutsService extends BESService {
 
         Keyboard.addEventListener('keydown', event => {
             const { lowerKey, nativeKeyCode, Meta, Shift, Control, Alt } = event
-            // console.log(lowerKey, event.Meta, Control)
+            // console.log(lowerKey, nativeKeyCode, event.Meta, Control)
             const noMods = !(Meta || Control || Alt)
     
             if (Bitwig.isActiveApplication()) {
-                if (nativeKeyCode === 10 && Meta) {
-                    sendPacketToBitwig({
-                        type: 'tracksearch/confirm',
-                        data: `mixing`
-                    })
-                } else if (lowerKey === 'F6') {
+                if (lowerKey === 'F6') {
                     sendPacketToBitwig({
                         type: 'bugfix/buzzing'
+                    })
+                } else if (lowerKey === '§' && Meta) {
+                    sendPacketToBitwig({
+                        type: 'devices/selected/layer/select-first'
                     })
                 } else if (lowerKey === '[' && Meta) {
                     sendPacketToBitwig({
@@ -54,15 +53,22 @@ export class ShortcutsService extends BESService {
                         lastEscape = new Date()
                     }
                 } else if (lowerKey === 'b' && !this.browserIsOpen) {
-                    sendPacketToBitwig({
-                        type: 'action',
-                        data: [
-                            `focus_or_toggle_detail_editor`,
-                            `focus_or_toggle_device_panel`,
-                            `show_insert_popup_browser`,
-                            `Select All`
-                        ]
-                    })
+                    if (Shift) {
+                        // insert at end of selected layer
+                        sendPacketToBitwig({
+                            type: 'devices/selected/layer/insert-at-end'
+                        })
+                    } else {
+                        sendPacketToBitwig({
+                            type: 'action',
+                            data: [
+                                `focus_or_toggle_detail_editor`,
+                                `focus_or_toggle_device_panel`,
+                                `show_insert_popup_browser`,
+                                `Select All`
+                            ]
+                        })
+                    }
                 } else if (lowerKey === 'Enter' && noMods) {
                     sendPacketToBitwig({
                         type: this.browserText.length > 0 ? 'browser/select-and-confirm' : 'browser/confirm'

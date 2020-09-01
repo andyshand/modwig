@@ -447,6 +447,7 @@ class DeviceController extends Controller {
     deviceChain
     deviceBank
     cursorTrack
+    cursorLayer
 
     mapDevices(cb) {
         for (let i = 0; i < DEVICE_BANK_SIZE; i++) {
@@ -498,6 +499,8 @@ class DeviceController extends Controller {
         this.cursorDevice.getCursorSlot().name().markInterested()
         this.cursorDevice.name().markInterested()
 
+        this.cursorLayer = this.cursorDevice.createCursorLayer()
+
         for (let i = 0; i < DEVICE_BANK_SIZE; i++) {
             const device = this.deviceBank.getDevice(i)
             device.isExpanded().markInterested()
@@ -547,11 +550,19 @@ class DeviceController extends Controller {
             }
         })
 
-        packetManager.listen('devices/selected/slot/enter', ({ data: i }) => {
+        packetManager.listen('devices/selected/slot/enter', () => {
             const slotName = this.cursorDevice.getCursorSlot().name().get()
             if (slotName) {
                 this.cursorDevice.selectFirstInSlot(slotName)
             }
+        })
+
+        packetManager.listen('devices/selected/layer/insert-at-end', () => {
+            this.cursorLayer.browseToInsertAtEndOfChain()
+        })
+
+        packetManager.listen('devices/selected/layer/select-first', () => {
+            this.cursorLayer.selectFirst()
         })
     }
 }
