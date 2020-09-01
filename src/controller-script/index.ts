@@ -12,8 +12,9 @@ load('Object2.js')
 const FX_TRACK_BANK_SIZE = 16
 const MAIN_TRACK_BANK_SIZE = 128
 const CUE_MARKER_BANK_SIZE = 32
+const DEVICE_BANK_SIZE = 16
 
-host.setShouldFailOnDeprecatedUse(true);
+host.setShouldFailOnDeprecatedUse(false);
 host.defineController("andy shand", "Bitwig Enhancement Suite", "0.1", "b90a4894-b89c-40b9-b372-e1e8659699df", "andy shand");
 
 let app: any
@@ -439,6 +440,92 @@ class BugFixController extends Controller {
     }
 }
 
+class DeviceController extends Controller {
+    trackSelectedWhenStarted: string = ''
+    active = false
+    cursorDevice
+    deviceChain
+    deviceBank
+    cursorTrack
+
+    mapDevices(cb) {
+        for (let i = 0; i < DEVICE_BANK_SIZE; i++) {
+            const device = this.deviceBank.getDevice(i)
+            if (device.exists().get()) {
+                cb(device, i)
+            }
+        }
+    }
+
+    constructor(deps) {
+        super(deps)
+        
+        const { packetManager, globalController } = deps
+
+        this.cursorTrack = host.createCursorTrack("Selected Track", "Selected Track", 0, 0, true)
+        this.cursorDevice = this.cursorTrack.createCursorDevice()
+        this.deviceChain = this.cursorDevice.deviceChain()
+        this.deviceBank = this.deviceChain.createDeviceBank(DEVICE_BANK_SIZE)
+
+        this.cursorDevice.isExpanded().markInterested()
+        this.cursorDevice.isRemoteControlsSectionVisible().markInterested()
+        this.cursorDevice.exists().markInterested()
+        this.cursorDevice.slotNames().markInterested()
+        this.cursorDevice.getCursorSlot().name().markInterested()
+
+        for (let i = 0; i < DEVICE_BANK_SIZE; i++) {
+            const device = this.deviceBank.getDevice(i)
+            device.isExpanded().markInterested()
+            device.isRemoteControlsSectionVisible().markInterested()
+            device.exists().markInterested()
+        }
+
+        packetManager.listen('devices/chain/collapse', () => {
+            this.mapDevices(device => {
+                device.isExpanded().set(false)
+                device.isRemoteControlsSectionVisible().set(false)
+            })            
+        })
+
+        packetManager.listen('devices/chain/expand', () => {
+            this.mapDevices(device => {
+                device.isExpanded().set(true)
+            })          
+        })
+
+        packetManager.listen('devices/selected/collapse', () => {
+            this.cursorDevice.isExpanded().set(false)
+            this.cursorDevice.isRemoteControlsSectionVisible().set(false)
+        })
+        
+        packetManager.listen('devices/selected/expand', () => {
+            this.cursorDevice.isExpanded().set(true)  
+        })
+
+        packetManager.listen('devices/selected/slot/select', ({ data: i }) => {
+            const slotName = this.cursorDevice.slotNames().get()[i]
+            if (slotName) {
+                const currentlySelected = this.cursorDevice.getCursorSlot().name().get()
+                if (currentlySelected === slotName) {
+                    // shortcut for browsing to insert at this slot (double tap slot shortcut)
+                    this.cursorDevice.getCursorSlot().browseToInsertAtEndOfChain()
+                } else {
+                    this.cursorDevice.getCursorSlot().selectSlot(slotName)
+                }
+            } else {
+                this.cursorDevice.selectParent()
+            }
+        })
+
+        packetManager.listen('devices/selected/slot/enter', ({ data: i }) => {
+            const slotName = this.cursorDevice.getCursorSlot().name().get()
+            if (slotName) {
+                this.cursorDevice.selectFirstInSlot(slotName)
+            }
+        })
+    }
+}
+
 class BrowserController extends Controller {
     popupBrowser: any
     isOpen = false
@@ -626,6 +713,7 @@ function init() {
     new BackForwardController(deps)    
     new BrowserController(deps)    
     new BugFixController(deps)    
+    new DeviceController(deps)    
 
     deps.packetManager.listen('transport/play', () => transport.togglePlay())
     deps.packetManager.listen('transport/stop', () => transport.stop())

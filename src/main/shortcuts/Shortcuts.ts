@@ -18,8 +18,8 @@ export class ShortcutsService extends BESService {
         })
 
         Keyboard.addEventListener('keydown', event => {
-            const { lowerKey, nativeKeyCode, Meta, Control, Alt } = event
-            // console.log(lowerKey, event.Meta, event.Control)
+            const { lowerKey, nativeKeyCode, Meta, Shift, Control, Alt } = event
+            // console.log(lowerKey, event.Meta, Control)
             const noMods = !(Meta || Control || Alt)
     
             if (Bitwig.isActiveApplication()) {
@@ -32,12 +32,20 @@ export class ShortcutsService extends BESService {
                     sendPacketToBitwig({
                         type: 'bugfix/buzzing'
                     })
+                } else if (lowerKey === '[' && Meta) {
+                    sendPacketToBitwig({
+                        type: `devices/${Shift ? `chain` : `selected`}/collapse`
+                    })
+                } else if (lowerKey === ']' && Meta) {
+                    sendPacketToBitwig({
+                        type: `devices/${Shift ? `chain` : `selected`}/expand`
+                    })
                 } else if (lowerKey === '9' && Meta) {
                     sendPacketToBitwig({
                         type: 'tracksearch/confirm',
                         data: `Master`
                     })
-                } else if (lowerKey === 'Escape' && !event.Meta) {
+                } else if (lowerKey === 'Escape' && !Meta) {
                     if (new Date().getTime() - lastEscape.getTime() < 250) {
                         // Double-tapped escape
                         Bitwig.closeFloatingWindows()
@@ -59,54 +67,49 @@ export class ShortcutsService extends BESService {
                     sendPacketToBitwig({
                         type: this.browserText.length > 0 ? 'browser/select-and-confirm' : 'browser/confirm'
                     })
-                } else if (lowerKey === 'Escape' && event.Alt) {
+                } else if (lowerKey === 'Escape' && Alt) {
                     sendPacketToBitwig({
                         type: 'browser/filters/clear'
                     })
-                } else if (lowerKey === 'Escape' && event.Meta) {
+                } else if (lowerKey === 'Escape' && Meta) {
                     sendPacketToBitwig({
                         type: this.browserText.length > 0 ? 'browser/select-and-confirm' : 'browser/confirm'
                     })
-                } else if (lowerKey === 'ArrowLeft' && event.Control) {
+                } else if (lowerKey === 'ArrowLeft' && Control) {
                     sendPacketToBitwig({
                         type: 'browser/tabs/previous'
                     })
-                } else if (lowerKey === '1' && event.Meta) {
+                } else if (!isNaN(parseInt(lowerKey))) {
+                    const i = parseInt(lowerKey) - 1
+                
+                    if (this.browserIsOpen) {
+                        // navigate browser tabs
+                        sendPacketToBitwig({
+                            type: 'browser/tabs/set',
+                            data: i
+                        })
+                    } else {
+                        // navigate device slots
+                        sendPacketToBitwig({
+                            type: 'devices/selected/slot/select',
+                            data: i
+                        })
+                    }
+                } else if (lowerKey === 'ArrowDown' && Meta) {
                     sendPacketToBitwig({
-                        type: 'browser/tabs/set',
-                        data: 0
+                        type: 'devices/selected/slot/enter'
                     })
-                } else if (lowerKey === '2' && event.Meta) {
-                    sendPacketToBitwig({
-                        type: 'browser/tabs/set',
-                        data: 1
-                    })
-                } else if (lowerKey === '3' && event.Meta) {
-                    sendPacketToBitwig({
-                        type: 'browser/tabs/set',
-                        data: 2
-                    })
-                } else if (lowerKey === '4' && event.Meta) {
-                    sendPacketToBitwig({
-                        type: 'browser/tabs/set',
-                        data: 3
-                    })
-                } else if (lowerKey === '5' && event.Meta) {
-                    sendPacketToBitwig({
-                        type: 'browser/tabs/set',
-                        data: 4
-                    })
-                } else if (lowerKey === 'ArrowRight' && event.Control) {
+                } else if (lowerKey === 'ArrowRight' && Control) {
                     sendPacketToBitwig({
                         type: 'browser/tabs/next'
                     })
-                } else if (lowerKey === 'w' && event.Control) {
+                } else if (lowerKey === 'w' && Control) {
                     Keyboard.keyPress('ArrowUp')
-                } else if (lowerKey === 'a' && event.Control) {
+                } else if (lowerKey === 'a' && Control) {
                     Keyboard.keyPress('ArrowLeft')
-                } else if (lowerKey === 's' && event.Control) {
+                } else if (lowerKey === 's' && Control) {
                     Keyboard.keyPress('ArrowDown')
-                } else if (lowerKey === 'd' && event.Control) {
+                } else if (lowerKey === 'd' && Control) {
                     Keyboard.keyPress('ArrowRight')
                 } else if (this.browserIsOpen && /[a-z]{1}/.test(lowerKey) && noMods) {
                     // Typing in browser

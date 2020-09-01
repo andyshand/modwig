@@ -21,6 +21,16 @@ It is currently **Mac only**, but is built with cross-platform support in mind.
 - [ ] Pass-through of keyboard shortcuts when plugin windows up front
 - [x] Exclusive-arm support
 
+### Devices
+
+- [x] Collapse selected device (except modulators): Meta+[
+- [x] Expand selected device (except modulators): Meta+]
+- [x] Collapse all devices in chain (except modulators): Meta+Shift+[
+- [x] Expand all devices in chain (except modulators): Meta+Shift+]
+- [x] Select slot: Meta+1/2/3
+- [x] Enter selected slot: Meta+ArrowDown
+- [x] Browse to insert at end of slot: Double-tap Meta+1/2/3
+
 ### Browser
 
 - [x] Open Popup Browser (regardless of panel focus): B
