@@ -28,6 +28,10 @@ export class ShortcutsService extends BESService {
                         type: 'tracksearch/confirm',
                         data: `mixing`
                     })
+                } else if (lowerKey === 'F6') {
+                    sendPacketToBitwig({
+                        type: 'bugfix/buzzing'
+                    })
                 } else if (lowerKey === '9' && Meta) {
                     sendPacketToBitwig({
                         type: 'tracksearch/confirm',
@@ -55,9 +59,13 @@ export class ShortcutsService extends BESService {
                     sendPacketToBitwig({
                         type: this.browserText.length > 0 ? 'browser/select-and-confirm' : 'browser/confirm'
                     })
-                } else if (lowerKey === 'Escape' && event.Meta) {
+                } else if (lowerKey === 'Escape' && event.Alt) {
                     sendPacketToBitwig({
                         type: 'browser/filters/clear'
+                    })
+                } else if (lowerKey === 'Escape' && event.Meta) {
+                    sendPacketToBitwig({
+                        type: this.browserText.length > 0 ? 'browser/select-and-confirm' : 'browser/confirm'
                     })
                 } else if (lowerKey === 'ArrowLeft' && event.Control) {
                     sendPacketToBitwig({
@@ -109,6 +117,16 @@ export class ShortcutsService extends BESService {
                         sendPacketToBitwig({
                             type: 'action',
                             data: 'Toggle Record'
+                        })
+                    } else if (lowerKey === 'w') {
+                        sendPacketToBitwig({
+                            type: 'action',
+                            data: 'Select previous track'
+                        })
+                    } else if (lowerKey === 's') {
+                        sendPacketToBitwig({
+                            type: 'action',
+                            data: 'Select next track'
                         })
                     }
                 }

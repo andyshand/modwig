@@ -216,6 +216,8 @@ class GlobalController extends Controller {
 
             t.addIsSelectedInEditorObserver(selected => {
                 if (selected) {
+                    // this is basically the hook for when selected track changes
+
                     if (t.trackType().get() !== "Group") {
                         // Group tracks bug out when you make them visible,
                         // vertically centering on their child content and not 
@@ -417,6 +419,26 @@ class TrackSearchController extends Controller {
     }
 }
 
+class BugFixController extends Controller {
+    trackSelectedWhenStarted: string = ''
+    active = false
+    constructor(deps) {
+        super(deps)
+        const wait = 40
+        const { packetManager, globalController } = deps
+        packetManager.listen('bugfix/buzzing', () => {
+            globalController.mapTracks((track, i) => {
+                host.scheduleTask(() => {
+                    track.solo().set(true)
+                }, wait * i)
+                host.scheduleTask(() => {
+                    track.solo().set(false)
+                }, wait * i + wait)
+            })
+        })
+    }
+}
+
 class BrowserController extends Controller {
     popupBrowser: any
     isOpen = false
@@ -603,6 +625,7 @@ function init() {
     new TrackSearchController(deps)    
     new BackForwardController(deps)    
     new BrowserController(deps)    
+    new BugFixController(deps)    
 
     deps.packetManager.listen('transport/play', () => transport.togglePlay())
     deps.packetManager.listen('transport/stop', () => transport.stop())
