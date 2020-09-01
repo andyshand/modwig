@@ -457,9 +457,33 @@ class DeviceController extends Controller {
         }
     }
 
+    reverseSlots = [
+        "Polysynth",
+        "Phase-4",
+        "Reverb",
+        "FM-4"
+    ]
+    deviceSlotMaps = {
+        'Multiband FX-3': {
+            1: 2,
+            2: 1
+        },
+        'Delay-4': {
+            3: 2,
+            2: 3
+        }
+    }
+
     constructor(deps) {
         super(deps)
         
+        for (const device of this.reverseSlots) {
+            this.deviceSlotMaps[device] = {
+                0: 1,
+                1: 0
+            }
+        }
+
         const { packetManager, globalController } = deps
 
         this.cursorTrack = host.createCursorTrack("Selected Track", "Selected Track", 0, 0, true)
@@ -472,6 +496,7 @@ class DeviceController extends Controller {
         this.cursorDevice.exists().markInterested()
         this.cursorDevice.slotNames().markInterested()
         this.cursorDevice.getCursorSlot().name().markInterested()
+        this.cursorDevice.name().markInterested()
 
         for (let i = 0; i < DEVICE_BANK_SIZE; i++) {
             const device = this.deviceBank.getDevice(i)
@@ -503,6 +528,11 @@ class DeviceController extends Controller {
         })
 
         packetManager.listen('devices/selected/slot/select', ({ data: i }) => {
+            const deviceName = this.cursorDevice.name().get()
+            if (deviceName in this.deviceSlotMaps) {
+                i = this.deviceSlotMaps[deviceName][i] ?? i
+            }
+
             const slotName = this.cursorDevice.slotNames().get()[i]
             if (slotName) {
                 const currentlySelected = this.cursorDevice.getCursorSlot().name().get()
