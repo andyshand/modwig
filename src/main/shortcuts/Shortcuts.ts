@@ -4,6 +4,7 @@ import { BESService } from "../core/Service"
 const { Keyboard, MainWindow, Bitwig } = require('bindings')('bes')
 
 let lastEscape = new Date()
+let renaming = false
 
 export class ShortcutsService extends BESService {
     browserIsOpen
@@ -21,8 +22,15 @@ export class ShortcutsService extends BESService {
             const { lowerKey, nativeKeyCode, Meta, Shift, Control, Alt } = event
             // console.log(lowerKey, nativeKeyCode, event.Meta, Control)
             const noMods = !(Meta || Control || Alt)
-    
-            if (Bitwig.isActiveApplication()) {
+
+            // Prevent shortcuts from triggering when renaming something
+            if (Bitwig.isActiveApplication() && lowerKey === 'r' && Meta) {
+                renaming = true
+            } else if (lowerKey === 'Enter' || lowerKey === 'Escape') {
+                renaming = false
+            }
+
+            if (Bitwig.isActiveApplication() && !renaming) {
                 if (lowerKey === 'F6') {
                     sendPacketToBitwig({
                         type: 'bugfix/buzzing'
@@ -30,6 +38,14 @@ export class ShortcutsService extends BESService {
                 } else if (lowerKey === '§' && Meta) {
                     sendPacketToBitwig({
                         type: 'devices/selected/layer/select-first'
+                    })
+                } else if (lowerKey === 'e' && Control) {
+                    sendPacketToBitwig({
+                        type: 'devices/selected/chain/insert-at-end'
+                    })
+                } else if (lowerKey === 'q' && Control) {
+                    sendPacketToBitwig({
+                        type: 'devices/selected/chain/insert-at-start'
                     })
                 } else if (lowerKey === '[' && Meta) {
                     sendPacketToBitwig({
@@ -95,11 +111,19 @@ export class ShortcutsService extends BESService {
                             data: i
                         })
                     } else {
-                        // navigate device slots
-                        sendPacketToBitwig({
-                            type: 'devices/selected/slot/select',
-                            data: i
-                        })
+                       if (Shift) {
+                            // navigate device layers
+                            sendPacketToBitwig({
+                                type: 'devices/selected/layers/select',
+                                data: i
+                            })
+                        } else {
+                            // navigate device slots
+                            sendPacketToBitwig({
+                                type: 'devices/selected/slot/select',
+                                data: i
+                            })
+                        }
                     }
                 } else if (lowerKey === 'ArrowDown' && Meta) {
                     sendPacketToBitwig({

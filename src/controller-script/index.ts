@@ -13,6 +13,7 @@ const FX_TRACK_BANK_SIZE = 16
 const MAIN_TRACK_BANK_SIZE = 128
 const CUE_MARKER_BANK_SIZE = 32
 const DEVICE_BANK_SIZE = 16
+const LAYER_BANK_SIZE = 16
 
 host.setShouldFailOnDeprecatedUse(false);
 host.defineController("andy shand", "Bitwig Enhancement Suite", "0.1", "b90a4894-b89c-40b9-b372-e1e8659699df", "andy shand");
@@ -448,6 +449,8 @@ class DeviceController extends Controller {
     deviceBank
     cursorTrack
     cursorLayer
+    layerBank
+    drumPadBank
 
     mapDevices(cb) {
         for (let i = 0; i < DEVICE_BANK_SIZE; i++) {
@@ -462,7 +465,8 @@ class DeviceController extends Controller {
         "Polysynth",
         "Phase-4",
         "Reverb",
-        "FM-4"
+        "FM-4",
+        "Sampler"
     ]
     deviceSlotMaps = {
         'Multiband FX-3': {
@@ -498,8 +502,18 @@ class DeviceController extends Controller {
         this.cursorDevice.slotNames().markInterested()
         this.cursorDevice.getCursorSlot().name().markInterested()
         this.cursorDevice.name().markInterested()
+        this.cursorDevice.hasDrumPads().markInterested()
+        this.cursorDevice.hasLayers().markInterested()
 
         this.cursorLayer = this.cursorDevice.createCursorLayer()
+        this.layerBank = this.cursorDevice.createLayerBank(LAYER_BANK_SIZE)
+        this.drumPadBank = this.cursorDevice.createDrumPadBank(LAYER_BANK_SIZE)
+
+        const ensureDeviceSelected = () => {
+            if (this.cursorDevice.name().get().trim() === '') {
+                this.deviceBank.getDevice(0).selectInEditor()
+            }            
+        }
 
         for (let i = 0; i < DEVICE_BANK_SIZE; i++) {
             const device = this.deviceBank.getDevice(i)
@@ -530,24 +544,68 @@ class DeviceController extends Controller {
             this.cursorDevice.isExpanded().set(true)  
         })
 
-        packetManager.listen('devices/selected/slot/select', ({ data: i }) => {
-            const deviceName = this.cursorDevice.name().get()
-            if (deviceName in this.deviceSlotMaps) {
-                i = this.deviceSlotMaps[deviceName][i] ?? i
-            }
-
-            const slotName = this.cursorDevice.slotNames().get()[i]
-            if (slotName) {
-                const currentlySelected = this.cursorDevice.getCursorSlot().name().get()
-                if (currentlySelected === slotName) {
-                    // shortcut for browsing to insert at this slot (double tap slot shortcut)
-                    this.cursorDevice.getCursorSlot().browseToInsertAtEndOfChain()
-                } else {
-                    this.cursorDevice.getCursorSlot().selectSlot(slotName)
+        packetManager.listen('devices/selected/layers/select', ({ data: i }) => {
+            ensureDeviceSelected()
+           
+            const recurseUp = (levelsUp = 0) => {
+                if (levelsUp > 5) {
+                    return
                 }
-            } else {
-                this.cursorDevice.selectParent()
+
+                const device = this.cursorDevice
+                const withDrumPadsOrLayers = (input) => {
+                    input.getChannel(i).selectInEditor()
+                }
+                if (device.hasLayers().get()) {
+                    withDrumPadsOrLayers(this.layerBank)
+                } else if (device.hasDrumPads().get()) {
+                    withDrumPadsOrLayers(this.drumPadBank)
+                } else {
+                    device.selectParent()
+                    host.scheduleTask(() => {
+                        recurseUp(levelsUp + 1)
+                    }, 100)
+                }
             }
+            recurseUp()
+        })
+
+        packetManager.listen('devices/selected/slot/select', ({ data: i }) => {
+            ensureDeviceSelected()
+            const recurseUp = (levelsUp = 0) => {
+                if (levelsUp > 5) {
+                    return
+                }
+
+                const deviceName = this.cursorDevice.name().get()
+                if (deviceName in this.deviceSlotMaps) {
+                    i = this.deviceSlotMaps[deviceName][i] ?? i
+                }
+        
+                const slotName = this.cursorDevice.slotNames().get()[i]
+                if (slotName) {
+                    const currentlySelected = this.cursorDevice.getCursorSlot().name().get()
+                    if (currentlySelected === slotName) {
+                        // shortcut for browsing to insert at this slot (double tap slot shortcut)
+                        this.cursorDevice.getCursorSlot().browseToInsertAtEndOfChain()
+                    } else {
+                        this.cursorDevice.getCursorSlot().selectSlot(slotName)
+                    }
+                } else {
+                    this.cursorDevice.selectParent()
+                    host.scheduleTask(() => {
+                        recurseUp(levelsUp + 1)
+                    }, 100)
+                }
+            }
+            recurseUp()
+        })
+
+        packetManager.listen('devices/selected/chain/insert-at-end', () => {
+            this.cursorDevice.deviceChain().browseToInsertAtEndOfChain()
+        })
+        packetManager.listen('devices/selected/chain/insert-at-start', () => {
+            this.cursorDevice.deviceChain().browseToInsertAtStartOfChain()
         })
 
         packetManager.listen('devices/selected/slot/enter', () => {
