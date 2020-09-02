@@ -510,6 +510,7 @@ class DeviceController extends Controller {
         this.cursorDevice.name().markInterested()
         this.cursorDevice.hasDrumPads().markInterested()
         this.cursorDevice.hasLayers().markInterested()
+        this.cursorDevice.hasSlots().markInterested()
         
         this.cursorLayer = this.cursorDevice.createCursorLayer()
 
@@ -524,6 +525,9 @@ class DeviceController extends Controller {
         this.drumPadBank = this.cursorDevice.createDrumPadBank(LAYER_BANK_SIZE)
         let selectedLayer = 0 
         let selectedDrumPad = 0 
+
+        this.layerBank.channelCount().markInterested()
+        this.drumPadBank.channelCount().markInterested()
 
         for (let i = 0; i < LAYER_BANK_SIZE; i++) {
             const layer = this.layerBank.getChannel(i)
@@ -597,7 +601,12 @@ class DeviceController extends Controller {
                             input.getChannel(i).browseToInsertAtEndOfChain()
                         }
                     } else {
-                        input.getChannel(i).selectInEditor()
+                        if (i > input.channelCount().get() - 1) {
+                            // TODO How do we insert a new layer here?
+                            input.getChannel(i).startOfDeviceChainInsertionPoint().browse()
+                        } else {
+                            input.getChannel(i).selectInEditor()
+                        }
                     }
                 }
                 if (hasLayers) {
@@ -626,8 +635,9 @@ class DeviceController extends Controller {
                     i = this.deviceSlotMaps[deviceName][i] ?? i
                 }
         
-                const slotName = this.cursorDevice.slotNames().get()[i]
-                if (slotName) {
+                const slotNames = this.cursorDevice.slotNames().get()
+                const slotName = slotNames[i]
+                if (this.cursorDevice.hasSlots()) {
                     const currentlySelected = this.cursorDevice.getCursorSlot().name().get()
                     if (currentlySelected === slotName) {
                         const firstDevice = this.cursorSlotDeviceBank.getDevice(0)
