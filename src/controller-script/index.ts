@@ -20,6 +20,9 @@ host.defineController("andy shand", "Bitwig Enhancement Suite", "0.1", "b90a4894
 
 let app: any
 let connection: any
+let settings = {
+    exclusiveArm: true
+}
 
 type Packet = {
     type: string
@@ -245,12 +248,14 @@ class GlobalController extends Controller {
             // Exclusive arm
             t.arm().addValueObserver(armed => {
                 if (armed) {
-                    // Unarm all other tracks
-                    this.mapTracks((t, i2) => {
-                        if (i !== i2) {
-                            t.arm().set(false);
-                        }
-                    })
+                    if (settings.exclusiveArm) {
+                        // Unarm all other tracks
+                        this.mapTracks((t, i2) => {
+                            if (i !== i2) {
+                                t.arm().set(false);
+                            }
+                        })
+                    }
                 }
             })
         })
@@ -769,6 +774,16 @@ class BrowserController extends Controller {
     }
 }
 
+class SettingsController extends Controller {
+    constructor(deps) {
+        super(deps)
+        const { packetManager, globalController } = deps
+        packetManager.listen('settings/update', ({ data }) => {
+            settings = {...settings, ...data}
+        })
+    }
+}
+
 class BackForwardController extends Controller {
     trackHistory: {name: string}[] = []
     historyIndex = -1
@@ -870,6 +885,7 @@ function init() {
     new BrowserController(deps)    
     new BugFixController(deps)    
     new DeviceController(deps)    
+    new SettingsController(deps)    
 
     deps.packetManager.listen('transport/play', () => transport.togglePlay())
     deps.packetManager.listen('transport/stop', () => transport.stop())

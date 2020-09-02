@@ -2,10 +2,14 @@ import { BESService, getService } from "./Service";
 import { Tray, Menu, app, BrowserWindow } from 'electron'
 import { getResourcePath } from "../../connector/shared/ResourcePath";
 import { url } from "./Url";
+import { sendPacketToBitwig } from "./WebsocketToSocket";
 
 const SETTINGS_WINDOW_WIDTH = 800
 const SETTINGS_WINDOW_HEIGHT = 500
 
+let settings = {
+    exclusiveArm: true
+}
 
 export class TrayService extends BESService {
     timer: any
@@ -19,6 +23,13 @@ export class TrayService extends BESService {
             const contextMenu = Menu.buildFromTemplate([
               { label: `Bitwig Enhancement Suite: ${this.connected ? 'Connected' : 'Connecting...'}`, enabled: false },
               { type: 'separator' },
+              { label: 'Exclusive Arm', checked: settings.exclusiveArm, type: "checkbox", click: () => {
+                settings.exclusiveArm = !settings.exclusiveArm
+                sendPacketToBitwig({
+                    type: 'settings/update',
+                    data: settings
+                })
+            } },
               { label: 'Preferences...', click: () => {
                 if (this.settingsWindow && !this.settingsWindow.isDestroyed()) {
                     this.settingsWindow.close()
