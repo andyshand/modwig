@@ -190,8 +190,7 @@ export async function setupNavigation() {
     Keyboard.addEventListener('mousemoved', whenActiveListener(event => {
         if (middleMouseDown) {
             const dX = event.x - lastX
-            currTrackScroll = Math.max(0, currTrackScroll - dX)            
-            console.log(currTrackScroll)
+            currTrackScroll = Math.max(0, currTrackScroll - dX)
             lastX = event.x
         }
     }))

@@ -68,6 +68,14 @@ export class ShortcutsService extends BESService {
                     } else {
                         lastEscape = new Date()
                     }
+                } else if (lowerKey === 'd' && !this.browserIsOpen && noMods) {
+                    sendPacketToBitwig({
+                        type: 'action',
+                        data: [
+                            `focus_or_toggle_detail_editor`,
+                            `focus_or_toggle_device_panel`
+                        ]
+                    })
                 } else if (lowerKey === 'b' && !this.browserIsOpen) {
                     if (Shift) {
                         // insert at end of selected layer
@@ -125,9 +133,9 @@ export class ShortcutsService extends BESService {
                             })
                         }
                     }
-                } else if (lowerKey === 'ArrowDown' && Meta) {
+                } else if (lowerKey === 'ArrowUp' && Meta || (Control && Meta && lowerKey === 'w')) {
                     sendPacketToBitwig({
-                        type: 'devices/selected/slot/enter'
+                        type: 'devices/selected/navigate-up'
                     })
                 } else if (lowerKey === 'ArrowRight' && Control) {
                     sendPacketToBitwig({

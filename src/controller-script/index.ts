@@ -75,10 +75,12 @@ class PacketManager {
                     const packet = JSON.parse(str)
                     // println('parsed the packet')
                     const listeners = this.listenersByType[packet.type] || []
+                    let warnNoListeners = listeners.length === 0
                     if (packet.type === 'ping') {
                         return this.send({type: 'pong'})
                     }
                     if (packet.type === 'action') {
+                        warnNoListeners = false
                         const actions = typeof packet.data === 'object' ? packet.data : [packet.data]
                         for (const actionName of actions) {
                             runAction(actionName)
@@ -87,6 +89,9 @@ class PacketManager {
                     // host.showPopupNotification(packet.type)
                     // println('send response???')
                     let errors = []
+                    if (warnNoListeners) {
+                        host.showPopupNotification('No listeners attached for packet type: ' + packet.type)
+                    }
                     for (const listener of listeners) {
                         try {
                             const response = listener(packet) as any
@@ -451,6 +456,8 @@ class DeviceController extends Controller {
     cursorLayer
     layerBank
     drumPadBank
+    cursorSlotDeviceBank
+    cursorLayerDeviceBank
 
     mapDevices(cb) {
         for (let i = 0; i < DEVICE_BANK_SIZE; i++) {
@@ -500,14 +507,38 @@ class DeviceController extends Controller {
         this.cursorDevice.isRemoteControlsSectionVisible().markInterested()
         this.cursorDevice.exists().markInterested()
         this.cursorDevice.slotNames().markInterested()
-        this.cursorDevice.getCursorSlot().name().markInterested()
         this.cursorDevice.name().markInterested()
         this.cursorDevice.hasDrumPads().markInterested()
         this.cursorDevice.hasLayers().markInterested()
-
+        
         this.cursorLayer = this.cursorDevice.createCursorLayer()
+
+        this.cursorDevice.getCursorSlot().name().markInterested()
+        this.cursorSlotDeviceBank = this.cursorDevice.getCursorSlot().createDeviceBank(1)
+        this.cursorSlotDeviceBank.getDevice(0).exists().markInterested()
+        
+        this.cursorLayerDeviceBank = this.cursorLayer.createDeviceBank(1)
+        this.cursorLayerDeviceBank.getDevice(0).exists().markInterested()
+        
         this.layerBank = this.cursorDevice.createLayerBank(LAYER_BANK_SIZE)
         this.drumPadBank = this.cursorDevice.createDrumPadBank(LAYER_BANK_SIZE)
+        let selectedLayer = 0 
+        let selectedDrumPad = 0 
+
+        for (let i = 0; i < LAYER_BANK_SIZE; i++) {
+            const layer = this.layerBank.getChannel(i)
+            layer.addIsSelectedInEditorObserver((selected) => {
+                if (selected) {
+                    selectedLayer = i
+                }
+            }) 
+            const drumPad = this.layerBank.getChannel(i)
+            drumPad.addIsSelectedInEditorObserver((selected) => {
+                if (selected) {
+                    selectedDrumPad = i
+                }
+            }) 
+        }
 
         const ensureDeviceSelected = () => {
             if (this.cursorDevice.name().get().trim() === '') {
@@ -553,12 +584,25 @@ class DeviceController extends Controller {
                 }
 
                 const device = this.cursorDevice
+                const hasLayers = device.hasLayers().get()
+                const hasDrumPads = device.hasDrumPads().get()
+
                 const withDrumPadsOrLayers = (input) => {
-                    input.getChannel(i).selectInEditor()
+                    const alreadySelected = i == (hasLayers ? selectedLayer : selectedDrumPad)
+                    if (alreadySelected) {
+                        const firstDevice = this.cursorLayerDeviceBank.getDevice(0)
+                        if (firstDevice.exists().get()) {
+                            this.cursorLayerDeviceBank.getDevice(0).selectInEditor()
+                        } else {
+                            input.getChannel(i).browseToInsertAtEndOfChain()
+                        }
+                    } else {
+                        input.getChannel(i).selectInEditor()
+                    }
                 }
-                if (device.hasLayers().get()) {
+                if (hasLayers) {
                     withDrumPadsOrLayers(this.layerBank)
-                } else if (device.hasDrumPads().get()) {
+                } else if (hasDrumPads) {
                     withDrumPadsOrLayers(this.drumPadBank)
                 } else {
                     device.selectParent()
@@ -586,8 +630,12 @@ class DeviceController extends Controller {
                 if (slotName) {
                     const currentlySelected = this.cursorDevice.getCursorSlot().name().get()
                     if (currentlySelected === slotName) {
-                        // shortcut for browsing to insert at this slot (double tap slot shortcut)
-                        this.cursorDevice.getCursorSlot().browseToInsertAtEndOfChain()
+                        const firstDevice = this.cursorSlotDeviceBank.getDevice(0)
+                        if (firstDevice.exists().get()) {
+                            this.cursorSlotDeviceBank.getDevice(0).selectInEditor()
+                        } else {
+                            this.cursorDevice.getCursorSlot().browseToInsertAtEndOfChain()
+                        }
                     } else {
                         this.cursorDevice.getCursorSlot().selectSlot(slotName)
                     }
@@ -602,17 +650,16 @@ class DeviceController extends Controller {
         })
 
         packetManager.listen('devices/selected/chain/insert-at-end', () => {
+            ensureDeviceSelected()
             this.cursorDevice.deviceChain().browseToInsertAtEndOfChain()
         })
         packetManager.listen('devices/selected/chain/insert-at-start', () => {
+            ensureDeviceSelected()
             this.cursorDevice.deviceChain().browseToInsertAtStartOfChain()
         })
 
-        packetManager.listen('devices/selected/slot/enter', () => {
-            const slotName = this.cursorDevice.getCursorSlot().name().get()
-            if (slotName) {
-                this.cursorDevice.selectFirstInSlot(slotName)
-            }
+        packetManager.listen('devices/selected/navigate-up', () => {
+            this.cursorDevice.selectParent()
         })
 
         packetManager.listen('devices/selected/layer/insert-at-end', () => {
