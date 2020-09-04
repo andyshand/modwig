@@ -1,5 +1,5 @@
 import { BESService, makeEvent } from "./Service";
-import { WEBSOCKET_PORT, SOCKET_PORT } from '../../connector/shared/constants'
+import { WEBSOCKET_PORT, SOCKET_PORT } from '../../connector/shared/Constants'
 const async = require('async')
 const logInOut = false
 const RECONNECT_IN = 1000 * 3;

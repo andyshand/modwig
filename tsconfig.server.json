@@ -6,6 +6,7 @@
         "suppressImplicitAnyIndexErrors": true,
         "allowSyntheticDefaultImports": true,
         "strictNullChecks": true,
+        "forceConsistentCasingInFileNames": true,
         "lib": [
             "es2017",
             "dom"

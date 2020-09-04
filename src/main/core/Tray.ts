@@ -16,12 +16,40 @@ export class TrayService extends BESService {
     animationI = 0
     connected = false
     settingsWindow
+
+    copyControllerScript() {
+        try {
+            const fs = require('fs')
+            const path = require('path')
+            const homedir = require('os').homedir();
+
+            const controllerSrcFolder = getResourcePath('/controller-script')
+            const controllerDestFolder = path.join(homedir, 'Documents', 'Bitwig Studio', 'Controller Scripts', 'Bitwig Enhancement Suite')
+
+            if (!fs.existsSync(controllerDestFolder)) {
+                fs.mkdirSync(controllerDestFolder)
+            }
+
+            for (const file of fs.readdirSync(controllerSrcFolder)) {
+                fs.copyFileSync(path.join(controllerSrcFolder, file), path.join(controllerDestFolder, file))
+            }
+        } catch (e) {
+            console.error(e)   
+        }
+    }
+
     activate() {
+        app.dock.hide()
+        this.copyControllerScript()
+
         const socket = getService('SocketMiddlemanService')
         const tray = new Tray(getResourcePath('/images/tray-0Template.png'))
         const updateMenu = () => {
             const contextMenu = Menu.buildFromTemplate([
               { label: `Bitwig Enhancement Suite: ${this.connected ? 'Connected' : 'Connecting...'}`, enabled: false },
+              { label: `Reinstall Controller Script`, click: () => {
+                this.copyControllerScript()
+              } },
               { type: 'separator' },
               { label: 'Exclusive Arm', checked: settings.exclusiveArm, type: "checkbox", click: () => {
                 settings.exclusiveArm = !settings.exclusiveArm

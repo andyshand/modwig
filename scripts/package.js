@@ -6,8 +6,8 @@ packager({
     dir: path.join(__dirname, '..'),
     platform: process.env.PLATFORM,
     arch: process.env.ARCH,
-    asar: true,
-    out: path.join(__dirname, '..', '..', 'producer-tools-app'),
+    asar: false,
+    out: path.join(__dirname, '..', '..', 'bitwig-enhancement-suite'),
     overwrite: true,
     afterPrune: [
         (buildPath, electronVersion, platform, arch, cb) => {
@@ -35,7 +35,7 @@ packager({
                 execSync(command, { cwd: buildPath })
             }
 
-            execSync(`rm -rf scripts src .vscode .gitignore tsconfig.json tsconfig.server.json tslint.json webpack.config.js webpack.server.js yarn.lock README.md FEATURES.md package-lock.json`, { cwd: buildPath })
+            execSync(`rm -rf scripts IDEAS.md CONTRIBUTING.md main.tsconfig.json tsconfig.controller-script.json webpack.main.config.js src .vscode .gitignore tsconfig.json tsconfig.server.json tslint.json webpack.config.js webpack.server.js yarn.lock README.md FEATURES.md package-lock.json`, { cwd: buildPath })
             cb()
         }
     ]

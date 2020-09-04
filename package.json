@@ -1,21 +1,20 @@
 {
   "name": "bitwig-enhancement-suite",
-  "version": "1.0.0",
   "description": "Adds extra features to Bitwig",
+  "main": "./dist/main/main.js",
   "scripts": {
     "electron": "electron dist/main/main.js",
     "watch": "tsc -w --p tsconfig.server.json",
     "start": "npm run buildc:dev && NODE_ENV=dev nodemon -V --watch ./dist . --exec 'npm run electron'",
     "dev": "webpack-dev-server",
-    "build:mac": "PLATFORM=darwin ARCH=x64 node ./scripts/package.js && open ../producer-tools-app",
-    "build:windows": "PLATFORM=win32 ARCH=ia32 node ./scripts/package.js && open ../producer-tools-app",
+    "build:mac": "PLATFORM=darwin ARCH=x64 node ./scripts/package.js && open ../bitwig-enhancement-suite",
+    "build:windows": "PLATFORM=win32 ARCH=ia32 node ./scripts/package.js && open ../bitwig-enhancement-suite",
     "upload": "echo \"Update message?\" && read message && ./scripts/upload.sh \"$message\"",
     "package:mac": "PLATFORM=darwin npm run writeversion && npm run build:renderer && npm run build:main && npm run build:mac",
     "package:windows": "PLATFORM=win32 npm run writeversion && npm run build:renderer && npm run build:main && npm run build:windows",
     "packageandupload": "npm run package:mac && npm run package:windows && npm run upload",
     "build:renderer": "webpack",
-    "build:main:alt": "webpack --config webpack.main.config.js",
-    "build:main": "tsc --p tsconfig.server.json",
+    "build:main": "npm run buildc && tsc --p tsconfig.server.json",
     "writeversion": "echo \"Version? Current is $npm_package_version\" && read VERSION && node ./scripts/writeVersion.js $VERSION",
     "buildc:dev": "node-gyp -j 16 build --debug",
     "buildc": "node-gyp -j 16 build",
@@ -97,5 +96,6 @@
     "webpack-merge": "^5.1.0",
     "webpack-node-externals": "^2.5.0"
   },
-  "gypfile": true
+  "gypfile": true,
+  "version": "1.0.0"
 }

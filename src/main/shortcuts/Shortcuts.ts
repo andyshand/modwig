@@ -20,11 +20,11 @@ export class ShortcutsService extends BESService {
 
         Keyboard.addEventListener('keydown', event => {
             const { lowerKey, nativeKeyCode, Meta, Shift, Control, Alt } = event
-            // console.log(lowerKey, nativeKeyCode, event.Meta, Control)
+            console.log(event)
             const noMods = !(Meta || Control || Alt)
 
             // Prevent shortcuts from triggering when renaming something
-            if (Bitwig.isActiveApplication() && lowerKey === 'r' && Meta) {
+            if (Bitwig.isActiveApplication() && lowerKey === 'r' && Meta && !Shift && !Alt) {
                 renaming = true
             } else if (lowerKey === 'Enter' || lowerKey === 'Escape') {
                 renaming = false
@@ -60,7 +60,7 @@ export class ShortcutsService extends BESService {
                         type: 'tracksearch/confirm',
                         data: `Master`
                     })
-                } else if (lowerKey === 'Escape' && !Meta) {
+                } else if (lowerKey === 'Escape' && !Meta && !Alt) {
                     if (new Date().getTime() - lastEscape.getTime() < 250) {
                         // Double-tapped escape
                         Bitwig.closeFloatingWindows()
