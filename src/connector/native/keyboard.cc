@@ -269,6 +269,7 @@ CGEventRef eventtap_callback(CGEventTapProxy proxy, CGEventType type, CGEventRef
     return event;
 }
 
+/// Note that mousemove events seem to get fired when mouse is clicked too - TODO investigate
 Napi::Value addEventListener(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
     auto eventType = info[0].As<Napi::String>().Utf8Value();

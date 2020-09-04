@@ -1,7 +1,8 @@
 import { sendPacketToBitwig, interceptPacket } from "../core/WebsocketToSocket"
 import { BESService } from "../core/Service"
+import { returnMouseAfter } from "../../connector/shared/EventUtils"
 
-const { Keyboard, MainWindow, Bitwig } = require('bindings')('bes')
+const { Keyboard, Mouse, MainWindow, Bitwig } = require('bindings')('bes')
 
 let lastEscape = new Date()
 let renaming = false
@@ -16,6 +17,26 @@ export class ShortcutsService extends BESService {
             if (isOpen) {
                 this.browserText = ''
             }
+        })
+
+        // Would use mousemove event here but it fires when mouse is clicked too for some reason
+        let middleDown = false
+        let startPos = null
+        const makePos = event => JSON.stringify({x: event.x, y: event.y})
+        Keyboard.addEventListener('mousedown', event => {
+            middleDown = Bitwig.isActiveApplication() && !this.browserIsOpen && event.x > 490 && event.button === 1
+            startPos = makePos(event)
+        })
+
+        Keyboard.addEventListener('mouseup', event => {
+            if (middleDown && makePos(event) === startPos) {
+                returnMouseAfter(() => {
+                    Keyboard.keyDown('1')
+                    Mouse.doubleClick(0, {x: event.x, y: 125})
+                    Keyboard.keyUp('1')
+                })
+            }
+            middleDown = false
         })
 
         Keyboard.addEventListener('keydown', event => {
