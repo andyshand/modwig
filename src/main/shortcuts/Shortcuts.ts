@@ -20,7 +20,7 @@ export class ShortcutsService extends BESService {
 
         Keyboard.addEventListener('keydown', event => {
             const { lowerKey, nativeKeyCode, Meta, Shift, Control, Alt } = event
-            console.log(event)
+            // console.log(event)
             const noMods = !(Meta || Control || Alt)
 
             // Prevent shortcuts from triggering when renaming something

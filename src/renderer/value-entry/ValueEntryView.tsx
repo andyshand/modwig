@@ -59,7 +59,9 @@ export class ValueEntryView extends React.Component<any> {
         try {
             w.valueEntryX = this.state.originalValue
             console.log(this.state)
-            const output = eval(this.state.typedValue.replace(/x/g, `window.valueEntryX`))
+            const toEval = this.state.typedValue.replace(/x/g, `window.valueEntryX`)
+            console.log(toEval)
+            const output = eval(toEval)
             if (output === this.state.originalValue) {
                 return null
             } else {
@@ -83,7 +85,11 @@ export class ValueEntryView extends React.Component<any> {
                 curr.select()
                 setTimeout(() => {
                     const originalText = clipboard.readText()
-                    this.setState({originalValue: parseFloat(originalText)})
+                    let originalValue = parseFloat(originalText)
+                    if (isNaN(originalValue)) { // TODO why does this happen?
+                        originalValue = 0
+                    }
+                    this.setState({originalValue})
                 }, 200)
             }
         })
@@ -124,6 +130,7 @@ export class ValueEntryView extends React.Component<any> {
             const result = this.getEvaled()
             recent10 = [this.state.typedValue].concat(recent10).slice(0, recentCount)
             setTimeout(saveRecent10, 100)
+            console.log('returning typed value: ', result)
             return result
         }
         return <ValueEntryWrap>

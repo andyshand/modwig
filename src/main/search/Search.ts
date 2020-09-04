@@ -68,7 +68,7 @@ export async function setupNavigation() {
         width: WINDOW_WIDTH, 
         height: WINDOW_HEIGHT, 
         frame: false, 
-        show: true,
+        show: false,
         // transparent: true,
         webPreferences: {
             nodeIntegration: true,

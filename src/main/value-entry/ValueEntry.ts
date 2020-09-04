@@ -63,24 +63,31 @@ export function setupValueEntry() {
             if (lowerKey === 'Enter') {
                 try {
                     const typedValue = await valueEntryWindow.webContents.executeJavaScript(`window.getTypedValue()`);
-                    clipboard.writeText(typedValue)
+                    // If result is null, it's the same as before, don't do anything
+
+                    if (typedValue !== null) {
+                        clipboard.writeText(typedValue)
+                    }
+
                     app.hide()
                     valueEntryWindow.hide()
 
-                    setTimeout(() => {
-                        returnMouseAfter(async () => {
-                            const clickAt = getAutomationValueLoc()
-                        
-                            Keyboard.keyDown('Meta')
-                            Mouse.click(0, { x: clickAt.x, y: clickAt.y, Meta: true })
+                    if (typedValue !== null) {
+                        setTimeout(() => {
+                            returnMouseAfter(async () => {
+                                const clickAt = getAutomationValueLoc()
                             
-                            // Paste value
-                            Keyboard.keyPress('v', {Meta: true})    
-                            Keyboard.keyUp('Meta')
+                                Keyboard.keyDown('Meta')
+                                Mouse.click(0, { x: clickAt.x, y: clickAt.y, Meta: true })
+                                
+                                // Paste value
+                                Keyboard.keyPress('v', {Meta: true})    
+                                Keyboard.keyUp('Meta')
 
-                            Keyboard.keyPress('Enter')
-                        })
-                    }, 200)                        
+                                Keyboard.keyPress('Enter')
+                            })
+                        }, 200)                   
+                    }     
                 } catch (e) {
                     console.error(e)
                 }

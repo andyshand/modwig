@@ -40,7 +40,9 @@ export class TrayService extends BESService {
 
     activate() {
         app.dock.hide()
-        this.copyControllerScript()
+        if (process.env.NODE_ENV !== 'dev') {
+            this.copyControllerScript()
+        }
 
         const socket = getService('SocketMiddlemanService')
         const tray = new Tray(getResourcePath('/images/tray-0Template.png'))
