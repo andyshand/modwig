@@ -5,6 +5,5 @@ export function getResourcePath(resource = '') {
     } else {
         out = `${process.resourcesPath}/app/extra-resources${resource}`
     }
-    console.log(out)
     return out
 }
