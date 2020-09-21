@@ -2,7 +2,7 @@ import React from 'react'
 
 
 
-export class SettingsShortcuts extends React.Component {
+export class SettingsBrowser extends React.Component {
 
     render() {
 

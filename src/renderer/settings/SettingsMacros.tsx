@@ -1,6 +1,6 @@
 import React from 'react'
 
-export class SettingsShortcuts extends React.Component {
+export class SettingsMacros extends React.Component {
 
     render() {
 

@@ -1,6 +1,7 @@
 import { createConnection } from "typeorm"
 import { Project } from "./entities/Project"
 import { ProjectTrack } from "./entities/ProjectTrack"
+import { Setting } from "./entities/Setting"
 import { sqlitePath, sqliteBackupPath } from '../config'
 const fs = require('fs')
 const path = require('path')
@@ -42,7 +43,7 @@ export async function getDb() {
         conn = await createConnection({
             type: "sqlite",
             database: sqlitePath,
-            entities: [Project, ProjectTrack],
+            entities: [Project, ProjectTrack, Setting],
             synchronize: true, // TODO change for production
             migrations: [path.join(__dirname, "./migrations/*.js")],
         })

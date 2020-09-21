@@ -39,9 +39,9 @@ export class TrayService extends BESService {
     }
 
     activate() {
-        app.dock.hide()
         if (process.env.NODE_ENV !== 'dev') {
             this.copyControllerScript()
+            app.dock.hide()
         }
 
         const socket = getService('SocketMiddlemanService')
