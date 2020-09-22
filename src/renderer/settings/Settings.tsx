@@ -1,11 +1,6 @@
 import React from 'react'
 import { styled } from 'linaria/react'
-import { SettingsArranger } from './SettingsArranger'
-import { SettingsBrowser } from './SettingsBrowser'
-import { SettingsDevices } from './SettingsDevices'
 import { SettingsView } from './SettingsView'
-import { SettingsMacros } from './SettingsMacros'
-import { SettingsNoteEditor } from './SettingsNoteEditor'
 
 const SettingsWrap = styled.div`
     display: flex;
@@ -25,12 +20,16 @@ const SettingsWrap = styled.div`
 `
 const Tabs = styled.div`
     background: #444;
-    box-shadow: 0 0 1em rgba(0, 0, 0, 0.3);
+    padding-top: 6rem;
+    width: 8.8rem;
+    border-right: 1px solid #333;
+    -webkit-app-region: drag; 
 `
 const TabInner = styled.div`
     &:hover {
         background: ${(props: any) => props.isActive ? `#222` : `#333`};
     }
+    color: ${(props: any) => props.isActive ? `white` : `#CCC`};
     background: ${(props: any) => props.isActive ? `#222` : ``};
     padding: 1em;
     padding-right: 2em;

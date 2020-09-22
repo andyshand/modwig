@@ -9,6 +9,7 @@ const { Keyboard, Mouse, MainWindow, Bitwig } = require('bindings')('bes')
 let lastKeyPressed = new Date()
 let lastKey = ''
 let renaming = false
+let keyRepeatTimeout: any = null
 
 export class ShortcutsService extends BESService {
     browserIsOpen
@@ -48,7 +49,10 @@ export class ShortcutsService extends BESService {
                         this.actions[key].action()
                     }
                 }
-                this.shortcutCache[code] = (this.shortcutCache[code] || []).concat(runner)
+                this.shortcutCache[code] = (this.shortcutCache[code] || []).concat({
+                    runner,
+                    keyRepeat: value.keyRepeat || false
+                })
             }
         }
 
@@ -82,7 +86,8 @@ export class ShortcutsService extends BESService {
                 },
                 selectPreviousTrack: {
                     defaultSetting: {
-                        keys: ['W']
+                        keys: ['W'],
+                        keyRepeat: true
                     },
                     action: () => {
                         sendPacketToBitwig({
@@ -93,7 +98,8 @@ export class ShortcutsService extends BESService {
                 },
                 selectNextTrack: {
                     defaultSetting: {
-                        keys: ['S']
+                        keys: ['S'],
+                        keyRepeat: true
                     },
                     action: () => {
                         sendPacketToBitwig({
@@ -482,7 +488,7 @@ export class ShortcutsService extends BESService {
         const code = this.makeShortcutValueCode(state)
         let ran = false
         if (code in this.shortcutCache) {
-            for (const runner of this.shortcutCache[code]) {
+            for (const {runner} of this.shortcutCache[code]) {
                 runner()
                 ran = true
             }
@@ -514,6 +520,24 @@ export class ShortcutsService extends BESService {
             middleDown = false
         })
 
+        const getEventKeysArray = event => {
+            const { lowerKey, Meta, Shift, Control, Alt } = event
+            const keys = [lowerKey.length === 1 ? lowerKey.toUpperCase() : lowerKey]
+            if (Meta) {
+                keys.push('Meta')
+            }
+            if (Shift) {
+                keys.push('Shift')
+            }
+            if (Control) {
+                keys.push('Control')
+            }
+            if (Alt) {
+                keys.push('Alt')
+            }
+            return keys.reverse()
+        }
+
         Keyboard.addEventListener('keydown', event => {
             const { lowerKey, nativeKeyCode, Meta, Shift, Control, Alt } = event
             // console.log(event)
@@ -532,22 +556,8 @@ export class ShortcutsService extends BESService {
                     this.browserText += lowerKey
                 }
 
-                let keys = [lowerKey.length === 1 ? lowerKey.toUpperCase() : lowerKey]
-                if (Meta) {
-                    keys.push('Meta')
-                }
-                if (Shift) {
-                    keys.push('Shift')
-                }
-                if (Control) {
-                    keys.push('Control')
-                }
-                if (Alt) {
-                    keys.push('Alt')
-                }
-                keys.reverse()
+                let keys = getEventKeysArray(event)
                 const asJSON = JSON.stringify(keys)
-                console.log(asJSON)
 
                 let ranDouble = false
                 if (asJSON === lastKey && new Date().getTime() - lastKeyPressed.getTime() < 250) {

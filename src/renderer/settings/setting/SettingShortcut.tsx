@@ -157,7 +157,6 @@ export const SettingShortcut = ({setting}) => {
     const onKeyDown = event => {
         event.preventDefault()
         let key = charMapMac[event.keyCode]
-        console.log(event.keyCode, key, event.key)
         const overrides = {
             '±': '§',
             'Unidentified': '§',
@@ -214,7 +213,6 @@ export const SettingShortcut = ({setting}) => {
     }
 
     const optionProps = (key, label) => {
-        console.log(value, value[key])
         return {
             label,
             value: Boolean(value[key]),
@@ -226,6 +224,7 @@ export const SettingShortcut = ({setting}) => {
 
     const options = [
         optionProps('doubleTap', 'Double-tap'),
+        // optionProps('keyRepeat', 'Key Repeat'),
         optionProps('vstPassThrough', 'Pass through VSTs')
     ]
 

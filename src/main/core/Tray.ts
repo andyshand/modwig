@@ -50,6 +50,7 @@ export class TrayService extends BESService {
                 height: SETTINGS_WINDOW_HEIGHT, 
                 show: false,
                 title: 'Bitwig Enhancement Suite - Settings',
+                titleBarStyle: 'hiddenInset',
                 webPreferences: {
                     nodeIntegration: true,
                 }
