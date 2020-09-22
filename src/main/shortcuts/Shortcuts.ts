@@ -367,7 +367,10 @@ export class ShortcutsService extends BESService {
                     action: () => {
                         sendPacketToBitwig({
                             type: 'action',
-                            data: 'toggle_double_or_single_row_track_height'
+                            data: [
+                                'focus_track_header_area',
+                                'toggle_double_or_single_row_track_height'
+                            ]
                         })
                     }
                 },
