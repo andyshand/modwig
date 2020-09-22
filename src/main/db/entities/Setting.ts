@@ -16,6 +16,10 @@ export class Setting {
     @Column({type: 'simple-json'})
     value: string
 
+    @Index()
+    @Column()
+    type: string
+
     @CreateDateColumn()
     created_at: Date;
 

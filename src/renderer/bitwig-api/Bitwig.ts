@@ -40,22 +40,42 @@ export function onMessageReceived(callback) {
 // let packetsWaitingForResponse
 
 let queued: any[] = []
-export function send(newPacket: any) {
+let responseListeners: {[id: string]: Function} = {}
+
+export function send(newPacket: any, cb?: Function) {
   queued.push(newPacket)
   if (ws.readyState === 1) {
     for (const packet of queued) {
       console.log("sending: ", packet)
       packet.id = nextPacketId++
       ws.send(JSON.stringify(packet))
+      if (cb) {
+        responseListeners[packet.id] = cb
+      }
     }
     queued = []
   }
 }
 
+export function sendPromise(newPacket) {
+  return new Promise((resolve) => {
+    send(newPacket, resolve)
+  })
+}
+
 ws.onmessage = (event) => {
   const packet = JSON.parse(event.data)
   console.log("Received: ", packet)
-  const { type } = packet
+  const { type, id } = packet
+  if (id in responseListeners) {
+    try {
+      responseListeners[id](packet)
+    } catch (e) {
+      console.error(e)
+    }
+    delete responseListeners[id]
+  }
+
   if (type === 'tracks') {
     state.tracksById = {}
     for (const t of packet.data) {

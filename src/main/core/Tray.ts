@@ -39,13 +39,33 @@ export class TrayService extends BESService {
     }
 
     activate() {
+        const socket = getService('SocketMiddlemanService')
+        const tray = new Tray(getResourcePath('/images/tray-0Template.png'))
+        const openPreferences = () => {
+            if (this.settingsWindow && !this.settingsWindow.isDestroyed()) {
+                this.settingsWindow.close()
+            }
+            this.settingsWindow = new BrowserWindow({ 
+                width: SETTINGS_WINDOW_WIDTH, 
+                height: SETTINGS_WINDOW_HEIGHT, 
+                show: false,
+                title: 'Bitwig Enhancement Suite - Settings',
+                webPreferences: {
+                    nodeIntegration: true,
+                }
+            })
+            this.settingsWindow.loadURL(url('/#/settings'))
+            this.settingsWindow.show()
+        }
+        
         if (process.env.NODE_ENV !== 'dev') {
             this.copyControllerScript()
             app.dock.hide()
+        } else {
+            openPreferences()
+            this.settingsWindow.toggleDevTools()
         }
 
-        const socket = getService('SocketMiddlemanService')
-        const tray = new Tray(getResourcePath('/images/tray-0Template.png'))
         const updateMenu = () => {
             const contextMenu = Menu.buildFromTemplate([
               { label: `Bitwig Enhancement Suite: ${this.connected ? 'Connected' : 'Connecting...'}`, enabled: false },
@@ -60,22 +80,7 @@ export class TrayService extends BESService {
                     data: settings
                 })
             } },
-              { label: 'Preferences...', click: () => {
-                if (this.settingsWindow && !this.settingsWindow.isDestroyed()) {
-                    this.settingsWindow.close()
-                }
-                this.settingsWindow = new BrowserWindow({ 
-                    width: SETTINGS_WINDOW_WIDTH, 
-                    height: SETTINGS_WINDOW_HEIGHT, 
-                    show: false,
-                    title: 'Bitwig Enhancement Suite - Settings',
-                    webPreferences: {
-                        nodeIntegration: true,
-                    }
-                })
-                this.settingsWindow.loadURL(url('/#/settings'))
-                this.settingsWindow.show()
-            } },
+              { label: 'Preferences...', click: openPreferences },
             { type: 'separator' },
               { label: 'Quit', click: () => {
                 app.quit();

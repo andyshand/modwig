@@ -1,4 +1,4 @@
-import { sendPacketToBitwig, interceptPacket } from "../core/WebsocketToSocket"
+import { sendPacketToBitwig, interceptPacket, sendPacketToBrowser } from "../core/WebsocketToSocket"
 import { BESService } from "../core/Service"
 import { returnMouseAfter } from "../../connector/shared/EventUtils"
 import { getDb } from "../db"
@@ -6,59 +6,387 @@ import { Setting } from "../db/entities/Setting"
 
 const { Keyboard, Mouse, MainWindow, Bitwig } = require('bindings')('bes')
 
-let lastEscape = new Date()
+let lastKeyPressed = new Date()
+let lastKey = ''
 let renaming = false
 
 export class ShortcutsService extends BESService {
     browserIsOpen
     browserText = ''
+    actions = this.getActions()
+    shortcutCache = {}
 
-    getDefaultShortcutSettings() {
+    repeatActionWithRange(name, startIncl, endIncl, genTakesI) {
+        let out = {}
+        for (let i = startIncl; i <= endIncl; i++) {
+            out[name + i] = {
+                ...genTakesI(i)
+            }
+        }
+        return out
+    }
+
+    makeShortcutValueCode = (value) => {
+        return value.keys.sort().join('') + (value.doubleTap || false)
+    }
+
+    async updateShortcutCache() {
+        const db = await getDb()
+        const settings = db.getRepository(Setting) 
+        const results = await settings.find({where: {type: 'shortcut'}})
+
+        this.shortcutCache = {}
+        for (const shortcut of results) {
+            if (shortcut.value.keys.length > 0) {
+                const value = shortcut.value
+                const key = shortcut.key
+                const code = this.makeShortcutValueCode(value)
+                // code is our ID, key is the action to run
+                const runner = () => {
+                    console.log('Running shortcut code: ' + code + ' with action: ' + key)
+                    if (value.vstPassThrough || !Bitwig.isPluginWindowActive()) {
+                        this.actions[key].action()
+                    }
+                }
+                this.shortcutCache[code] = (this.shortcutCache[code] || []).concat(runner)
+            }
+        }
+
+        console.log('Shortcut cache is')
+        console.log(this.shortcutCache)
+    }
+
+    actionsWithCategory(cat, actions) {
+        Object.values(actions).forEach((action: any) => {
+            action['category'] = cat
+        })
+        return actions
+    }
+
+    getActions() {
         return {
-            "devices": {
-                "Focus Device Panel": 'd',
-                "Close All Plugin Windows": {"doubletap": 'Escape'},
-                "Insert Device at End": ["ctrl", "e"],
-                "Insert Device at Start": ["ctrl", "q"],
-                "Collapse Selected Device": ["meta", "["],
-                "Expand Selected Device": ["meta", "]"],
-                "Collapse All Devices": ["meta", "shift", "["],
-                "Expand All Devices": ["meta", "shift", "]"],
-                "Select Device Slot 1": [],
-                "Select Device Slot 2": [],
-                "Select Device Slot 3": [],
-                "Select Device Slot 4": [],
-                "Select Device Slot 5": [],
-                "Select Device Slot 6": [],
-                "Select Device Slot 7": [],
-                "Select Device Slot 8": [],
-            },
-            "global": {
-                "Open Track Search": ["ctrl", "space"],
-                "Select Previous Track": [],
-                "Select Next Track": [],
-                "Enter": [],
-                "ArrowUp": [],
-                "ArrowDown": [],
-                "ArrowLeft": [],
-                "ArrowRight": []           
-            },
-            "browser": {
-                "Previous Browser Tab": [],
-                "Next Browser Tab": [],
-                "Select Browser Tab 1": [],
-                "Select Browser Tab 2": [],
-                "Select Browser Tab 3": [],
-                "Select Browser Tab 4": [],
-                "Select Browser Tab 5": [],
-                "Select Browser Tab 6": [],
-                "Open Device Browser": [],
-                "Reset Browser Filters": [],
-            },
-            "arranger": {
-                "Toggle Double Track Height": [],
-                "Set Value for Current Automation": []
-            },
+            // GLOBAL 
+            ...(this.actionsWithCategory('global', {
+                openTrackSearch: {
+                    action: () => {
+                       
+                    }                
+                },
+                toggleRecord: {            
+                    action: () => {
+                        sendPacketToBitwig({
+                            type: 'action',
+                            data: 'Toggle Record'
+                        })
+                    }                
+                },
+                selectPreviousTrack: {
+                    defaultSetting: {
+                        keys: ['W']
+                    },
+                    action: () => {
+                        sendPacketToBitwig({
+                            type: 'action',
+                            data: 'Select previous track'
+                        })
+                    }                
+                },
+                selectNextTrack: {
+                    defaultSetting: {
+                        keys: ['S']
+                    },
+                    action: () => {
+                        sendPacketToBitwig({
+                            type: 'action',
+                            data: 'Select next track'
+                        })
+                    }                
+                },
+                enter: {
+                    defaultSetting: {
+                        keys: []
+                    },
+                    action: () => {
+                        Keyboard.keyPress('Enter')
+                    }                
+                },
+                arrowUp: {
+                    defaultSetting: {
+                        keys: []
+                    },
+                    action: () => {
+                        Keyboard.keyPress('ArrowUp')
+                    }                
+                },
+                arrowDown: {
+                    defaultSetting: {
+                        keys: []
+                    },
+                    action: () => {
+                        Keyboard.keyPress('ArrowDown')
+                    }                
+                },
+                arrowLeft: {
+                    defaultSetting: {
+                        keys: []
+                    },
+                    action: () => {
+                        Keyboard.keyPress('ArrowLeft')
+                    }                
+                },
+                arrowRight: {
+                    defaultSetting: {
+                        keys: []
+                    },
+                    action: () => {
+                        Keyboard.keyPress('ArrowRight')
+                    }                
+                },
+            })),
+
+            // DEVICES
+            ...(this.actionsWithCategory('devices', {
+                focusDevicePanel: {
+                    defaultSetting: {
+                        keys: ['D']
+                    },
+                    action: () => {
+                        if (!this.browserIsOpen && !renaming) {
+                            sendPacketToBitwig({
+                                type: 'action',
+                                data: [
+                                    `focus_or_toggle_detail_editor`,
+                                    `focus_or_toggle_device_panel`
+                                ]
+                            })
+                        }
+                    }
+                },
+                selectFirstDevice: {
+                    defaultSetting: {
+                        keys: ['Meta', '§']
+                    },
+                    action: () => {
+                        sendPacketToBitwig({
+                            type: 'devices/selected/layer/select-first'
+                        })
+                    }
+                },
+                selectLastDevice: {
+                    defaultSetting: {
+                        keys: []
+                    },
+                    action: () => {
+                        sendPacketToBitwig({
+                            type: 'devices/selected/layer/select-last'
+                        })
+                    }
+                },
+                insertDeviceAtStart: {
+                    defaultSetting: {
+                        keys: ['Control', 'Q']
+                    },
+                    action: () => {
+                        sendPacketToBitwig({
+                            type: 'devices/selected/chain/insert-at-start'
+                        })
+                    }
+                },
+                insertDeviceAtEnd: {
+                    defaultSetting: {
+                        keys: ['Control', 'E']
+                    },
+                    action: () => {
+                        sendPacketToBitwig({
+                            type: 'devices/selected/chain/insert-at-end'
+                        })
+                    }
+                },
+                collapseSelectedDevice: {
+                    defaultSetting: {
+                        keys: ['Meta', '[']
+                    },
+                    action: () => {
+                        sendPacketToBitwig({
+                            type: `devices/selected/collapse`
+                        })
+                    },
+                },
+                expandSelectedDevice: {
+                    defaultSetting: {
+                        keys: ['Meta', ']']
+                    },
+                    action: () => {
+                        sendPacketToBitwig({
+                            type: `devices/selected/expand`
+                        })
+                    },
+                },
+                collapseAllDevicesInChain: {
+                    defaultSetting: {
+                        keys: ['Meta', 'Shift', '[']
+                    },
+                    action: () => {
+                        sendPacketToBitwig({
+                            type: `devices/chain/collapse`
+                        })
+                    },
+                },
+                expandAllDevicesInChain: {
+                    defaultSetting: {
+                        keys: ['Meta', 'Shift', ']']
+                    },
+                    action: () => {
+                        sendPacketToBitwig({
+                            type: `devices/chain/expand`
+                        })
+                    },
+                },
+                closeAllPluginWindows: {
+                    defaultSetting: {
+                        keys: ['Escape'],
+                        doubleTap: true
+                    },
+                    action: () =>  Bitwig.closeFloatingWindows()
+                },
+                navigateToParentDevice: {
+                    defaultSetting: {
+                        keys: ['Meta', 'Shift', 'W']
+                    },
+                    action: () => {
+                        sendPacketToBitwig({
+                            type: 'devices/selected/navigate-up'
+                        })
+                    }
+                },
+                ...this.repeatActionWithRange('selectDeviceSlot', 1, 8, i => {
+                    return {
+                        defaultSetting: {
+                            keys: ["Meta", String(i)]
+                        },
+                        action: () => sendPacketToBitwig({
+                            type: 'devices/selected/slot/select',
+                            data: i - 1
+                        })
+                    }
+                }),
+                ...this.repeatActionWithRange('selectDeviceLayer', 1, 8, i => {
+                    return {
+                        defaultSetting: {
+                            keys: ["Meta", "Shift", String(i)]
+                        },
+                        action: () => sendPacketToBitwig({
+                            type: 'devices/selected/layers/select',
+                            data: i - 1
+                        }),
+                    }
+                }),
+            })),
+
+            // BROWSER
+            ...(this.actionsWithCategory('browser', {
+                openDeviceBrowser: {
+                    defaultSetting: {
+                        keys: ['B']
+                    },
+                    action: () => {
+                        if (!this.browserIsOpen) {
+                            sendPacketToBitwig({
+                                type: 'action',
+                                data: [
+                                    `focus_or_toggle_detail_editor`,
+                                    `focus_or_toggle_device_panel`,
+                                    `show_insert_popup_browser`,
+                                    `Select All`
+                                ]
+                            })
+                        }
+                    }
+                },
+
+                clearBrowserFilters: {
+                    defaultSetting: {
+                        keys: ['Alt', '§']
+                    },
+                    action: () => {
+                        sendPacketToBitwig({
+                            type: 'browser/filters/clear'
+                        })
+                    }
+                },
+                confirmBrowser: {
+                    defaultSetting: {
+                        keys: ['Enter']
+                    },
+                    action: () => {
+                        sendPacketToBitwig({
+                            type: this.browserText.length > 0 ? 'browser/select-and-confirm' : 'browser/confirm'
+                        })
+                    }
+                },
+                previousBrowsertab: {
+                    defaultSetting: {
+                        keys: ['Control', 'ArrowLeft']
+                    },
+                    action: () => {
+                        sendPacketToBitwig({
+                            type: 'browser/tabs/previous'
+                        })
+                    }
+                },
+                nextBrowserTab: {
+                    defaultSetting: {
+                        keys: ['Control', 'ArrowRight']
+                    },
+                    action: () => {
+                        sendPacketToBitwig({
+                            type: 'browser/tabs/next'
+                        })
+                    }
+                },
+                ...this.repeatActionWithRange('selectBrowserTab', 1, 6, i => {
+                    return {
+                        defaultSetting: {
+                            keys: ["Meta", String(i)]
+                        },
+                        action: () => sendPacketToBitwig({
+                            type: 'browser/tabs/set',
+                            data: i - 1
+                        }),
+                    }
+                }),
+            })),
+
+            // ARRANGER
+            ...(this.actionsWithCategory('arranger', {
+                toggleLargeTrackHeight: {
+                    defaultSetting: {
+                        keys: ['Shift', 'C'],
+                        vstPassThrough: true
+                    },
+                    action: () => {
+                        sendPacketToBitwig({
+                            type: 'action',
+                            data: 'toggle_double_or_single_row_track_height'
+                        })
+                    }
+                },
+            })),
+
+            // MISC
+            ...(this.actionsWithCategory('misc', {
+
+                fixBuzzing: {
+                    defaultSetting: {
+                        keys: ['F6']
+                    },
+                    action: () => {
+                        sendPacketToBitwig({
+                            type: 'bugfix/buzzing'
+                        })
+                    }
+                }
+            })),
         }
     }
 
@@ -98,35 +426,68 @@ export class ShortcutsService extends BESService {
         const defaultSets = this.getDefaultSettings()
         for (const category in defaultSets) {
             for (const key in defaultSets[category]) {
+                const value = defaultSets[category][key]
                 await this.insertSettingIfNotExist(settings, {
-                    key: `${category}/${this.normalise(key)}`,
-                    value: defaultSets[category][key],
-                    category
+                    key: this.normalise(key),
+                    value,
+                    category,
+                    type: 'boolean'
                 })
             }
         }
 
-        const defaultShorts = this.getDefaultShortcutSettings()
-        for (const category in defaultShorts) {
-            for (const key in defaultShorts[category]) {
-                await this.insertSettingIfNotExist(settings, {
-                    key: `shortcut/${category}/${this.normalise(key)}`,
-                    value: defaultShorts[category][key],
-                    category
-                })
-            }
+        const actions = this.actions
+        for (const actionKey in actions) {
+            const action = actions[actionKey]
+            await this.insertSettingIfNotExist(settings, {
+                key: actionKey,
+                category: action.category,
+                type: 'shortcut',
+                value: action.defaultSetting || {keys: []}
+            })
         }
+
+        await this.updateShortcutCache()
     }
 
-    activate() {
-        this.seedSettings()
+    setupPacketListeners() {
         interceptPacket('browser/state', undefined, ({ data: {isOpen} }) => {
             this.browserIsOpen = isOpen
             if (isOpen) {
                 this.browserText = ''
             }
         })
+        interceptPacket('api/settings/category', async ({ data: {category}, id }) => {
+            const db = await getDb()
+            const settings = db.getRepository(Setting) 
+            const results = await settings.find({where: {category}})
+            sendPacketToBrowser({data: results, id})
+        })
+        interceptPacket('api/settings/set', async ({ data: setting }) => {
+            const db = await getDb()
+            const { key } = setting
+            const settings = db.getRepository(Setting)
+            const { id } = await settings.findOne({where: {key}})
+            const copy = { ...setting }
+            delete setting.id
+            await settings.update(id, copy)
+            await this.updateShortcutCache()
+        })
+    }
 
+    maybeRunActionForState(state) {
+        const code = this.makeShortcutValueCode(state)
+        if (code in this.shortcutCache) {
+            for (const runner of this.shortcutCache[code]) {
+                runner()
+            }
+        }
+    }
+
+    activate() {
+        this.seedSettings()
+        this.setupPacketListeners()
+        
         // Would use mousemove event here but it fires when mouse is clicked too for some reason
         let middleDown = false
         let startPos = ''
@@ -160,147 +521,49 @@ export class ShortcutsService extends BESService {
             }
 
             if (Bitwig.isActiveApplication() && !renaming) {
-                if (lowerKey === 'F6') {
-                    sendPacketToBitwig({
-                        type: 'bugfix/buzzing'
-                    })
-                } else if (lowerKey === '§' && Meta) {
-                    sendPacketToBitwig({
-                        type: 'devices/selected/layer/select-first'
-                    })
-                } else if (lowerKey === 'e' && Control) {
-                    sendPacketToBitwig({
-                        type: 'devices/selected/chain/insert-at-end'
-                    })
-                } else if (lowerKey === 'q' && Control) {
-                    sendPacketToBitwig({
-                        type: 'devices/selected/chain/insert-at-start'
-                    })
-                } else if (lowerKey === '[' && Meta) {
-                    sendPacketToBitwig({
-                        type: `devices/${Shift ? `chain` : `selected`}/collapse`
-                    })
-                } else if (lowerKey === ']' && Meta) {
-                    sendPacketToBitwig({
-                        type: `devices/${Shift ? `chain` : `selected`}/expand`
-                    })
-                } else if (lowerKey === '9' && Meta) {
-                    sendPacketToBitwig({
-                        type: 'tracksearch/confirm',
-                        data: `Master`
-                    })
-                } else if (lowerKey === 'Escape' && !Meta && !Alt) {
-                    if (new Date().getTime() - lastEscape.getTime() < 250) {
-                        // Double-tapped escape
-                        Bitwig.closeFloatingWindows()
-                        lastEscape = new Date(0)
-                    } else {
-                        lastEscape = new Date()
-                    }
-                } else if (lowerKey === 'd' && !this.browserIsOpen && noMods) {
-                    sendPacketToBitwig({
-                        type: 'action',
-                        data: [
-                            `focus_or_toggle_detail_editor`,
-                            `focus_or_toggle_device_panel`
-                        ]
-                    })
-                } else if (lowerKey === 'b' && !this.browserIsOpen) {
-                    if (Shift) {
-                        // insert at end of selected layer
-                        sendPacketToBitwig({
-                            type: 'devices/selected/layer/insert-at-end'
-                        })
-                    } else {
-                        sendPacketToBitwig({
-                            type: 'action',
-                            data: [
-                                `focus_or_toggle_detail_editor`,
-                                `focus_or_toggle_device_panel`,
-                                `show_insert_popup_browser`,
-                                `Select All`
-                            ]
-                        })
-                    }
-                } else if (lowerKey === 'Enter' && noMods) {
-                    sendPacketToBitwig({
-                        type: this.browserText.length > 0 ? 'browser/select-and-confirm' : 'browser/confirm'
-                    })
-                } else if (lowerKey === 'Escape' && Alt) {
-                    sendPacketToBitwig({
-                        type: 'browser/filters/clear'
-                    })
-                } else if (lowerKey === 'Escape' && Meta) {
-                    sendPacketToBitwig({
-                        type: this.browserText.length > 0 ? 'browser/select-and-confirm' : 'browser/confirm'
-                    })
-                } else if (lowerKey === 'ArrowLeft' && Control) {
-                    sendPacketToBitwig({
-                        type: 'browser/tabs/previous'
-                    })
-                } else if (!isNaN(parseInt(lowerKey))) {
-                    const i = parseInt(lowerKey) - 1
-                
-                    if (this.browserIsOpen) {
-                        // navigate browser tabs
-                        sendPacketToBitwig({
-                            type: 'browser/tabs/set',
-                            data: i
-                        })
-                    } else {
-                       if (Shift) {
-                            // navigate device layers
-                            sendPacketToBitwig({
-                                type: 'devices/selected/layers/select',
-                                data: i
-                            })
-                        } else {
-                            // navigate device slots
-                            sendPacketToBitwig({
-                                type: 'devices/selected/slot/select',
-                                data: i
-                            })
-                        }
-                    }
-                } else if (lowerKey === 'ArrowUp' && Meta || (Control && Meta && lowerKey === 'w')) {
-                    sendPacketToBitwig({
-                        type: 'devices/selected/navigate-up'
-                    })
-                } else if (lowerKey === 'ArrowRight' && Control) {
-                    sendPacketToBitwig({
-                        type: 'browser/tabs/next'
-                    })
-                } else if (lowerKey === 'w' && Control) {
-                    Keyboard.keyPress('ArrowUp')
-                } else if (lowerKey === 'a' && Control) {
-                    Keyboard.keyPress('ArrowLeft')
-                } else if (lowerKey === 's' && Control) {
-                    Keyboard.keyPress('ArrowDown')
-                } else if (lowerKey === 'd' && Control) {
-                    Keyboard.keyPress('ArrowRight')
-                } else if (this.browserIsOpen && /[a-z]{1}/.test(lowerKey) && noMods) {
+                if (this.browserIsOpen && /[a-z]{1}/.test(lowerKey) && noMods) {
                     // Typing in browser
                     this.browserText += lowerKey
                 }
-                if (Bitwig.isPluginWindowActive()) {
-                    if (lowerKey === 'r' && noMods) {
-                        sendPacketToBitwig({
-                            type: 'action',
-                            data: 'Toggle Record'
-                        })
-                    } else if (lowerKey === 'w') {
-                        sendPacketToBitwig({
-                            type: 'action',
-                            data: 'Select previous track'
-                        })
-                    } else if (lowerKey === 's') {
-                        sendPacketToBitwig({
-                            type: 'action',
-                            data: 'Select next track'
-                        })
-                    }
+
+                let keys = [lowerKey.length === 1 ? lowerKey.toUpperCase() : lowerKey]
+                if (Meta) {
+                    keys.push('Meta')
                 }
-            } 
+                if (Shift) {
+                    keys.push('Shift')
+                }
+                if (Control) {
+                    keys.push('Control')
+                }
+                if (Alt) {
+                    keys.push('Alt')
+                }
+                keys.reverse()
+                const asJSON = JSON.stringify(keys)
+                console.log(asJSON)
+
+                if (asJSON === lastKey && new Date().getTime() - lastKeyPressed.getTime() < 250) {
+                    // Double-tapped, check for shortcut
+                    lastKey = ''
+                    lastKeyPressed = new Date(0)
+                    this.maybeRunActionForState({
+                        keys,
+                        doubleTap: true
+                    })
+                } else {
+                    // Single tap
+                    lastKey = asJSON
+                    lastKeyPressed = new Date()
+                    // Uncomment to debug error messages that crash NAPI
+                    // setTimeout(() => {
+                        this.maybeRunActionForState({
+                            keys,
+                            doubleTap: false
+                        })
+                    // }, 100)
+                }
+            }
         })
     }
 }

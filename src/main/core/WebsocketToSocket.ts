@@ -37,7 +37,7 @@ const bitwigToClientQueue = async.queue(async function ({data}, callback) {
             if (activeWebsocket) {
                 if (logInOut) logWithTime('Bitwig sent: ' + partialMsg.substr(0, 50));
                 try {
-                    partialMsg = await processInterceptors(partialMsg, fromBWInterceptors)
+                    partialMsg = (await processInterceptors(partialMsg, fromBWInterceptors)).string
                 } catch (e) {
                     console.error("Error intercepting packet", e)
                 }
@@ -71,7 +71,10 @@ async function processInterceptors(packetStr, ceptors: {[type: string]: Function
         }
     }
     // Don't waste time re-stringifying if nothing changed
-    return didIntercept ? JSON.stringify(packet) : packetStr
+    return {
+        string: didIntercept ? JSON.stringify(packet) : packetStr,
+        parsedBefore: packet
+    }
 }
 
 export class SocketMiddlemanService extends BESService {
@@ -119,11 +122,15 @@ export class SocketMiddlemanService extends BESService {
         wss.on('connection', ws => {
             activeWebsocket = ws;
             logWithTime('Browser connected');
-            ws.on('message', messageFromBrowser => {
+            ws.on('message', async messageFromBrowser => {
                 if (logInOut) logWithTime('Browser sent: ', messageFromBrowser);
                 try {
-                    processInterceptors(messageFromBrowser, toBWInterceptors)
-                    sendToBitwig(messageFromBrowser)
+                    const { parsedBefore } = await processInterceptors(messageFromBrowser, toBWInterceptors)
+                    if (parsedBefore.type.split('/')[0] === 'api') {
+                        // No need to do anything
+                    } else {    
+                        sendToBitwig(messageFromBrowser)
+                    }
                 } catch (e) {
                     console.error("Invalid packet from browser", e)
                 } 
@@ -153,6 +160,10 @@ function sendToBitwig(str) {
 
 export function sendPacketToBitwig(packet) {
   return sendToBitwig(JSON.stringify(packet))
+}
+
+export function sendPacketToBrowser(packet) {
+    activeWebsocket.send(JSON.stringify(packet))
 }
 
 /**
