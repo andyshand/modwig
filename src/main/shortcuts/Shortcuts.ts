@@ -477,11 +477,14 @@ export class ShortcutsService extends BESService {
 
     maybeRunActionForState(state) {
         const code = this.makeShortcutValueCode(state)
+        let ran = false
         if (code in this.shortcutCache) {
             for (const runner of this.shortcutCache[code]) {
                 runner()
+                ran = true
             }
         }
+        return ran
     }
 
     activate() {
@@ -543,15 +546,17 @@ export class ShortcutsService extends BESService {
                 const asJSON = JSON.stringify(keys)
                 console.log(asJSON)
 
+                let ranDouble = false
                 if (asJSON === lastKey && new Date().getTime() - lastKeyPressed.getTime() < 250) {
                     // Double-tapped, check for shortcut
                     lastKey = ''
                     lastKeyPressed = new Date(0)
-                    this.maybeRunActionForState({
+                    ranDouble = this.maybeRunActionForState({
                         keys,
                         doubleTap: true
                     })
-                } else {
+                } 
+                if (!ranDouble) {
                     // Single tap
                     lastKey = asJSON
                     lastKeyPressed = new Date()
