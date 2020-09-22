@@ -55,7 +55,9 @@ export class TrayService extends BESService {
                     nodeIntegration: true,
                 }
             })
-            this.settingsWindow.loadURL(url('/#/settings'))
+            const loadUrl = url('/#/settings')
+            console.log(loadUrl)
+            this.settingsWindow.loadURL(loadUrl)
             this.settingsWindow.show()
         }
         

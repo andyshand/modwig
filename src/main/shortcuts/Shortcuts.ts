@@ -558,6 +558,7 @@ export class ShortcutsService extends BESService {
 
                 let keys = getEventKeysArray(event)
                 const asJSON = JSON.stringify(keys)
+                console.log(asJSON)
 
                 let ranDouble = false
                 if (asJSON === lastKey && new Date().getTime() - lastKeyPressed.getTime() < 250) {
