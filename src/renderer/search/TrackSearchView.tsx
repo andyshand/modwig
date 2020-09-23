@@ -297,7 +297,7 @@ export class TrackSearchView extends React.Component<SearchProps> {
         if (currentCue) {
             // Save confirmed track as existing after curr cue
             send({
-                type: 'track/save',
+                type: 'api/track/save',
                 data: {
                     name: track.name,
                     data: {

@@ -169,7 +169,7 @@ export const TrackResult = React.memo(({result, selected, onConfirmed, onShouldS
                 after[cue.name] = true
             }
             send({
-                type: 'track/save',
+                type: 'api/track/save',
                 data: {
                     name: track.name,
                     data: {

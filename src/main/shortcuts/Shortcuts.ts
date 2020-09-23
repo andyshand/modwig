@@ -251,7 +251,8 @@ export class ShortcutsService extends BESService {
                 closeAllPluginWindows: {
                     defaultSetting: {
                         keys: ['Escape'],
-                        doubleTap: true
+                        doubleTap: true,
+                        vstPassThrough: true
                     },
                     action: () =>  Bitwig.closeFloatingWindows()
                 },

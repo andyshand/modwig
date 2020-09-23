@@ -37,15 +37,12 @@ export function onMessageReceived(callback) {
     onMessage.push(callback)
 }
 
-// let packetsWaitingForResponse
-
 let queued: any[] = []
 let responseListeners: {[id: string]: Function} = {}
 
-export function send(newPacket: any, cb?: Function) {
-  queued.push(newPacket)
+function sendQueuedPackets() {
   if (ws.readyState === 1) {
-    for (const packet of queued) {
+    for (const {packet, callback: cb} of queued) {
       console.log("sending: ", packet)
       packet.id = nextPacketId++
       ws.send(JSON.stringify(packet))
@@ -55,6 +52,11 @@ export function send(newPacket: any, cb?: Function) {
     }
     queued = []
   }
+}
+
+export function send(newPacket: any, callback?: Function) {
+  queued.push({packet: newPacket, callback})
+  sendQueuedPackets()
 }
 
 export function sendPromise(newPacket) {
@@ -153,12 +155,16 @@ export function getCueMarkersAtPosition(pos) {
   return [state.cueMarkers[i] || DUMMY_START_MARKER, DUMMY_END_MARKER]
 }
 
-w.onclose = () => {
+ws.onclose = () => {
   console.log('websocket closed!!!')
 }
 
-w.onerror = err => {
+ws.onerror = err => {
   console.error('websocket error!', err)
+}
+
+ws.onopen = () => {
+  sendQueuedPackets()
 }
 
 if (w.pingInterval) {
@@ -168,6 +174,6 @@ w.pingInterval = setInterval(() => {
   send({type: 'ping'})
 }, 1000 * 5)
 
-send({type: 'ping'})
-send({type: 'ping'})
-send({type: 'ping'})
+// send({type: 'ping'})
+// send({type: 'ping'})
+// send({type: 'ping'})
