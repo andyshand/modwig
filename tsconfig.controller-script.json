@@ -5,7 +5,7 @@
         "suppressImplicitAnyIndexErrors": true,
         "moduleResolution": "node",
         "target": "es3",
-        "outFile": "extraResources/controller-script/bes.control.js",
+        "outFile": "extra-resources/controller-script/bes.control.js",
         "experimentalDecorators": true,
         "emitDecoratorMetadata": true
     },

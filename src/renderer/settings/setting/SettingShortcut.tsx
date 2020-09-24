@@ -55,6 +55,8 @@ const ShortcutWrap = styled.div`
     /* border-radius: .5em; */
     overflow: hidden;
     border: 1px solid #666;
+    user-select: none;
+    cursor: default;
     border-left: none;
     border-right: none;
 
@@ -230,7 +232,9 @@ export const SettingShortcut = ({setting}) => {
 
     return <ShortcutWrap >
         <FlexRow>
-            <div>{settingTitle(setting)}</div>
+            <div title={setting.description}>
+                {settingTitle(setting)}
+            </div>
             <InputWrap {...wrapProps}>
                 <ShortcutInput {...props} />
                 <div><FontAwesomeIcon onClick={() => updateValue({keys: []})} icon={faTimesCircle} /></div>

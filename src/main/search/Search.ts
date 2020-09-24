@@ -154,7 +154,7 @@ export async function setupNavigation() {
             return { modified: true }
         }
     })
-    interceptPacket('track/save', ({ data: { name: trackName, data }}) => {
+    interceptPacket('api/track/save', ({ data: { name: trackName, data }}) => {
         if (typeof currProject === 'string') {
             createOrUpdateTrack(trackName, currProject, { data })
         }

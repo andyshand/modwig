@@ -3,6 +3,7 @@ import { Tray, Menu, app, BrowserWindow } from 'electron'
 import { getResourcePath } from "../../connector/shared/ResourcePath";
 import { url } from "./Url";
 import { sendPacketToBitwig } from "./WebsocketToSocket";
+import { promises as fs } from 'fs'
 
 const SETTINGS_WINDOW_WIDTH = 800
 const SETTINGS_WINDOW_HEIGHT = 500
@@ -17,21 +18,20 @@ export class TrayService extends BESService {
     connected = false
     settingsWindow
 
-    copyControllerScript() {
+    async copyControllerScript() {
         try {
-            const fs = require('fs')
             const path = require('path')
             const homedir = require('os').homedir();
 
             const controllerSrcFolder = getResourcePath('/controller-script')
             const controllerDestFolder = path.join(homedir, 'Documents', 'Bitwig Studio', 'Controller Scripts', 'Bitwig Enhancement Suite')
 
-            if (!fs.existsSync(controllerDestFolder)) {
-                fs.mkdirSync(controllerDestFolder)
+            const stats = await fs.stat(controllerDestFolder)
+            if (!stats.isDirectory()) {
+                await fs.mkdir(controllerDestFolder)
             }
-
-            for (const file of fs.readdirSync(controllerSrcFolder)) {
-                fs.copyFileSync(path.join(controllerSrcFolder, file), path.join(controllerDestFolder, file))
+            for (const file of await fs.readdir(controllerSrcFolder)) {
+                await fs.copyFile(path.join(controllerSrcFolder, file), path.join(controllerDestFolder, file))
             }
         } catch (e) {
             console.error(e)   

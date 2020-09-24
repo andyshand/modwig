@@ -10,18 +10,31 @@ const ShortcutsWrap = styled.div`
 `
 const SectionHeader = styled.div`
     padding: 1.2rem;
-    font-size: 0.9em;
-    text-transform: uppercase;
-    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    >:first-child {
+        font-size: 0.9em;
+        text-transform: uppercase;
+        font-weight: 600;
+    }
+    >:nth-child(2) {
+        font-size: .8em;
+        text-align: right;
+        max-width: 18em;
+    }
     color: #888;
-    text-align: center;
+    /* text-align: center; */
 `
 class Shortcuts extends React.Component {
     render() {
         const { settings } = this.props
         return <div>
             <ShortcutsWrap>
-                <SectionHeader>Shortcuts</SectionHeader>
+                <SectionHeader>
+                    <div>Shortcuts</div>
+                    <div>Please ensure you have disabled any built-in shortcuts using the same keys.</div>
+                </SectionHeader>
                 <div>
                     {settings.filter(s => s.type === 'shortcut').map(setting => {
                         return <SettingShortcut key={setting.key} setting={setting} />

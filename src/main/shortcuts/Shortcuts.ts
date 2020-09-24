@@ -11,6 +11,9 @@ let lastKey = ''
 let renaming = false
 let keyRepeatTimeout: any = null
 
+const MODS_MESSAGE = `Modulators are currently inaccessible from the controller API. This shortcut is also limited to a single device at any time.`
+const MODS_MESSAGE_2 = `Modulators are currently inaccessible from the controller API.`
+const PROXY_MESSAGE = key => `Proxy key for the "${key}" key for convenient remapping.`
 export class ShortcutsService extends BESService {
     browserIsOpen
     browserText = ''
@@ -56,8 +59,8 @@ export class ShortcutsService extends BESService {
             }
         }
 
-        console.log('Shortcut cache is')
-        console.log(this.shortcutCache)
+        // console.log('Shortcut cache is')
+        // console.log(this.shortcutCache)
     }
 
     actionsWithCategory(cat, actions) {
@@ -77,6 +80,7 @@ export class ShortcutsService extends BESService {
                     }                
                 },
                 toggleRecord: {            
+                    description: `This "Toggle Record" shortcut can optionally pass through VSTs, whereas the built-in shortcut cannot.`,
                     action: () => {
                         sendPacketToBitwig({
                             type: 'action',
@@ -117,6 +121,7 @@ export class ShortcutsService extends BESService {
                     }                
                 },
                 arrowUp: {
+                    description: PROXY_MESSAGE('ArrowUp'),
                     defaultSetting: {
                         keys: []
                     },
@@ -125,6 +130,7 @@ export class ShortcutsService extends BESService {
                     }                
                 },
                 arrowDown: {
+                    description: PROXY_MESSAGE('ArrowDown'),
                     defaultSetting: {
                         keys: []
                     },
@@ -133,6 +139,7 @@ export class ShortcutsService extends BESService {
                     }                
                 },
                 arrowLeft: {
+                    description: PROXY_MESSAGE('ArrowLeft'),
                     defaultSetting: {
                         keys: []
                     },
@@ -141,6 +148,7 @@ export class ShortcutsService extends BESService {
                     }                
                 },
                 arrowRight: {
+                    description: PROXY_MESSAGE('ArrowRight'),
                     defaultSetting: {
                         keys: []
                     },
@@ -153,6 +161,7 @@ export class ShortcutsService extends BESService {
             // DEVICES
             ...(this.actionsWithCategory('devices', {
                 focusDevicePanel: {
+                    description: "Just focus the device panel, rather than the toggle/focus behaviour built into Bitwig.",
                     defaultSetting: {
                         keys: ['D']
                     },
@@ -169,6 +178,7 @@ export class ShortcutsService extends BESService {
                     }
                 },
                 selectFirstDevice: {
+                    description: `Select the first device for the currently selected device chain.`,
                     defaultSetting: {
                         keys: ['Meta', '§']
                     },
@@ -179,6 +189,7 @@ export class ShortcutsService extends BESService {
                     }
                 },
                 selectLastDevice: {
+                    description: `Select the last device for the currently selected device chain.`,
                     defaultSetting: {
                         keys: []
                     },
@@ -209,6 +220,7 @@ export class ShortcutsService extends BESService {
                     }
                 },
                 collapseSelectedDevice: {
+                    description: `Close the main panel and remote controls page of the currently selected device. ${MODS_MESSAGE}`,
                     defaultSetting: {
                         keys: ['Meta', '[']
                     },
@@ -219,6 +231,7 @@ export class ShortcutsService extends BESService {
                     },
                 },
                 expandSelectedDevice: {
+                    description: `Expand the main panel of the selected device. ${MODS_MESSAGE}`,
                     defaultSetting: {
                         keys: ['Meta', ']']
                     },
@@ -229,6 +242,7 @@ export class ShortcutsService extends BESService {
                     },
                 },
                 collapseAllDevicesInChain: {
+                    description: `Close the main panel and remote controls page of all devices in the currently selected chain. ${MODS_MESSAGE_2}`,
                     defaultSetting: {
                         keys: ['Meta', 'Shift', '[']
                     },
@@ -239,6 +253,7 @@ export class ShortcutsService extends BESService {
                     },
                 },
                 expandAllDevicesInChain: {
+                    description: `Expand the main panel of all devices in the currently selected chain. ${MODS_MESSAGE_2}`,
                     defaultSetting: {
                         keys: ['Meta', 'Shift', ']']
                     },
@@ -257,6 +272,7 @@ export class ShortcutsService extends BESService {
                     action: () =>  Bitwig.closeFloatingWindows()
                 },
                 navigateToParentDevice: {
+                    description: `Selects the parent device of the currently selected device.`,
                     defaultSetting: {
                         keys: ['Meta', 'Shift', 'W']
                     },
@@ -268,6 +284,7 @@ export class ShortcutsService extends BESService {
                 },
                 ...this.repeatActionWithRange('selectDeviceSlot', 1, 8, i => {
                     return {
+                        description: `Focuses slot ${i} of the currently selected device. Press a second time on an empty slot to insert a device.`,
                         defaultSetting: {
                             keys: ["Meta", String(i)]
                         },
@@ -279,6 +296,7 @@ export class ShortcutsService extends BESService {
                 }),
                 ...this.repeatActionWithRange('selectDeviceLayer', 1, 8, i => {
                     return {
+                        description: `Focuses layer ${i} of the currently selected device. Press a second time on an empty layer to insert a device. If the selected device does not have layers, selection will occur on the parent device instead (recursing up to a maximum of 5 device levels).`,
                         defaultSetting: {
                             keys: ["Meta", "Shift", String(i)]
                         },
@@ -296,6 +314,7 @@ export class ShortcutsService extends BESService {
                     defaultSetting: {
                         keys: ['B']
                     },
+                    description: `Ensures the device panel is focused so the browser is more likely to open when you want it to.`,
                     action: () => {
                         if (!this.browserIsOpen) {
                             sendPacketToBitwig({
@@ -315,6 +334,7 @@ export class ShortcutsService extends BESService {
                     defaultSetting: {
                         keys: ['Alt', '§']
                     },
+                    description: `Resets all the filters in the currently open popup browser.`,
                     action: () => {
                         sendPacketToBitwig({
                             type: 'browser/filters/clear'
@@ -325,13 +345,14 @@ export class ShortcutsService extends BESService {
                     defaultSetting: {
                         keys: ['Enter']
                     },
+                    description: `Confirms the current choice in the popup browser. If there is a search query and no selected item, the first result will be confirmed.`,
                     action: () => {
                         sendPacketToBitwig({
                             type: this.browserText.length > 0 ? 'browser/select-and-confirm' : 'browser/confirm'
                         })
                     }
                 },
-                previousBrowsertab: {
+                previousBrowserTab: {
                     defaultSetting: {
                         keys: ['Control', 'ArrowLeft']
                     },
@@ -367,6 +388,7 @@ export class ShortcutsService extends BESService {
             // ARRANGER
             ...(this.actionsWithCategory('arranger', {
                 toggleLargeTrackHeight: {
+                    description: `Toggles large track height, ensuring the arranger is focused first so the shortcut works when expected.`,
                     defaultSetting: {
                         keys: ['Shift', 'C'],
                         vstPassThrough: true
@@ -385,8 +407,8 @@ export class ShortcutsService extends BESService {
 
             // MISC
             ...(this.actionsWithCategory('misc', {
-
                 fixBuzzing: {
+                    description: `Solos each track one-by-one to try and eliminate any buzzing noises that have somehow accumulated.`,
                     defaultSetting: {
                         keys: ['F6']
                     },
@@ -449,11 +471,15 @@ export class ShortcutsService extends BESService {
         const actions = this.actions
         for (const actionKey in actions) {
             const action = actions[actionKey]
+            const value = action.defaultSetting || {keys: []}
+            if (process.env.NODE_ENV !== 'dev') {
+                delete value.keys
+            }
             await this.insertSettingIfNotExist(settings, {
                 key: actionKey,
                 category: action.category,
                 type: 'shortcut',
-                value: action.defaultSetting || {keys: []}
+                value
             })
         }
 
@@ -471,7 +497,17 @@ export class ShortcutsService extends BESService {
             const db = await getDb()
             const settings = db.getRepository(Setting) 
             const results = await settings.find({where: {category}})
-            sendPacketToBrowser({data: results, id})
+
+            const actions = this.actions
+
+            sendPacketToBrowser({data: results.map(res => {
+                res = {...res}
+                if (res.key in actions) {
+                    const action = actions[res.key]
+                    res.description = action.description
+                }
+                return res
+            }), id})
         })
         interceptPacket('api/settings/set', async ({ data: setting }) => {
             const db = await getDb()

@@ -483,6 +483,9 @@ var DeviceController = /** @class */ (function (_super) {
         }
         var packetManager = deps.packetManager, globalController = deps.globalController;
         _this.cursorTrack = host.createCursorTrack("Selected Track", "Selected Track", 0, 0, true);
+        // this.cursorDevice.position().addValueObserver(() => {
+        //     host.showPopupNotification('position changed')
+        // })
         _this.cursorDevice = _this.cursorTrack.createCursorDevice();
         _this.deviceChain = _this.cursorDevice.deviceChain();
         _this.deviceBank = _this.deviceChain.createDeviceBank(DEVICE_BANK_SIZE);
