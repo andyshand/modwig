@@ -7,6 +7,7 @@ import { Settings } from './settings/Settings';
 import { TrackSearchView } from './search/TrackSearchView';
 import { ValueEntryView } from './value-entry/ValueEntryView';
 import { SearchPanel } from './search/SearchPanel';
+import { Setup } from './setup/Setup';
 
 function removeAllListeners() {
     app.removeAllListeners('browser-window-focus')
@@ -135,6 +136,7 @@ ReactDOM.render(
         <GlobalStyle />
         <Switch>
             <Route path="/settings" component={Settings} />
+            <Route path="/setup" component={Setup} />
             <Route path="/search" component={SearchPanel} />
             <Route path="/value-entry" component={ValueEntryView} />
         </Switch>

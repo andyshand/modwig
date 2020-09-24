@@ -4,6 +4,9 @@ import { getResourcePath } from "../../connector/shared/ResourcePath";
 import { url } from "./Url";
 import { sendPacketToBitwig } from "./WebsocketToSocket";
 import { promises as fs } from 'fs'
+const { Bitwig } = require('bindings')('bes')
+import { getDb } from "../db";
+import { Setting } from "../db/entities/Setting";
 
 const SETTINGS_WINDOW_WIDTH = 800
 const SETTINGS_WINDOW_HEIGHT = 500
@@ -17,6 +20,7 @@ export class TrayService extends BESService {
     animationI = 0
     connected = false
     settingsWindow
+    settingsService = getService('SettingsService')
 
     async copyControllerScript() {
         try {
@@ -38,10 +42,19 @@ export class TrayService extends BESService {
         }
     }
 
-    activate() {
+    async activate() {
         const socket = getService('SocketMiddlemanService')
         const tray = new Tray(getResourcePath('/images/tray-0Template.png'))
-        const openPreferences = () => {
+        
+        await this.settingsService.insertSettingIfNotExist({
+            key: 'setupComplete',
+            value: false,
+            category: 'internal',
+            type: 'boolean'
+        })
+        const isSetupComplete = async () => await this.settingsService.getSettingValue('setupComplete')
+
+        const openPreferences = async () => {
             if (this.settingsWindow && !this.settingsWindow.isDestroyed()) {
                 this.settingsWindow.close()
             }
@@ -55,8 +68,7 @@ export class TrayService extends BESService {
                     nodeIntegration: true,
                 }
             })
-            const loadUrl = url('/#/settings')
-            console.log(loadUrl)
+            const loadUrl = await isSetupComplete() ? url('/#/settings') : url('/#/setup')
             this.settingsWindow.loadURL(loadUrl)
             this.settingsWindow.show()
         }
@@ -69,9 +81,14 @@ export class TrayService extends BESService {
             this.settingsWindow.toggleDevTools()
         }
 
-        const updateMenu = () => {
+        const updateMenu = async () => {
             const contextMenu = Menu.buildFromTemplate([
               { label: `Bitwig Enhancement Suite: ${this.connected ? 'Connected' : 'Connecting...'}`, enabled: false },
+              ...(Bitwig.isAccessibilityEnabled(false) ? [] : [
+                { label: 'Enable Accessibility', click: () => {
+                    Bitwig.isAccessibilityEnabled(true)
+                } },
+              ]),
               { label: `Reinstall Controller Script`, click: () => {
                 this.copyControllerScript()
               } },
@@ -83,7 +100,7 @@ export class TrayService extends BESService {
                     data: settings
                 })
             } },
-              { label: 'Preferences...', click: openPreferences },
+              { label: await isSetupComplete() ? 'Preferences...' : 'Setup...', click: openPreferences },
             { type: 'separator' },
               { label: 'Quit', click: () => {
                 app.quit();
@@ -91,12 +108,18 @@ export class TrayService extends BESService {
             ])
             tray.setContextMenu(contextMenu)
         }
+        const imageOrWarning = str => {
+            if (!Bitwig.isAccessibilityEnabled(false)) {
+                return getResourcePath(`/images/tray-warningTemplate.png`)
+            }
+            return str
+        }
         const onNotConnected = () => {
             if (this.timer) {
                 clearInterval(this.timer)
             }
             this.timer = setInterval(() => {
-                tray.setImage(getResourcePath(`/images/tray-${this.animationI % 6}Template.png`))    
+                tray.setImage(imageOrWarning(getResourcePath(`/images/tray-${this.animationI % 6}Template.png`)))    
                 this.animationI++
             }, 250)
         }
@@ -104,7 +127,7 @@ export class TrayService extends BESService {
             this.connected = isConnected
             if (isConnected && this.timer) {
                 clearInterval(this.timer)
-                tray.setImage(getResourcePath(`/images/tray-0Template.png`))   
+                tray.setImage(imageOrWarning(getResourcePath(`/images/tray-0Template.png`)))
             } else {
                 onNotConnected()
             }

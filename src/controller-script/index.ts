@@ -504,10 +504,6 @@ class DeviceController extends Controller {
         const { packetManager, globalController } = deps
 
         this.cursorTrack = host.createCursorTrack("Selected Track", "Selected Track", 0, 0, true)
-        // this.cursorDevice.position().addValueObserver(() => {
-        //     host.showPopupNotification('position changed')
-            
-        // })
 
         this.cursorDevice = this.cursorTrack.createCursorDevice()
         this.deviceChain = this.cursorDevice.deviceChain()

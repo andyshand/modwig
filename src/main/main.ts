@@ -5,14 +5,16 @@ import { ShortcutsService } from "./shortcuts/Shortcuts";
 import { registerService } from "./core/Service";
 import { SocketMiddlemanService } from "./core/WebsocketToSocket";
 import { TrayService } from "./core/Tray";
+import { SettingsService } from "./core/SettingsService";
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   // Service creation order is manually controlled atm, but each
   // has dependencies
   // TODO automate this - is error prone
-  const socketMiddleMan = registerService(SocketMiddlemanService)
-  const trayService = registerService(TrayService)
-  const shortcutsService = registerService(ShortcutsService)
+  const settingsService = await registerService(SettingsService)
+  const socketMiddleMan = await registerService(SocketMiddlemanService)
+  const trayService = await registerService(TrayService)
+  const shortcutsService = await registerService(ShortcutsService)
   setupNavigation()  
   setupValueEntry()
 })

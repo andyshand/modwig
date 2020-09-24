@@ -1,5 +1,5 @@
 import { sendPacketToBitwig, interceptPacket, sendPacketToBrowser } from "../core/WebsocketToSocket"
-import { BESService } from "../core/Service"
+import { BESService, getService } from "../core/Service"
 import { returnMouseAfter } from "../../connector/shared/EventUtils"
 import { getDb } from "../db"
 import { Setting } from "../db/entities/Setting"
@@ -19,6 +19,7 @@ export class ShortcutsService extends BESService {
     browserText = ''
     actions = this.getActions()
     shortcutCache = {}
+    settingsService: any
 
     repeatActionWithRange(name, startIncl, endIncl, genTakesI) {
         let out = {}
@@ -439,27 +440,16 @@ export class ShortcutsService extends BESService {
         }
     }
 
-    async insertSettingIfNotExist(settings, setting) {
-        const existingSetting = await settings.findOne({where: {key: setting.key}})
-        if (!existingSetting) {
-            const newSetting = settings.create(setting)
-            await settings.save(newSetting);
-        }
-    }
-
     normalise(label) {
         return label.replace(/[\s]+/g, '-').toLowerCase()
     }
 
     async seedSettings() {
-        const db = await getDb()
-        const settings = db.getRepository(Setting)
-
         const defaultSets = this.getDefaultSettings()
         for (const category in defaultSets) {
             for (const key in defaultSets[category]) {
                 const value = defaultSets[category][key]
-                await this.insertSettingIfNotExist(settings, {
+                await this.settingsService.insertSettingIfNotExist({
                     key: this.normalise(key),
                     value,
                     category,
@@ -475,7 +465,7 @@ export class ShortcutsService extends BESService {
             if (process.env.NODE_ENV !== 'dev') {
                 delete value.keys
             }
-            await this.insertSettingIfNotExist(settings, {
+            await this.settingsService.insertSettingIfNotExist({
                 key: actionKey,
                 category: action.category,
                 type: 'shortcut',
@@ -534,6 +524,7 @@ export class ShortcutsService extends BESService {
     }
 
     activate() {
+        this.settingsService = getService('SettingsService')
         this.seedSettings()
         this.setupPacketListeners()
         

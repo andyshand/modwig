@@ -7,17 +7,28 @@ AXUIElementRef cachedBitwigRef;
 AXUIElementRef cachedPluginHostRef;
 pid_t pluginHostPID = -1;
 
-bool AccessibilityEnabled() {
-    auto dict = CFDictionaryCreate(NULL, 
-        (const void **)&kAXTrustedCheckOptionPrompt, 
-        (const void **)&kCFBooleanTrue, 
-        1, 
-        &kCFTypeDictionaryKeyCallBacks, 
-        &kCFTypeDictionaryValueCallBacks
+Napi::Value AccessibilityEnabled(const Napi::CallbackInfo &info) {
+    Napi::Env env = info.Env();
+    bool notify = info[0].As<Napi::Boolean>();
+    bool trusted = false;
+
+    if (notify) {
+        auto dict = CFDictionaryCreate(NULL, 
+            (const void **)&kAXTrustedCheckOptionPrompt, 
+            (const void **)&kCFBooleanTrue, 
+            1, 
+            &kCFTypeDictionaryKeyCallBacks, 
+            &kCFTypeDictionaryValueCallBacks
+        );
+        trusted = AXIsProcessTrustedWithOptions(dict);
+        CFRelease(dict);
+    } else {
+        trusted = AXIsProcessTrusted();
+    }
+    return Napi::Boolean::New(
+        env, 
+        trusted
     );
-    bool trusted = AXIsProcessTrustedWithOptions(dict);
-    CFRelease(dict);
-    return trusted;
 }
 
 pid_t GetPID(std::string name) {
@@ -142,6 +153,7 @@ Napi::Value InitBitwig(Napi::Env env, Napi::Object exports)
     obj.Set(Napi::String::New(env, "isActiveApplication"), Napi::Function::New(env, IsActiveApplication));
     obj.Set(Napi::String::New(env, "isPluginWindowActive"), Napi::Function::New(env, IsPluginWindowActive));
     obj.Set(Napi::String::New(env, "closeFloatingWindows"), Napi::Function::New(env, CloseFloatingWindows));
+    obj.Set(Napi::String::New(env, "isAccessibilityEnabled"), Napi::Function::New(env, AccessibilityEnabled));
     exports.Set("Bitwig", obj);
     return exports;
 }

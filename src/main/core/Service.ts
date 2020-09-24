@@ -21,17 +21,20 @@ const servicesByName: {[name: string]: BESService} = {}
 export abstract class BESService {
     constructor(public readonly name: string) {}
 
-    abstract activate()
+    abstract async activate()
 }
 
 /**
  * Creates a shared instance of a service and runs
  * its "activate" function
  */
-export function registerService(service: Function) {
+export async function registerService(service: Function) {
     const instance = new (service as any)()
     servicesByName[service.name] = instance
-    instance.activate()
+    const res = instance.activate()
+    if (res?.then) {
+        await res
+    }
     return instance;
 }
 
