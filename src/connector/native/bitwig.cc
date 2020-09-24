@@ -10,21 +10,16 @@ pid_t pluginHostPID = -1;
 Napi::Value AccessibilityEnabled(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
     bool notify = info[0].As<Napi::Boolean>();
-    bool trusted = false;
+    auto dict = CFDictionaryCreate(NULL, 
+        (const void **)&kAXTrustedCheckOptionPrompt, 
+        (const void **)(notify ? &kCFBooleanTrue : &kCFBooleanFalse), 
+        1, 
+        &kCFTypeDictionaryKeyCallBacks, 
+        &kCFTypeDictionaryValueCallBacks
+    );
+    bool trusted = AXIsProcessTrustedWithOptions(dict);
+    CFRelease(dict);
 
-    if (notify) {
-        auto dict = CFDictionaryCreate(NULL, 
-            (const void **)&kAXTrustedCheckOptionPrompt, 
-            (const void **)&kCFBooleanTrue, 
-            1, 
-            &kCFTypeDictionaryKeyCallBacks, 
-            &kCFTypeDictionaryValueCallBacks
-        );
-        trusted = AXIsProcessTrustedWithOptions(dict);
-        CFRelease(dict);
-    } else {
-        trusted = AXIsProcessTrusted();
-    }
     return Napi::Boolean::New(
         env, 
         trusted
