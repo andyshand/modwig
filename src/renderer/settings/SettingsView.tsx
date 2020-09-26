@@ -4,9 +4,14 @@ import titleize from 'titleizejs'
 import { Checkbox } from '../core/Checkbox'
 import { styled } from 'linaria/react'
 import { SettingShortcut } from './setting/SettingShortcut'
-
-const ShortcutsWrap = styled.div`
+import { SettingBoolean } from './setting/SettingBoolean'
+const SettingsViewWrap = styled.div`
     background: #222;
+`
+const ShortcutsWrap = styled.div`
+    &:not(:last-child) {
+        margin-bottom: 3rem;
+    }
 `
 const SectionHeader = styled.div`
     padding: 1.2rem;
@@ -32,6 +37,16 @@ class Shortcuts extends React.Component {
         return <div>
             <ShortcutsWrap>
                 <SectionHeader>
+                    <div>Features</div>
+                </SectionHeader>
+                <div>
+                    {settings.filter(s => s.type === 'boolean').map(setting => {
+                        return <SettingBoolean key={setting.key} setting={setting} />
+                    })}
+                </div>
+             </ShortcutsWrap>
+            <ShortcutsWrap>
+                <SectionHeader>
                     <div>Shortcuts</div>
                     <div>Please ensure you have disabled any built-in shortcuts using the same keys.</div>
                 </SectionHeader>
@@ -41,12 +56,6 @@ class Shortcuts extends React.Component {
                     })}
                 </div>
             </ShortcutsWrap>
-            {/* {settings.map(setting => {
-                return <div key={setting.key}>
-                    {title(setting.key)}
-                    {<Checkbox />}
-                </div>
-            })} */}
         </div>
     }
 }
@@ -66,8 +75,8 @@ export class SettingsView extends React.Component<Props> {
     }
 
     render() {
-        return <div>
+        return <SettingsViewWrap>
             <Shortcuts settings={this.state.settings} />
-        </div>
+        </SettingsViewWrap>
     }
 }
