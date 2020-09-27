@@ -147,5 +147,8 @@ export class TrayService extends BESService {
         interceptPacket('api/setup/finish', async () => {
             await this.settingsService.setSettingValue('setupComplete', true)
         })
+        interceptPacket('api/setup/accessibility', async () => {
+            Bitwig.isAccessibilityEnabled(true)
+        })
     }
 }

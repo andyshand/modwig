@@ -2,7 +2,7 @@ import React from 'react'
 import { getResourcePath } from '../../connector/shared/ResourcePath'
 const { app } = require('electron').remote
 import { styled } from 'linaria/react'
-import { sendPromise } from '../bitwig-api/Bitwig'
+import { send, sendPromise } from '../bitwig-api/Bitwig'
 import { Button } from '../core/Button'
 import { Spinner } from '../core/Spinner'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -117,11 +117,18 @@ export class Setup extends React.Component {
     }
     step1() {
         const { accessibilityEnabled } = this.state.status
+        const onClick = () => {
+            if (accessibilityEnabled) {
+                this.onNextStep()
+            } else {
+                send({type: 'api/setup/accessibility'})
+            }
+        }
         return {
             description: <div>
                 Bitwig needs accessibility access in order to monitor keyboard shortcuts globally.<br /><br />
                 Please note that you may need to restart Bitwig Enhancement Suite after enabling access.
-                <Button onClick={this.onNextStep}>{accessibilityEnabled ? `Continue` : `Enable Accessibility Access`}</Button>
+                <Button onClick={onClick}>{accessibilityEnabled ? `Continue` : `Enable Accessibility Access`}</Button>
                 <StatusMessage>{accessibilityEnabled ? <><FontAwesomeIcon icon={faCheck} /> Accessibility Enabled!</> : <><Spinner style={{marginRight: '.3em'}} /> Checking for access...</>}</StatusMessage>
             </div>,
             content: null
