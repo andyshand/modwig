@@ -88,7 +88,7 @@ export class SearchPanel extends React.Component {
     state = {
         query: '',
         options: {
-            onlyNamed: true
+            onlyNamed: false
         }
     }
     searchViewRef = React.createRef<TrackSearchView>()

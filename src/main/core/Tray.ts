@@ -91,9 +91,6 @@ export class TrayService extends BESService {
                     Bitwig.isAccessibilityEnabled(true)
                 } },
               ]),
-              { label: `Reinstall Controller Script`, click: () => {
-                this.copyControllerScript()
-              } },
               { type: 'separator' },
               { label: 'Exclusive Arm', checked: settings.exclusiveArm, type: "checkbox", click: () => {
                 settings.exclusiveArm = !settings.exclusiveArm
@@ -102,6 +99,7 @@ export class TrayService extends BESService {
                     data: settings
                 })
             } },
+            { type: 'separator' },
               { label: 'Preferences...', click: () => openWindow({type: 'settings'}) },
               { label: 'Setup...', click: () => openWindow({type: 'setup'}) },
             { type: 'separator' },
