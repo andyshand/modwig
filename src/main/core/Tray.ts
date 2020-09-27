@@ -5,8 +5,6 @@ import { url } from "./Url";
 import { interceptPacket, sendPacketToBitwig } from "./WebsocketToSocket";
 import { promises as fs } from 'fs'
 const { Bitwig } = require('bindings')('bes')
-import { getDb } from "../db";
-import { Setting } from "../db/entities/Setting";
 
 const SETTINGS_WINDOW_WIDTH = 800
 const SETTINGS_WINDOW_HEIGHT = 500
@@ -61,7 +59,7 @@ export class TrayService extends BESService {
             }
             this.settingsWindow = new BrowserWindow({ 
                 width: type === 'setup' ? 900 : SETTINGS_WINDOW_WIDTH, 
-                height: type === 'setup' ? 750 : SETTINGS_WINDOW_HEIGHT, 
+                height: type === 'setup' ? 650 : SETTINGS_WINDOW_HEIGHT, 
                 show: false,
                 resizable: type === settings,
                 titleBarStyle: 'hiddenInset',

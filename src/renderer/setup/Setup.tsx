@@ -5,9 +5,11 @@ import { styled } from 'linaria/react'
 import { sendPromise } from '../bitwig-api/Bitwig'
 import { Button } from '../core/Button'
 import { Spinner } from '../core/Spinner'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faCheck, faCheckSquare } from '@fortawesome/free-solid-svg-icons'
 
 const Video = styled.video`
-    width: 80%;
+    height: 380px;
     margin: 0 auto;
     margin-bottom: 1.6rem;
     display: block;
@@ -106,7 +108,7 @@ export class Setup extends React.Component {
                 Open Bitwig Settings and enable the "Bitwig Enhancement Suite" controller.
 
                 <Button onClick={this.onNextStep} disabled={!bitwigConnected}>Continue</Button>
-                <StatusMessage>{bitwigConnected ? `Connected to Bitwig!` : <><Spinner style={{marginRight: '.3em'}} /> Waiting for connection...</>}</StatusMessage>
+                <StatusMessage>{bitwigConnected ? <><FontAwesomeIcon icon={faCheck} /> Connected to Bitwig!</> : <><Spinner style={{marginRight: '.3em'}} /> Waiting for connection...</>}</StatusMessage>
             </div>,
             content: <Video loop autoPlay>
                 <source src={getResourcePath('/videos/setup-0.mp4')} type="video/mp4" />
@@ -120,7 +122,7 @@ export class Setup extends React.Component {
                 Bitwig needs accessibility access in order to monitor keyboard shortcuts globally.<br /><br />
                 Please note that you may need to restart Bitwig Enhancement Suite after enabling access.
                 <Button onClick={this.onNextStep}>{accessibilityEnabled ? `Continue` : `Enable Accessibility Access`}</Button>
-                <StatusMessage>{accessibilityEnabled ? `Accessibility Enabled!` : <><Spinner style={{marginRight: '.3em'}} /> Checking for access...</>}</StatusMessage>
+                <StatusMessage>{accessibilityEnabled ? <><FontAwesomeIcon icon={faCheck} /> Accessibility Enabled!</> : <><Spinner style={{marginRight: '.3em'}} /> Checking for access...</>}</StatusMessage>
             </div>,
             content: null
         }
@@ -180,7 +182,7 @@ export class Setup extends React.Component {
                                 this.setStep(i)
                             }
                         }
-                        return <StepCircle visited={this.state.visitedSteps[i]} isActive={i === this.state.step} onClick={onStepClick} />
+                        return <StepCircle key={i} visited={this.state.visitedSteps[i]} isActive={i === this.state.step} onClick={onStepClick} />
                     })}
                 </StepCircles>
                 <StepText>

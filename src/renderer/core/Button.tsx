@@ -14,6 +14,7 @@ export const Button = styled.button`
     &:disabled {
         cursor: not-allowed;
         background: #666;
+        opacity: .5;
     }
     &:hover:not(:disabled) {
         filter: brightness(85%);

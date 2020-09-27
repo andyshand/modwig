@@ -1,15 +1,19 @@
 import { BESService, makeEvent } from "./Service";
 import { WEBSOCKET_PORT, SOCKET_PORT } from '../../connector/shared/Constants'
+import { app } from "electron";
 const { Bitwig } = require('bindings')('bes')
 const async = require('async')
+const WebSocket = require('ws');
+const net = require('net');
 const logInOut = true
 const RECONNECT_IN = 1000 * 3;
 
+let nextSocketId = 0
 let waiting = 0
 let partialMsg = ''
 let bitwigClient: any = null
 let bitwigConnected = false;
-let activeWebsocket;
+let activeWebsockets: {ws:any,id:number}[] = [];
 
 const logWithTime = (...args) => {
     const d = new Date()
@@ -35,14 +39,14 @@ const bitwigToClientQueue = async.queue(async function ({data}, callback) {
         partialMsg += thisTime
         waiting -= thisTime.length 
         if (waiting === 0) {
-            if (activeWebsocket) {
+            if (activeWebsockets.length) {
                 if (logInOut) logWithTime('Bitwig sent: ' + partialMsg.substr(0, 50));
                 try {
                     partialMsg = (await processInterceptors(partialMsg, fromBWInterceptors)).string
                 } catch (e) {
                     console.error("Error intercepting packet", e)
                 }
-                activeWebsocket.send(partialMsg);
+                activeWebsockets.forEach(info => info.ws.send(partialMsg))
             } else {
                 logWithTime('Websocket not active, packet lost')
             }
@@ -84,10 +88,8 @@ export class SocketMiddlemanService extends BESService {
     }
 
     activate() {
-        const WebSocket = require('ws');
-        const net = require('net');
+        console.log("Activating Socket...")
         const wss = new WebSocket.Server({ port: WEBSOCKET_PORT });
-
         const connectBitwig = () => {
             logWithTime('Connecting to Bitwig...');
             try {
@@ -121,8 +123,9 @@ export class SocketMiddlemanService extends BESService {
         connectBitwig();
         
         wss.on('connection', ws => {
-            activeWebsocket = ws;
-            logWithTime('Browser connected');
+            const id = nextSocketId++
+            activeWebsockets.push({ws, id});
+            logWithTime(`Browser connected (${id})`);
             ws.on('message', async messageFromBrowser => {
                 if (logInOut) logWithTime('Browser sent: ', messageFromBrowser);
                 try {
@@ -137,8 +140,8 @@ export class SocketMiddlemanService extends BESService {
                 } 
             });
             ws.on('close', () => {
-                logWithTime('Connection to browser lost. Waiting for reconnection...');
-                activeWebsocket = null;
+                logWithTime(`Connection to browser lost (${id})`);
+                activeWebsockets = activeWebsockets.filter((info) => info.id !== id);
             });
         });
     }
@@ -164,7 +167,11 @@ export function sendPacketToBitwig(packet) {
 }
 
 export function sendPacketToBrowser(packet) {
-    activeWebsocket.send(JSON.stringify(packet))
+    const str = JSON.stringify(packet)
+    if (logInOut) {
+        console.log('Sending to browser:', str)
+    }
+    activeWebsockets.forEach(info => info.ws.send(str))
 }
 
 /**
@@ -180,11 +187,12 @@ export function interceptPacket(type: string, toBitwig?: Function, fromBitwig?: 
 }
 
 interceptPacket('api/status', ({id}) => {
+    console.log('intercepting')
     sendPacketToBrowser({
         type: 'api/status',
         data: {
             bitwigConnected,
-            accessibilityEnabled: Bitwig.isAccessibilityEnabled()
+            accessibilityEnabled: Bitwig.isAccessibilityEnabled(false)
         },
         id
     })
