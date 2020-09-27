@@ -1,6 +1,7 @@
 import { BESService } from "./Service"
 import { getDb } from "../db"
 import { Setting } from "../db/entities/Setting"
+import { interceptPacket } from "./WebsocketToSocket"
 
 interface SettingTemplate {
     key: string

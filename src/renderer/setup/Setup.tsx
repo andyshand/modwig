@@ -149,7 +149,7 @@ export class Setup extends React.Component {
         }
         return arr
     }
-    onNextStep = () => {
+    onNextStep = async () => {
         const nextI = this.state.step + 1
         if (nextI < this.getStepCount()) {
             this.setState({
@@ -161,6 +161,7 @@ export class Setup extends React.Component {
             })
         } else {
             // we're done!
+            sendPromise({type: `api/setup/finish`})
             window.location.href = '#/settings'
         }
     }

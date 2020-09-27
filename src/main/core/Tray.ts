@@ -2,7 +2,7 @@ import { BESService, getService } from "./Service";
 import { Tray, Menu, app, BrowserWindow } from 'electron'
 import { getResourcePath } from "../../connector/shared/ResourcePath";
 import { url } from "./Url";
-import { sendPacketToBitwig } from "./WebsocketToSocket";
+import { interceptPacket, sendPacketToBitwig } from "./WebsocketToSocket";
 import { promises as fs } from 'fs'
 const { Bitwig } = require('bindings')('bes')
 import { getDb } from "../db";
@@ -77,8 +77,8 @@ export class TrayService extends BESService {
             this.copyControllerScript()
             app.dock.hide()
         } else {
-            openWindow({type: 'settings'})
-            this.settingsWindow.toggleDevTools()
+            // openWindow({type: 'settings'})
+            // this.settingsWindow.toggleDevTools()
         }
 
         const updateMenu = async () => {
@@ -136,5 +136,14 @@ export class TrayService extends BESService {
         })
         onNotConnected()
         updateMenu()
+
+        const setupComplete = await isSetupComplete()
+        if (!setupComplete) {
+            openWindow({type: 'setup'})
+        }
+
+        interceptPacket('api/setup/finish', async () => {
+            await this.settingsService.setSettingValue('setupComplete', true)
+        })
     }
 }
