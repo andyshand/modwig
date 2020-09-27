@@ -1,5 +1,6 @@
 import { BESService, makeEvent } from "./Service";
 import { WEBSOCKET_PORT, SOCKET_PORT } from '../../connector/shared/Constants'
+const { Bitwig } = require('bindings')('bes')
 const async = require('async')
 const logInOut = true
 const RECONNECT_IN = 1000 * 3;
@@ -177,3 +178,14 @@ export function interceptPacket(type: string, toBitwig?: Function, fromBitwig?: 
         fromBWInterceptors[type] = (fromBWInterceptors[type] || []).concat(fromBitwig)
     }
 }
+
+interceptPacket('api/status', ({id}) => {
+    sendPacketToBrowser({
+        type: 'api/status',
+        data: {
+            bitwigConnected,
+            accessibilityEnabled: Bitwig.isAccessibilityEnabled()
+        },
+        id
+    })
+})

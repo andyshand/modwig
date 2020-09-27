@@ -54,31 +54,30 @@ export class TrayService extends BESService {
         })
         const isSetupComplete = async () => await this.settingsService.getSettingValue('setupComplete')
 
-        const openPreferences = async () => {
+        const openWindow = async ({type}) => {
+            const loadUrl = url(`/#/${type}`)
             if (this.settingsWindow && !this.settingsWindow.isDestroyed()) {
                 this.settingsWindow.close()
             }
             this.settingsWindow = new BrowserWindow({ 
-                width: SETTINGS_WINDOW_WIDTH, 
-                height: SETTINGS_WINDOW_HEIGHT, 
+                width: type === 'setup' ? 900 : SETTINGS_WINDOW_WIDTH, 
+                height: type === 'setup' ? 750 : SETTINGS_WINDOW_HEIGHT, 
                 show: false,
-                title: 'Bitwig Enhancement Suite - Settings',
+                resizable: type === settings,
                 titleBarStyle: 'hiddenInset',
                 webPreferences: {
                     webSecurity: false,
                     nodeIntegration: true,
                 }
             })
-            const loadUrl = await isSetupComplete() ? url('/#/settings') : url('/#/setup')
             this.settingsWindow.loadURL(loadUrl)
             this.settingsWindow.show()
         }
-        
         if (process.env.NODE_ENV !== 'dev') {
             this.copyControllerScript()
             app.dock.hide()
         } else {
-            openPreferences()
+            openWindow({type: 'settings'})
             this.settingsWindow.toggleDevTools()
         }
 
@@ -101,7 +100,8 @@ export class TrayService extends BESService {
                     data: settings
                 })
             } },
-              { label: await isSetupComplete() ? 'Preferences...' : 'Setup...', click: openPreferences },
+              { label: 'Preferences...', click: () => openWindow({type: 'settings'}) },
+              { label: 'Setup...', click: () => openWindow({type: 'setup'}) },
             { type: 'separator' },
               { label: 'Quit', click: () => {
                 app.quit();

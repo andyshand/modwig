@@ -86,7 +86,6 @@
     "react-loader-spinner": "^3.1.4",
     "react-router-dom": "^5.1.2",
     "source-map-loader": "^0.2.3",
-    "styled-components": "^5.1.1",
     "titleizejs": "^1.0.2",
     "ts-loader": "^6.2.0",
     "tslint": "^5.8.0",

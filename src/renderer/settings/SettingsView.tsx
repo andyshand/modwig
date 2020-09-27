@@ -37,7 +37,7 @@ class Shortcuts extends React.Component {
         return <div>
             <ShortcutsWrap>
                 <SectionHeader>
-                    <div>Features</div>
+                    <div>Settings</div>
                 </SectionHeader>
                 <div>
                     {settings.filter(s => s.type === 'boolean').map(setting => {

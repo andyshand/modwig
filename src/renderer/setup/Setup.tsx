@@ -1,24 +1,17 @@
 import React from 'react'
 import { getResourcePath } from '../../connector/shared/ResourcePath'
+const { app } = require('electron').remote
 import { styled } from 'linaria/react'
-const Button = styled.div`
-    background: #EA6A10;
-    color: white;
-    padding: .5em 2em;
-    margin: 0 auto;
-    display: inline-block;
-    cursor: pointer;   
-    &:hover {
-        filter: brightness(85%);
-    }
-    border-radius: .2em;
-    margin-top: 1.6rem;
-`
+import { sendPromise } from '../bitwig-api/Bitwig'
+import { Button } from '../core/Button'
+import { Spinner } from '../core/Spinner'
+
 const Video = styled.video`
     width: 80%;
     margin: 0 auto;
     margin-bottom: 1.6rem;
     display: block;
+    border-radius: 0.4em;
 `
 const StepText = styled.div`
     text-align: center;
@@ -31,7 +24,10 @@ const StepWrap = styled.div`
     justify-content: center;
     height: 100%;
     width: 100%;
+    top: 0;
+    bottom: 0;
     position: fixed;
+    padding-bottom:3rem;
 `
 const StepCircles = styled.div`
     display: flex;
@@ -44,9 +40,9 @@ const StepCircles = styled.div`
     right: 0;
 `
 const StepCircle = styled.div`
-    width: .7em;
-    height: .7em;
-    background: ${(props: any) => props.isActive ? `#CCC` : `#666`};
+    width: .6em;
+    height: .6em;
+    background: ${(props: any) => props.isActive ? `#CCC` : props.visited ? `#666` : `#222`};
     border-radius: 100%;
     cursor: pointer;
     &:hover {
@@ -57,35 +53,79 @@ const StepCircle = styled.div`
         margin-right: .5em;
     }
 `
+const StatusMessage = styled.div`
+    font-size: .8em;
+    color: #CCC;
+    margin-top: .4em;
+`
+let interval
 export class Setup extends React.Component {
     state = {
-        step: 3
+        step: 0,
+        visitedSteps: {0: true},
+        status: {
+            bitwigConnected: false,
+            accessibilityEnabled: false
+        },
+        loading: true
     }
-    step0() {
-        return {
-            description: 'Thanks for trying out Bitwig Enhancement Suite. There are just a couple setup steps to get things working...',
-            canContinue: true,
-            content: null
+    refreshStatus = async () => {
+        this.setState({loading: true})
+        try {
+            const { data: status } = await sendPromise({type: 'api/status'}) as any
+            this.setState({status})
+        } catch (e) {
+            console.error(e)
         }
+        this.setState({loading: false})
     }
-    step1() {
+    onFocus = () => {
+        this.refreshStatus()
+    }   
+    componentWillMount() {
+        clearInterval(interval)
+        interval = setInterval(this.refreshStatus, 1000)
+        app.on('browser-window-focus', this.onFocus)
+        this.refreshStatus()
+    }
+    componentWillUnmount() {
+        clearInterval(interval)
+        app.removeListener('browser-window-focus', this.onFocus)
+    }
+    // step0() {
+    //     return {
+    //         description: 'Thanks for trying out Bitwig Enhancement Suite. There are just a couple setup steps to get things working...',
+    //         canContinue: true,
+    //         content: null
+    //     }
+    // }
+    step0() {
+        const { bitwigConnected } = this.state.status
         return {
-            description: 'Open Bitwig Settings and enable the "Bitwig Enhancement Suite" controller.',
+            description: <div>
+                Open Bitwig Settings and enable the "Bitwig Enhancement Suite" controller.
+
+                <Button onClick={this.onNextStep} disabled={!bitwigConnected}>Continue</Button>
+                <StatusMessage>{bitwigConnected ? `Connected to Bitwig!` : <><Spinner style={{marginRight: '.3em'}} /> Waiting for connection...</>}</StatusMessage>
+            </div>,
             content: <Video loop autoPlay>
                 <source src={getResourcePath('/videos/setup-0.mp4')} type="video/mp4" />
             </Video>
         }
     }
-    step2() {
+    step1() {
+        const { accessibilityEnabled } = this.state.status
         return {
             description: <div>
-                Bitwig needs accessibility access in order to monitor keyboard shortcuts globally.
-                <Button>Enable Accessibility Access</Button>
+                Bitwig needs accessibility access in order to monitor keyboard shortcuts globally.<br /><br />
+                Please note that you may need to restart Bitwig Enhancement Suite after enabling access.
+                <Button onClick={this.onNextStep}>{accessibilityEnabled ? `Continue` : `Enable Accessibility Access`}</Button>
+                <StatusMessage>{accessibilityEnabled ? `Accessibility Enabled!` : <><Spinner style={{marginRight: '.3em'}} /> Checking for access...</>}</StatusMessage>
             </div>,
             content: null
         }
     }
-    step3() {
+    step2() {
         return {
             description: <div>
                 All done! If you ever need to see these steps again, click the icon in the menu bar and choose "Setup..."
@@ -112,16 +152,20 @@ export class Setup extends React.Component {
     onNextStep = () => {
         const nextI = this.state.step + 1
         if (nextI < this.getStepCount()) {
-            this.setState({step: nextI}) 
+            this.setState({
+                step: nextI,
+                visitedSteps: {
+                    ...this.state.visitedSteps,
+                    [nextI]: true
+                }
+            })
         } else {
             // we're done!
             window.location.href = '#/settings'
         }
     }
     setStep = (i) => {
-        if (i < this.state.step) {
-            this.setState({step: i})
-        }
+        this.setState({step: i})
     }
     render() {
         const currStep = this['step' + this.state.step]()
@@ -130,7 +174,12 @@ export class Setup extends React.Component {
                 {currStep.content}
                 <StepCircles>
                     {this.times(this.getStepCount()).map(i => {
-                        return <StepCircle isActive={i === this.state.step} onClick={() => this.setStep(i)} />
+                        const onStepClick = () => {
+                            if (this.state.visitedSteps[i]) {
+                                this.setStep(i)
+                            }
+                        }
+                        return <StepCircle visited={this.state.visitedSteps[i]} isActive={i === this.state.step} onClick={onStepClick} />
                     })}
                 </StepCircles>
                 <StepText>
