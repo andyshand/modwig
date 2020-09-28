@@ -16,7 +16,7 @@ const DEVICE_BANK_SIZE = 16
 const LAYER_BANK_SIZE = 16
 
 host.setShouldFailOnDeprecatedUse(false);
-host.defineController("andy shand", "Bitwig Enhancement Suite", "0.1", "b90a4894-b89c-40b9-b372-e1e8659699df", "andy shand");
+host.defineController("andy shand", "Modwig", "0.1", "b90a4894-b89c-40b9-b372-e1e8659699df", "andy shand");
 
 let app: any
 let connection: any

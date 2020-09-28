@@ -23,7 +23,7 @@ export class TrayService extends BESService {
             const homedir = require('os').homedir();
 
             const controllerSrcFolder = getResourcePath('/controller-script')
-            const controllerDestFolder = path.join(homedir, 'Documents', 'Bitwig Studio', 'Controller Scripts', 'Bitwig Enhancement Suite')
+            const controllerDestFolder = path.join(homedir, 'Documents', 'Bitwig Studio', 'Controller Scripts', 'Modwig')
 
             const stats = await fs.stat(controllerDestFolder)
             if (!stats.isDirectory()) {
@@ -81,9 +81,9 @@ export class TrayService extends BESService {
 
         const updateMenu = async () => {
             const contextMenu = Menu.buildFromTemplate([
-              { label: `Bitwig Enhancement Suite: ${this.connected ? 'Connected' : 'Connecting...'}`, enabled: false },
+              { label: `Modwig: ${this.connected ? 'Connected' : 'Connecting...'}`, enabled: false },
               { label: `Report an Issue...`, click: () => {
-                require('electron').shell.openExternal(`https://github.com/andyshand/bitwig-enhancement-suite/issues/new`);
+                require('electron').shell.openExternal(`https://github.com/andyshand/modwig/issues/new`);
               } },
               ...(Bitwig.isAccessibilityEnabled(false) ? [] : [
                 { label: 'Enable Accessibility', click: () => {

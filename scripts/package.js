@@ -7,7 +7,7 @@ packager({
     platform: process.env.PLATFORM,
     arch: process.env.ARCH,
     asar: false,
-    out: path.join(__dirname, '..', '..', 'bitwig-enhancement-suite'),
+    out: path.join(__dirname, '..', '..', 'modwig'),
     overwrite: true,
     afterPrune: [
         (buildPath, electronVersion, platform, arch, cb) => {

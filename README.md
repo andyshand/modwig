@@ -1,4 +1,4 @@
-# Bitwig Enhancement Suite
+# Modwig
 
 > In Early Development
 

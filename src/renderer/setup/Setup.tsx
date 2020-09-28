@@ -197,7 +197,7 @@ export class Setup extends React.Component {
         return {
             description: <div>
                 <CenterText>
-                    Open Bitwig Settings and enable the "Bitwig Enhancement Suite" controller.
+                    Open Bitwig Settings and enable the "Modwig" controller.
                 </CenterText>
                 <EndButton onClick={this.onNextStep} disabled={!bitwigConnected}>Continue</EndButton>
                 <StatusMessage>{bitwigConnected ? <><FontAwesomeIcon icon={faCheck} /> Connected to Bitwig!</> : <><Spinner style={{marginRight: '.3em'}} /> Waiting for connection...</>}</StatusMessage>
@@ -220,7 +220,7 @@ export class Setup extends React.Component {
             description: <div>
                 <CenterText>
                     Bitwig needs accessibility access in order to monitor keyboard shortcuts globally.<br /><br />
-                    Please note that you may need to restart Bitwig Enhancement Suite after enabling access.
+                    Please note that you may need to restart Modwig after enabling access.
                 </CenterText>
                 <EndButton onClick={onClick}>{accessibilityEnabled ? `Continue` : `Enable Accessibility Access`}</EndButton>
                 <StatusMessage>{accessibilityEnabled ? <><FontAwesomeIcon icon={faCheck} /> Accessibility Enabled!</> : <><Spinner style={{marginRight: '.3em'}} /> Checking for access...</>}</StatusMessage>

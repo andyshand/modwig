@@ -1,5 +1,5 @@
 {
-  "name": "bitwig-enhancement-suite",
+  "name": "modwig",
   "description": "Adds extra features to Bitwig",
   "main": "./dist/main/main.js",
   "scripts": {
@@ -7,8 +7,8 @@
     "watch": "tsc -w --p tsconfig.server.json",
     "start": "npm run buildc:dev && NODE_ENV=dev nodemon -V --watch ./dist . --exec 'npm run electron'",
     "dev": "webpack-dev-server",
-    "build:mac": "PLATFORM=darwin ARCH=x64 node ./scripts/package.js && open ../bitwig-enhancement-suite",
-    "build:windows": "PLATFORM=win32 ARCH=ia32 node ./scripts/package.js && open ../bitwig-enhancement-suite",
+    "build:mac": "PLATFORM=darwin ARCH=x64 node ./scripts/package.js && open ../modwig",
+    "build:windows": "PLATFORM=win32 ARCH=ia32 node ./scripts/package.js && open ../modwig",
     "upload": "echo \"Update message?\" && read message && ./scripts/upload.sh \"$message\"",
     "package:mac": "PLATFORM=darwin npm run writeversion && npm run build:renderer && npm run build:main && npm run build:mac",
     "package:windows": "PLATFORM=win32 npm run writeversion && npm run build:renderer && npm run build:main && npm run build:windows",
@@ -30,7 +30,7 @@
       "./extraResources/**"
     ]
   },
-  "repository": "https://github.com/andyshand/bitwig-enhancement-suite",
+  "repository": "https://github.com/andyshand/modwig",
   "author": "Andrew Shand",
   "license": "MIT",
   "dependencies": {

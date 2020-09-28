@@ -3,7 +3,7 @@ import { promises as fs } from 'fs'
 import { app } from 'electron'
 const isRenderer = require('is-electron-renderer')
 
-export const basePath = isRenderer ? '' : path.join(app.getPath('appData'), 'bitwig-enhancement-suite')
+export const basePath = isRenderer ? '' : path.join(app.getPath('appData'), 'modwig')
 export const sqlitePath = isRenderer ? '' : path.join(basePath, 'db.sqlite')
 export const sqliteBackupPath = isRenderer ? '' : path.join(basePath, 'backups')
 export const storagePath = isRenderer ? '' : path.join(basePath, 'files')

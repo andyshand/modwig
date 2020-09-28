@@ -3,7 +3,7 @@ const path = require('path')
 const homedir = require('os').homedir();
 
 const controllerSrcFolder = path.join(__dirname, 'controller-script')
-const controllerDestFolder = path.join(homedir, 'Documents', 'Bitwig Studio', 'Controller Scripts', 'Bitwig Enhancement Suite')
+const controllerDestFolder = path.join(homedir, 'Documents', 'Bitwig Studio', 'Controller Scripts', 'Modwig')
 
 if (!fs.existsSync(controllerDestFolder)) {
     fs.mkdirSync(controllerDestFolder)
