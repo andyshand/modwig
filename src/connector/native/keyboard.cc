@@ -270,7 +270,7 @@ CGEventRef eventtap_callback(CGEventTapProxy proxy, CGEventType type, CGEventRef
 }
 
 /// Note that mousemove events seem to get fired when mouse is clicked too - TODO investigate
-Napi::Value addEventListener(const Napi::CallbackInfo &info) {
+Napi::Value on(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
     auto eventType = info[0].As<Napi::String>().Utf8Value();
     auto cb = info[1].As<Napi::Function>();
@@ -410,7 +410,7 @@ Napi::Value keyPress(const Napi::CallbackInfo &info) {
 Napi::Value InitKeyboard(Napi::Env env, Napi::Object exports)
 {
     Napi::Object obj = Napi::Object::New(env);
-    obj.Set(Napi::String::New(env, "addEventListener"), Napi::Function::New(env, addEventListener));
+    obj.Set(Napi::String::New(env, "on"), Napi::Function::New(env, on));
     obj.Set(Napi::String::New(env, "removeEventListener"), Napi::Function::New(env, removeEventListener));
     obj.Set(Napi::String::New(env, "isEnabled"), Napi::Function::New(env, isEnabled));
     obj.Set(Napi::String::New(env, "keyDown"), Napi::Function::New(env, keyDown));

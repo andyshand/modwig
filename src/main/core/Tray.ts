@@ -6,9 +6,6 @@ import { interceptPacket, sendPacketToBitwig } from "./WebsocketToSocket";
 import { promises as fs } from 'fs'
 const { Bitwig } = require('bindings')('bes')
 
-const SETTINGS_WINDOW_WIDTH = 800
-const SETTINGS_WINDOW_HEIGHT = 500
-
 let settings = {
     exclusiveArm: true
 }
@@ -58,10 +55,9 @@ export class TrayService extends BESService {
                 this.settingsWindow.close()
             }
             this.settingsWindow = new BrowserWindow({ 
-                width: type === 'setup' ? 900 : SETTINGS_WINDOW_WIDTH, 
-                height: type === 'setup' ? 650 : SETTINGS_WINDOW_HEIGHT, 
+                width: 900, 
+                height: 650, 
                 show: false,
-                resizable: type === settings,
                 titleBarStyle: 'hiddenInset',
                 webPreferences: {
                     webSecurity: false,
@@ -86,6 +82,9 @@ export class TrayService extends BESService {
         const updateMenu = async () => {
             const contextMenu = Menu.buildFromTemplate([
               { label: `Bitwig Enhancement Suite: ${this.connected ? 'Connected' : 'Connecting...'}`, enabled: false },
+              { label: `Report an Issue...`, click: () => {
+                require('electron').shell.openExternal(`https://github.com/andyshand/bitwig-enhancement-suite/issues/new`);
+              } },
               ...(Bitwig.isAccessibilityEnabled(false) ? [] : [
                 { label: 'Enable Accessibility', click: () => {
                     Bitwig.isAccessibilityEnabled(true)

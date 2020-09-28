@@ -1,12 +1,11 @@
 import { app, BrowserWindow, Tray } from "electron";
-import { setupNavigation } from './search/Search'
-import { setupValueEntry } from './value-entry/ValueEntry'
 import { ShortcutsService } from "./shortcuts/Shortcuts";
 import { registerService } from "./core/Service";
 import { SocketMiddlemanService } from "./core/WebsocketToSocket";
 import { TrayService } from "./core/Tray";
 import { SettingsService } from "./core/SettingsService";
 import { protocol } from "electron";
+import { ModsService } from "./mods/ModsService";
 
 app.whenReady().then(async () => {
 
@@ -16,6 +15,7 @@ app.whenReady().then(async () => {
       callback(pathname);
     });
   });
+
   // Service creation order is manually controlled atm, but each
   // has dependencies
   // TODO automate this - is error prone
@@ -23,6 +23,5 @@ app.whenReady().then(async () => {
   const socketMiddleMan = await registerService(SocketMiddlemanService)
   const trayService = await registerService(TrayService)
   const shortcutsService = await registerService(ShortcutsService)
-  setupNavigation()  
-  setupValueEntry()
+  const modsService = await registerService(ModsService)
 })

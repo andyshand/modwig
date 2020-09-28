@@ -23,7 +23,7 @@ export function setupValueEntry() {
     })
     valueEntryWindow.loadURL(url('/#/value-entry'))
 
-    Keyboard.addEventListener('keyup', async event => {
+    Keyboard.on('keyup', async event => {
         const { lowerKey } = event
         function getAutomationValueLoc() {
             const frame = MainWindow.getFrame()

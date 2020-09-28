@@ -20,5 +20,4 @@ export const Button = styled.button`
         filter: brightness(85%);
     }
     border-radius: .2em;
-    margin-top: 1.6rem;
 `

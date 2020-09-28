@@ -1,4 +1,4 @@
-import { BESService, makeEvent } from "./Service";
+import { BESService, getService, makeEvent } from "./Service";
 import { WEBSOCKET_PORT, SOCKET_PORT } from '../../connector/shared/Constants'
 import { app } from "electron";
 const { Bitwig } = require('bindings')('bes')
@@ -12,7 +12,6 @@ let nextSocketId = 0
 let waiting = 0
 let partialMsg = ''
 let bitwigClient: any = null
-let bitwigConnected = false;
 let activeWebsockets: {ws:any,id:number}[] = [];
 
 const logWithTime = (...args) => {
@@ -86,6 +85,7 @@ export class SocketMiddlemanService extends BESService {
     events = {
         connected: makeEvent<boolean>()
     }
+    bitwigConnected: boolean = false
 
     activate() {
         console.log("Activating Socket...")
@@ -97,7 +97,7 @@ export class SocketMiddlemanService extends BESService {
                 bitwigClient.connect(SOCKET_PORT, '127.0.0.1', () => {
                     logWithTime('Connected to Bitwig');
                     this.events.connected.emit(true)
-                    bitwigConnected = true;
+                    this.bitwigConnected = true;
                 });
                 bitwigClient.on('data', data => bitwigToClientQueue.push({data}))
                 bitwigClient.on('error', err => {
@@ -105,7 +105,7 @@ export class SocketMiddlemanService extends BESService {
                 })
                 bitwigClient.on('close', () => {
                     logWithTime('Connection to Bitwig closed, reconnecting...');
-                    bitwigConnected = false;
+                    this.bitwigConnected = false;
                     bitwigClient = null
                     this.events.connected.emit(false)
                     waiting = 0
@@ -148,7 +148,7 @@ export class SocketMiddlemanService extends BESService {
 }
 
 function sendToBitwig(str) {
-  if (bitwigClient && bitwigConnected) {
+  if (bitwigClient && getService('SocketMiddlemanService').bitwigConnected) {
     const buff = Buffer.from(str, 'utf8');
     const sizeBuf = Buffer.alloc(4);
     sizeBuf.writeInt32BE(str.length, 0);
@@ -191,7 +191,7 @@ interceptPacket('api/status', ({id}) => {
     sendPacketToBrowser({
         type: 'api/status',
         data: {
-            bitwigConnected,
+            bitwigConnected: getService('SocketMiddlemanService').bitwigConnected,
             accessibilityEnabled: Bitwig.isAccessibilityEnabled(false)
         },
         id

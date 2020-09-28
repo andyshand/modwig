@@ -47,7 +47,7 @@ class Shortcuts extends React.Component {
              </ShortcutsWrap>
             <ShortcutsWrap>
                 <SectionHeader>
-                    <div>Shortcuts</div>
+                    <div>Actions</div>
                     <div>Please ensure you have disabled any built-in shortcuts using the same keys.</div>
                 </SectionHeader>
                 <div>

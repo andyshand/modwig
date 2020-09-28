@@ -3,6 +3,8 @@ import { BESService, getService } from "../core/Service"
 import { returnMouseAfter } from "../../connector/shared/EventUtils"
 import { getDb } from "../db"
 import { Setting } from "../db/entities/Setting"
+import { BrowserWindow } from "electron"
+import { url } from "../core/Url"
 
 const { Keyboard, Mouse, MainWindow, Bitwig } = require('bindings')('bes')
 
@@ -20,6 +22,7 @@ export class ShortcutsService extends BESService {
     actions = this.getActions()
     shortcutCache = {}
     settingsService: any
+    searchWindow: BrowserWindow
 
     repeatActionWithRange(name, startIncl, endIncl, genTakesI) {
         let out = {}
@@ -77,7 +80,7 @@ export class ShortcutsService extends BESService {
             ...(this.actionsWithCategory('global', {
                 openTrackSearch: {
                     action: () => {
-                       
+                        this.searchWindow.show()
                     }                
                 },
                 toggleRecord: {            
@@ -89,10 +92,27 @@ export class ShortcutsService extends BESService {
                         })
                     }                
                 },
+                goBack: {
+                    description: 'Go back to the previous track in the selection history.',
+                    defaultSetting: {
+                        keys: []
+                    },
+                    action: () => {
+                        sendPacketToBitwig({type: 'tracknavigation/back'})
+                    }
+                },
+                goForward: {
+                    description: 'Go forward to the next track in the selection history.',
+                    defaultSetting: {
+                        keys: []
+                    },
+                    action: () => {
+                        sendPacketToBitwig({type: 'tracknavigation/forward'})
+                    }
+                },
                 selectPreviousTrack: {
                     defaultSetting: {
-                        keys: ['W'],
-                        keyRepeat: true
+                        keys: ['W']
                     },
                     action: () => {
                         sendPacketToBitwig({
@@ -103,8 +123,7 @@ export class ShortcutsService extends BESService {
                 },
                 selectNextTrack: {
                     defaultSetting: {
-                        keys: ['S'],
-                        keyRepeat: true
+                        keys: ['S']
                     },
                     action: () => {
                         sendPacketToBitwig({
@@ -426,16 +445,29 @@ export class ShortcutsService extends BESService {
     getDefaultSettings() {
         return {
             "global": {
-                "Exclusive Arm": true
-            },
-            "browser": {
-                "Enter Confirms Empty Selection": true
+                "Exclusive Arm": {
+                    description: 'Prevents more than one track from being armed at any one time',
+                    defaultSetting: {
+                        value: true,
+                        showInMenu: true
+                    }
+                }
             },
             "arranger": {
-                "Middle Click to play from point": true
+                "Middle Click to play from point": {
+                    description: 'Middle click anywhere within the arranger timeline to play from that point. Works by automating a double click with the pointer (1) tool in the timeline ruler. May not work for non-standard scaling/screen layouts.',
+                    defaultSetting: {
+                        value: true
+                    }
+                }
             },
             "devices": {
-                "Remember Device View Scroll Position": true
+                "Remember Device View Scroll Position": {
+                    description: 'Return to previous scroll position when switching between tracks. Scroll position is currently tracked by listening for middle click drags on the device view portion of the screen. May not work for non-standard scaling/screen layouts.',
+                    defaultSetting: {
+                        value: true
+                    }
+                }
             }
         }
     }
@@ -448,7 +480,7 @@ export class ShortcutsService extends BESService {
         const defaultSets = this.getDefaultSettings()
         for (const category in defaultSets) {
             for (const key in defaultSets[category]) {
-                const value = defaultSets[category][key]
+                const { value } = defaultSets[category][key]
                 await this.settingsService.insertSettingIfNotExist({
                     key: this.normalise(key),
                     value,
@@ -524,6 +556,17 @@ export class ShortcutsService extends BESService {
     }
 
     activate() {
+        this.searchWindow = new BrowserWindow({ 
+            width: 370, 
+            height: 480, 
+            frame: false, 
+            show: false,
+            webPreferences: {
+                nodeIntegration: true,
+            }
+        })
+        this.searchWindow.loadURL(url('/#/search'))
+
         this.settingsService = getService('SettingsService')
         this.seedSettings()
         this.setupPacketListeners()
@@ -532,12 +575,12 @@ export class ShortcutsService extends BESService {
         let middleDown = false
         let startPos = ''
         const makePos = event => JSON.stringify({x: event.x, y: event.y})
-        Keyboard.addEventListener('mousedown', event => {
+        Keyboard.on('mousedown', event => {
             middleDown = Bitwig.isActiveApplication() && !this.browserIsOpen && event.x > 490 && event.button === 1
             startPos = makePos(event)
         })
 
-        Keyboard.addEventListener('mouseup', event => {
+        Keyboard.on('mouseup', event => {
             if (middleDown && makePos(event) === startPos) {
                 returnMouseAfter(() => {
                     Keyboard.keyDown('1')
@@ -566,7 +609,7 @@ export class ShortcutsService extends BESService {
             return keys.reverse()
         }
 
-        Keyboard.addEventListener('keydown', event => {
+        Keyboard.on('keydown', event => {
             const { lowerKey, nativeKeyCode, Meta, Shift, Control, Alt } = event
             // console.log(event)
             const noMods = !(Meta || Control || Alt)
