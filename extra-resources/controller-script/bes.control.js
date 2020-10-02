@@ -243,19 +243,6 @@ var GlobalController = /** @class */ (function (_super) {
                     data: __assign(__assign({ selected: selected }, _this.createTrackInfo(t, isFX)), { project: { name: _this.deps.app.projectName().get() } })
                 });
             });
-            // Exclusive arm
-            t.arm().addValueObserver(function (armed) {
-                if (armed) {
-                    if (settings.exclusiveArm) {
-                        // Unarm all other tracks
-                        _this.mapTracks(function (t, i2) {
-                            if (i !== i2) {
-                                t.arm().set(false);
-                            }
-                        });
-                    }
-                }
-            });
         });
         _this.cueMarkerBank = _this.deps.arranger.createCueMarkerBank(CUE_MARKER_BANK_SIZE);
         _this.mapCueMarkers(function (marker) {
@@ -483,9 +470,6 @@ var DeviceController = /** @class */ (function (_super) {
         }
         var packetManager = deps.packetManager, globalController = deps.globalController;
         _this.cursorTrack = host.createCursorTrack("Selected Track", "Selected Track", 0, 0, true);
-        // this.cursorDevice.position().addValueObserver(() => {
-        //     host.showPopupNotification('position changed')
-        // })
         _this.cursorDevice = _this.cursorTrack.createCursorDevice();
         _this.deviceChain = _this.cursorDevice.deviceChain();
         _this.deviceBank = _this.deviceChain.createDeviceBank(DEVICE_BANK_SIZE);
@@ -877,4 +861,5 @@ function init() {
     deps.packetManager.listen('transport/play', function () { return transport.togglePlay(); });
     deps.packetManager.listen('transport/stop', function () { return transport.stop(); });
     host.showPopupNotification("BES Connecting...");
+    load('mods.js');
 }

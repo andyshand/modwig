@@ -1,5 +1,5 @@
-description = 'Return to previous scroll position when switching between tracks. Scroll position is currently tracked by listening for middle click drags on the device view portion of the screen. May not work for non-standard scaling/screen layouts.'
-category = 'arranger'
+// mod.description = 'Middle click anywhere within the arranger timeline to play from that point. Works by automating a double click with the pointer (1) tool in the timeline ruler. May not work for non-standard scaling/screen layouts.'
+// mod.category = 'arranger'
 
 let middleDown = false
 let startPos = ''

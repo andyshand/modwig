@@ -21,6 +21,10 @@ const servicesByName: {[name: string]: BESService} = {}
 export abstract class BESService {
     constructor(public readonly name: string) {}
 
+    /**
+     * Try not to run any long-running tasks in activate as this will slow down app startup and
+     * make it unresponsive
+     */
     abstract async activate()
 }
 
@@ -28,7 +32,7 @@ export abstract class BESService {
  * Creates a shared instance of a service and runs
  * its "activate" function
  */
-export async function registerService(service: Function) {
+export async function registerService<T>(service: Function) : Promise<T> {
     const instance = new (service as any)()
     servicesByName[service.name] = instance
     const res = instance.activate()
@@ -38,6 +42,6 @@ export async function registerService(service: Function) {
     return instance;
 }
 
-export function getService(name: string) : any {
-    return servicesByName[name]
+export function getService<T>(name: string) : T {
+    return servicesByName[name] as any
 }

@@ -36,6 +36,7 @@
   "dependencies": {
     "async": "^3.2.0",
     "bindings": "^1.5.0",
+    "chokidar": "^3.4.2",
     "electron-log": "^3.0.8",
     "electron-squirrel-startup": "^1.0.0",
     "electron-unhandled": "^3.0.0",

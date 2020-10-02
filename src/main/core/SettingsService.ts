@@ -1,26 +1,43 @@
-import { BESService } from "./Service"
+import { BESService, makeEvent } from "./Service"
 import { getDb } from "../db"
 import { Setting } from "../db/entities/Setting"
 import { interceptPacket } from "./WebsocketToSocket"
+import * as path from 'path'
 
 interface SettingTemplate {
     key: string
     value: any
-    type: "boolean" | "shortcut"
+    type: "boolean" | "shortcut" | "string"
     category: string
 }
 
 export class SettingsService extends BESService {
     db
     Settings
+    events = {
+        settingsUpdated: makeEvent<void>(),
+        settingUpdated: makeEvent<Partial<SettingTemplate>>()
+    }
 
     async activate() {
         this.db = await getDb()
         this.Settings = this.db.getRepository(Setting)
+
+        interceptPacket('api/settings/set', async ({ data: setting }) => {
+            const { key } = setting
+            const { id } = await this.Settings.findOne({where: {key}})
+            const copy = { ...setting }
+            delete setting.id
+            await this.Settings.update(id, copy)
+        })
+    }
+
+    async getSettingsForCategory(category: string) {
+        return this.Settings.find({where: {category}})
     }
 
     rectifySetting(setting) {
-        if (setting.type === 'boolean' && typeof setting.value === 'boolean') {
+        if ('type' in setting && setting.type !== 'shortcut' && 'value' in setting) {
             setting.value = { value: setting.value }
         }
         return setting
@@ -29,8 +46,12 @@ export class SettingsService extends BESService {
     async insertSettingIfNotExist(setting: SettingTemplate) {
         const existingSetting = await this.Settings.findOne({where: {key: setting.key}})
         if (!existingSetting) {
-            const newSetting = this.Settings.create(this.rectifySetting(setting))
+            const content = this.rectifySetting(setting)
+            const newSetting = this.Settings.create(content)
             await this.Settings.save(newSetting);
+
+            // this.events.settingsUpdated.emit()
+            // this.events.settingUpdated.emit(content)
         }
     }
 
@@ -40,7 +61,10 @@ export class SettingsService extends BESService {
 
     async getSettingValue(key: string) {
         const setting = await this.Settings.findOne({where: {key}})
-        if (setting.type === 'boolean') {
+        if (!setting) {
+            throw new Error(`Setting ${key} not found`)
+        }
+        if (setting.type !== 'shortcut') {
             return setting.value.value
         }
         return setting.value
@@ -51,7 +75,23 @@ export class SettingsService extends BESService {
         if (!setting) {
             throw new Error(`Setting ${key} not found`)
         }
-        await this.Settings.update(setting.id, this.rectifySetting({type: setting.type, value}))
+        const update = this.rectifySetting({type: setting.type, value})
+        await this.Settings.update(setting.id, update)
+
+        this.events.settingsUpdated.emit()
+        this.events.settingUpdated.emit({
+            key,
+            ...update
+        })
+    }
+
+    async userLibraryLocation() {
+        return await this.getSettingValue('userLibraryPath')
+    }
+
+    async modwigLibraryLocation() {
+        const userLib = await this.getSettingValue('userLibraryPath')
+        return path.join(userLib, 'Modwig')
     }
 
     normalise(label) {

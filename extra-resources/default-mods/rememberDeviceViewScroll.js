@@ -1,13 +1,9 @@
-description = 'Return to previous scroll position when switching between tracks. Scroll position is currently tracked by listening for middle click drags on the device view portion of the screen. May not work for non-standard scaling/screen layouts.'
-category = 'devices'
+// mod.description = 'Return to previous scroll position when switching between tracks. Scroll position is currently tracked by listening for middle click drags on the device view portion of the screen. May not work for non-standard scaling/screen layouts.'
+// mod.category = 'devices'
 
-let waitingToScroll = false
 let currTrackScroll = 0
 let middleMouseDown = false
 let lastX = 0
-
-const WINDOW_HEIGHT = 480
-const WINDOW_WIDTH = 370
 
 const doScroll = (dX) => {
     Mouse.returnAfter(() => {

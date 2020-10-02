@@ -244,20 +244,6 @@ class GlobalController extends Controller {
                     }
                 })
             })
-
-            // Exclusive arm
-            t.arm().addValueObserver(armed => {
-                if (armed) {
-                    if (settings.exclusiveArm) {
-                        // Unarm all other tracks
-                        this.mapTracks((t, i2) => {
-                            if (i !== i2) {
-                                t.arm().set(false);
-                            }
-                        })
-                    }
-                }
-            })
         })
 
         this.cueMarkerBank = this.deps.arranger.createCueMarkerBank(CUE_MARKER_BANK_SIZE)
@@ -892,4 +878,6 @@ function init() {
     deps.packetManager.listen('transport/stop', () => transport.stop())
 
     host.showPopupNotification("BES Connecting...");
+
+    load('mods.js')
 }

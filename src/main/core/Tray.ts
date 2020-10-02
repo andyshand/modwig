@@ -2,8 +2,9 @@ import { BESService, getService } from "./Service";
 import { Tray, Menu, app, BrowserWindow } from 'electron'
 import { getResourcePath } from "../../connector/shared/ResourcePath";
 import { url } from "./Url";
-import { interceptPacket, sendPacketToBitwig } from "./WebsocketToSocket";
+import { interceptPacket, sendPacketToBitwig, SocketMiddlemanService } from "./WebsocketToSocket";
 import { promises as fs } from 'fs'
+import { SettingsService } from "./SettingsService";
 const { Bitwig } = require('bindings')('bes')
 
 let settings = {
@@ -15,30 +16,10 @@ export class TrayService extends BESService {
     animationI = 0
     connected = false
     settingsWindow
-    settingsService = getService('SettingsService')
-
-    async copyControllerScript() {
-        try {
-            const path = require('path')
-            const homedir = require('os').homedir();
-
-            const controllerSrcFolder = getResourcePath('/controller-script')
-            const controllerDestFolder = path.join(homedir, 'Documents', 'Bitwig Studio', 'Controller Scripts', 'Modwig')
-
-            const stats = await fs.stat(controllerDestFolder)
-            if (!stats.isDirectory()) {
-                await fs.mkdir(controllerDestFolder)
-            }
-            for (const file of await fs.readdir(controllerSrcFolder)) {
-                await fs.copyFile(path.join(controllerSrcFolder, file), path.join(controllerDestFolder, file))
-            }
-        } catch (e) {
-            console.error(e)   
-        }
-    }
+    settingsService = getService<SettingsService>('SettingsService')
+    socket = getService<SocketMiddlemanService>('SocketMiddlemanService')
 
     async activate() {
-        const socket = getService('SocketMiddlemanService')
         const tray = new Tray(getResourcePath('/images/tray-0Template.png'))
         
         await this.settingsService.insertSettingIfNotExist({
@@ -72,7 +53,6 @@ export class TrayService extends BESService {
             })
         }
         if (process.env.NODE_ENV !== 'dev') {
-            this.copyControllerScript()
             app.dock.hide()
         } else {
             // openWindow({type: 'settings'})
@@ -123,7 +103,7 @@ export class TrayService extends BESService {
                 this.animationI++
             }, 250)
         }
-        socket.events.connected.listen(isConnected => {
+        this.socket.events.connected.listen(isConnected => {
             this.connected = isConnected
             if (isConnected && this.timer) {
                 clearInterval(this.timer)

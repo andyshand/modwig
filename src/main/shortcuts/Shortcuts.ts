@@ -5,13 +5,13 @@ import { getDb } from "../db"
 import { Setting } from "../db/entities/Setting"
 import { BrowserWindow } from "electron"
 import { url } from "../core/Url"
+import { SettingsService } from "../core/SettingsService"
 
 const { Keyboard, Mouse, MainWindow, Bitwig } = require('bindings')('bes')
 
 let lastKeyPressed = new Date()
 let lastKey = ''
 let renaming = false
-let keyRepeatTimeout: any = null
 
 const MODS_MESSAGE = `Modulators are currently inaccessible from the controller API. This shortcut is also limited to a single device at any time.`
 const MODS_MESSAGE_2 = `Modulators are currently inaccessible from the controller API.`
@@ -21,7 +21,7 @@ export class ShortcutsService extends BESService {
     browserText = ''
     actions = this.getActions()
     shortcutCache = {}
-    settingsService: any
+    settingsService = getService<SettingsService>('SettingsService')
     searchWindow: BrowserWindow
 
     repeatActionWithRange(name, startIncl, endIncl, genTakesI) {
@@ -515,7 +515,7 @@ export class ShortcutsService extends BESService {
                 this.browserText = ''
             }
         })
-        interceptPacket('api/settings/category', async ({ data: {category}, id }) => {
+        interceptPacket('api/shortcuts/category', async ({ data: {category}, id }) => {
             const db = await getDb()
             const settings = db.getRepository(Setting) 
             const results = await settings.find({where: {category}})
@@ -531,16 +531,7 @@ export class ShortcutsService extends BESService {
                 return res
             }), id})
         })
-        interceptPacket('api/settings/set', async ({ data: setting }) => {
-            const db = await getDb()
-            const { key } = setting
-            const settings = db.getRepository(Setting)
-            const { id } = await settings.findOne({where: {key}})
-            const copy = { ...setting }
-            delete setting.id
-            await settings.update(id, copy)
-            await this.updateShortcutCache()
-        })
+        this.settingsService.events.settingsUpdated.listen(() => this.updateShortcutCache())
     }
 
     maybeRunActionForState(state) {
@@ -570,26 +561,6 @@ export class ShortcutsService extends BESService {
         this.settingsService = getService('SettingsService')
         this.seedSettings()
         this.setupPacketListeners()
-        
-        // Would use mousemove event here but it fires when mouse is clicked too for some reason
-        let middleDown = false
-        let startPos = ''
-        const makePos = event => JSON.stringify({x: event.x, y: event.y})
-        Keyboard.on('mousedown', event => {
-            middleDown = Bitwig.isActiveApplication() && !this.browserIsOpen && event.x > 490 && event.button === 1
-            startPos = makePos(event)
-        })
-
-        Keyboard.on('mouseup', event => {
-            if (middleDown && makePos(event) === startPos) {
-                returnMouseAfter(() => {
-                    Keyboard.keyDown('1')
-                    Mouse.doubleClick(0, {x: event.x, y: 125})
-                    Keyboard.keyUp('1')
-                })
-            }
-            middleDown = false
-        })
 
         const getEventKeysArray = event => {
             const { lowerKey, Meta, Shift, Control, Alt } = event
