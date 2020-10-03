@@ -54,12 +54,7 @@ export class TrayService extends BESService {
                 app.dock.hide()
             })
         }
-        if (process.env.NODE_ENV !== 'dev') {
-            app.dock.hide()
-        } else {
-            openWindow({type: 'settings'})
-            this.settingsWindow.toggleDevTools()
-        }
+        
 
         
         const updateMenu = async () => {
@@ -131,7 +126,15 @@ export class TrayService extends BESService {
         const setupComplete = await isSetupComplete()
         if (!setupComplete) {
             openWindow({type: 'setup'})
+        } 
+
+        if (process.env.NODE_ENV !== 'dev') {
+            app.dock.hide()
+        } else if (setupComplete) {
+            openWindow({type: 'settings'})
+            this.settingsWindow.toggleDevTools()
         }
+        
 
         interceptPacket('api/setup/finish', async () => {
             await this.settingsService.setSettingValue('setupComplete', true)

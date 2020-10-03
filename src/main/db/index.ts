@@ -3,6 +3,7 @@ import { Project } from "./entities/Project"
 import { ProjectTrack } from "./entities/ProjectTrack"
 import { Setting } from "./entities/Setting"
 import { sqlitePath, sqliteBackupPath } from '../config'
+import { logWithTime } from "../core/Log"
 const fs = require('fs')
 const path = require('path')
 
@@ -25,7 +26,7 @@ export async function getDb() {
                             if (err) {
                                 console.error(err)
                             } else {
-                                console.log('Deleted old SQLite backup')
+                                logWithTime('Deleted old SQLite backup')
                             }
                         })
                     }
@@ -33,13 +34,13 @@ export async function getDb() {
             });
         });
         if (!newdb) {
-            console.log('Backing up current db')
+            logWithTime('Backing up current db')
             fs.copyFile(sqlitePath, path.join(sqliteBackupPath, `db.${new Date().getTime()}.sqlite`), err => {
                 if (err) console.error(err)
             })
         }
 
-        console.log('Creating connection')
+        logWithTime('Creating connection')
         conn = await createConnection({
             type: "sqlite",
             database: sqlitePath,
@@ -47,11 +48,11 @@ export async function getDb() {
             synchronize: true, // TODO change for production
             migrations: [path.join(__dirname, "./migrations/*.js")],
         })
-        console.log('About to run migrations...')
+        logWithTime('About to run migrations...')
         await conn.runMigrations({
             transaction: false
         });
-        console.log('Migration ran successfully!')
+        logWithTime('Migration ran successfully!')
     }
 
     return conn

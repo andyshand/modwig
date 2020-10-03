@@ -33,7 +33,7 @@ export class SettingsService extends BESService {
     }
 
     preSave(setting) {
-        if (setting.type in {'string':true,'boolean':true}) {
+        if (setting.type in {'string':true}) {
             return setting
        } else { 
             return {
@@ -44,7 +44,7 @@ export class SettingsService extends BESService {
     }
 
     postload(setting) {
-        if (setting.type in {'string':true,'boolean':true}) {
+        if (setting.type in {'string':true}) {
             return setting
        } else { 
             return {

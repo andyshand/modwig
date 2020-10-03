@@ -1,6 +1,7 @@
 import { BESService, getService, makeEvent } from "./Service";
 import { WEBSOCKET_PORT, SOCKET_PORT } from '../../connector/shared/Constants'
 import { app } from "electron";
+import { logWithTime } from "./Log";
 const { Bitwig } = require('bindings')('bes')
 const async = require('async')
 const WebSocket = require('ws');
@@ -13,12 +14,6 @@ let waiting = 0
 let partialMsg = ''
 let bitwigClient: any = null
 let activeWebsockets: {ws:any,id:number}[] = [];
-
-const logWithTime = (...args) => {
-    const d = new Date()
-    const pad0 = input => ('0' + input).substr(-2)
-    console.log(`${d.getHours()}:${pad0(d.getMinutes())}:${pad0(d.getSeconds())}:`, ...args)
-}
 
 /**
  * We have to have a queue here because our interceptors can be async, which means our
@@ -88,7 +83,7 @@ export class SocketMiddlemanService extends BESService {
     bitwigConnected: boolean = false
 
     activate() {
-        console.log("Activating Socket...")
+        logWithTime("Activating Socket...")
         const wss = new WebSocket.Server({ port: WEBSOCKET_PORT });
         const connectBitwig = () => {
             logWithTime('Connecting to Bitwig...');
@@ -169,7 +164,7 @@ export function sendPacketToBitwig(packet) {
 export function sendPacketToBrowser(packet) {
     const str = JSON.stringify(packet)
     if (logInOut) {
-        console.log('Sending to browser:', str)
+        logWithTime('Sending to browser:', str)
     }
     activeWebsockets.forEach(info => info.ws.send(str))
 }
@@ -197,7 +192,7 @@ export function addAPIMethod<T>(typePath: string, handler: (packet: any) => Prom
 }
 
 interceptPacket('api/status', ({id}) => {
-    console.log('intercepting')
+    logWithTime('intercepting')
     sendPacketToBrowser({
         type: 'api/status',
         data: {

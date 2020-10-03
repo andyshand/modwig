@@ -7,6 +7,7 @@ import { BrowserWindow } from "electron"
 import { url } from "../core/Url"
 import { SettingsService } from "../core/SettingsService"
 import { ModsService } from "../mods/ModsService"
+import { logWithTime } from "../core/Log"
 
 const { Keyboard, Mouse, MainWindow, Bitwig } = require('bindings')('bes')
 
@@ -54,7 +55,7 @@ export class ShortcutsService extends BESService {
                 const code = this.makeShortcutValueCode(value)
                 // code is our ID, key is the action to run
                 const runner = () => {
-                    console.log('Running shortcut code: ' + code + ' with action: ' + key)
+                    logWithTime('Running shortcut code: ' + code + ' with action: ' + key)
                     if (value.vstPassThrough || !Bitwig.isPluginWindowActive()) {
                         this.actions[key].action()
                     }
@@ -83,8 +84,8 @@ export class ShortcutsService extends BESService {
                 })
             }
         }
-        // console.log('Shortcut cache is')
-        // console.log(this.shortcutCache)
+        // logWithTime('Shortcut cache is')
+        // logWithTime(this.shortcutCache)
     }
 
     actionsWithCategory(cat, actions) {
@@ -557,7 +558,7 @@ export class ShortcutsService extends BESService {
 
         Keyboard.on('keydown', event => {
             const { lowerKey, nativeKeyCode, Meta, Shift, Control, Alt } = event
-            // console.log(event)
+            // logWithTime(event)
             const noMods = !(Meta || Control || Alt)
 
             // Prevent shortcuts from triggering when renaming something
@@ -575,7 +576,7 @@ export class ShortcutsService extends BESService {
 
                 let keys = getEventKeysArray(event)
                 const asJSON = JSON.stringify(keys)
-                console.log(asJSON)
+                logWithTime(asJSON)
 
                 let ranDouble = false
                 if (asJSON === lastKey && new Date().getTime() - lastKeyPressed.getTime() < 250) {
