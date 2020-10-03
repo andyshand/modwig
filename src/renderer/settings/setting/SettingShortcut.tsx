@@ -160,7 +160,7 @@ const Option = ({value, id, onChange, label}) => {
 
 export const SettingShortcut = ({setting}) => {
 
-    const [value, setValue] = useState(setting.value || [])
+    const [value, setValue] = useState(setting.value)
     const [focused, setFocused] = useState(false)
 
     const updateValue = value => {
@@ -205,7 +205,7 @@ export const SettingShortcut = ({setting}) => {
                 keys.push('Alt')
             }
             const shortcut = keys.reverse()
-            updateValue({...setting.value, keys: shortcut})
+            updateValue({...value, keys: shortcut})
         }
     }
 
@@ -267,7 +267,7 @@ export const SettingShortcut = ({setting}) => {
             </div>
             <InputWrap {...wrapProps}>
                 <ShortcutInput {...props} />
-                <div className="setdefault"><FontAwesomeIcon onClick={() => updateValue({keys: []})} icon={faTimesCircle} /></div>
+                <div className="setdefault"><FontAwesomeIcon onClick={() => updateValue({...value, keys: []})} icon={faTimesCircle} /></div>
             </InputWrap>
             <OptionsWrap>
                 {options.map(option => {
