@@ -2,5 +2,6 @@ node_modules
 dist
 build
 extraResources/controller-script/bes.control.js
+extraResources/controller-script/mods.js
 scripts/install
 .linaria-cache

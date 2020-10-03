@@ -32,17 +32,32 @@ export class SettingsService extends BESService {
         return this.Settings.find({where: {category}})
     }
 
-    rectifySetting(setting) {
-        if ('type' in setting && setting.type !== 'shortcut' && 'value' in setting) {
-            setting.value = { value: setting.value }
+    preSave(setting) {
+        if (setting.type in {'string':true,'boolean':true}) {
+            return setting
+       } else { 
+            return {
+                ...setting,
+                value: JSON.stringify(setting.value)
+            }
         }
-        return setting
+    }
+
+    postload(setting) {
+        if (setting.type in {'string':true,'boolean':true}) {
+            return setting
+       } else { 
+            return {
+                ...setting,
+                value: JSON.parse(setting.value)
+            }
+        }
     }
 
     async insertSettingIfNotExist(setting: SettingTemplate) {
         const existingSetting = await this.Settings.findOne({where: {key: setting.key}})
         if (!existingSetting) {
-            const content = this.rectifySetting(setting)
+            const content = this.preSave(setting)
             const newSetting = this.Settings.create(content)
             await this.Settings.save(newSetting);
 
@@ -52,7 +67,7 @@ export class SettingsService extends BESService {
     }
 
     async getSetting(key: string) {
-        return await this.Settings.findOne({where: {key}})
+        return this.postload(await this.Settings.findOne({where: {key}}))
     }
 
     async getSettingValue(key: string) {
@@ -60,10 +75,7 @@ export class SettingsService extends BESService {
         if (!setting) {
             throw new Error(`Setting ${key} not found`)
         }
-        if (setting.type !== 'shortcut') {
-            return setting.value.value
-        }
-        return setting.value
+        return this.postload(setting).value
     }
 
     async setSettingValue(key: string, value: any) {
@@ -71,7 +83,7 @@ export class SettingsService extends BESService {
         if (!setting) {
             throw new Error(`Setting ${key} not found`)
         }
-        const update = this.rectifySetting({type: setting.type, value})
+        const update = this.preSave({type: setting.type, value})
         await this.Settings.update(setting.id, update)
 
         this.events.settingsUpdated.emit()

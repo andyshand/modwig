@@ -20,6 +20,7 @@ interface ModInfo {
     description: string
     category: string
     id: string
+    path: string
 }
 
 export class ModsService extends BESService {
@@ -131,6 +132,29 @@ export class ModsService extends BESService {
         }
         return api
     }
+    async getMods({category, inMenu} = {} as any) {
+        await this.refreshMods()
+        const db = await getDb()
+        const settings = db.getRepository(Setting) 
+        const where = {type: 'mod'} as any
+        if (category) {
+            where.category = category
+        }
+        const results = await settings.find({where})
+        return results.map(res => {
+            res = this.settingsService.postload(res)
+            if (res.key in this.latestModsMap) {
+                const modInfo = this.latestModsMap[res.key]
+                res = {
+                    ...res,
+                    ...modInfo
+                }
+            }
+            return res
+        }).filter((mod) => {
+            return inMenu ? mod.value.showInMenu : true
+        })
+    }
     activate() {
         // Listen out for the current track/project state from the controller script
         interceptPacket('trackselected', undefined, async ({ data: { name: newTrackName, selected, project } }) => {
@@ -145,28 +169,9 @@ export class ModsService extends BESService {
         interceptPacket('browser/state', undefined, ({ data: {isOpen} }) => {
             this.browserIsOpen = isOpen
         })
-        addAPIMethod('api/mods/category', async ({ data: {category} }) => {
-            const db = await getDb()
-            const settings = db.getRepository(Setting) 
-            const results = await settings.find({where: {type: 'mod', category}})
-            return {
-                data: results.map(res => {
-                    if (res.key in this.latestModsMap) {
-                        const modInfo = this.latestModsMap[res.key]
-                        res = {
-                            ...res,
-                            ...modInfo
-                        }
-                    }
-                    return res
-                })
-            }
+        addAPIMethod('api/mods/category', async ({ category }) => {
+            return await this.getMods({category})
         })
-        // addAPIMethod('api/mods', () => {
-        //   return {
-
-        //   }  
-        // })
 
         const refreshFolderWatcher = async () => {
             console.log('Refreshing folder watcher')
@@ -278,7 +283,8 @@ for (var key in api) {
                         name,
                         description,
                         category,
-                        version
+                        version,
+                        path: path.join(modsFolder, filePath)
                     }
                     const isEnabled = (await this.settingsService.getSetting(settingsKey)).value.enabled
                     if (isEnabled) {

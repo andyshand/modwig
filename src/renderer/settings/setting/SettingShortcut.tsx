@@ -1,10 +1,12 @@
-import { faCross, faTimesCircle } from '@fortawesome/free-solid-svg-icons'
+import { faCross, faSearch, faTimesCircle } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import React, {useState} from 'react'
 import { styled } from 'linaria/react'
 import { sendPromise } from '../../bitwig-api/Bitwig'
 import { settingTitle } from '../helpers/settingTitle'
 import { Checkbox } from '../../core/Checkbox'
+const { shell } = require('electron')
+
 const borderColor = `#444`;
 const xPad = "1.2rem";
 const ShortcutInput = styled.input`
@@ -55,7 +57,8 @@ const InputWrap = styled.div`
         transform: translateY(-50%);
     }
 `
-const FlexRow = styled.table`
+const FlexRow = styled.div`
+    display: table;
     position: relative;
     font-size: .9em;
     width: 100%;
@@ -87,8 +90,6 @@ const FlexRow = styled.table`
     }
 `
 const OptionsWrap = styled.div`
-    display: flex;
-    border-top: 1px solid ${borderColor};
     padding: .2em ${xPad};
     align-items: center;
     color: #666;
@@ -204,7 +205,7 @@ export const SettingShortcut = ({setting}) => {
                 keys.push('Alt')
             }
             const shortcut = keys.reverse()
-            updateValue({keys: shortcut})
+            updateValue({...setting.value, keys: shortcut})
         }
     }
 
@@ -218,7 +219,7 @@ export const SettingShortcut = ({setting}) => {
     
     const shortcutToTextDescription = () => {
         if ((value.keys || []).length === 0) {
-            return 'No Shortcut Set'
+            return 'Click to set shortcut...'
         }
         return (value.keys || []).join(' + ').replace(/Meta/g, process.platform === 'darwin' ? 'Command' : 'Win')
     }
@@ -227,7 +228,7 @@ export const SettingShortcut = ({setting}) => {
         onBlur,
         onFocus,
         onKeyDown,
-        value: (focused && shortcutToTextDescription() === '') ? 'Press any key combination to set...' : shortcutToTextDescription(),
+        value: (focused && shortcutToTextDescription() === 'Click to set shortcut...') ? 'Press any key combination to set...' : shortcutToTextDescription(),
         readOnly: true
     }
     const wrapProps = {
@@ -246,6 +247,10 @@ export const SettingShortcut = ({setting}) => {
     }
 
     const options = [
+        ...(setting.type === 'mod' ? [
+            optionProps('enabled', 'Enabled'),
+            optionProps('showInMenu', 'Show in Menu'),
+        ] : []),
         optionProps('doubleTap', 'Double-tap'),
         // optionProps('keyRepeat', 'Key Repeat'),
         optionProps('vstPassThrough', 'Pass through VSTs')
@@ -255,6 +260,7 @@ export const SettingShortcut = ({setting}) => {
         <FlexRow>
             <div>
                 <Title>{settingTitle(setting)}</Title>
+                {setting.path ? <div className="setdefault"><FontAwesomeIcon onClick={() => shell.showItemInFolder(setting.path)} icon={faSearch} /></div> : null}
             </div>
             <div>
                 <Description>{setting.description}</Description>
@@ -263,12 +269,13 @@ export const SettingShortcut = ({setting}) => {
                 <ShortcutInput {...props} />
                 <div className="setdefault"><FontAwesomeIcon onClick={() => updateValue({keys: []})} icon={faTimesCircle} /></div>
             </InputWrap>
+            <OptionsWrap>
+                {options.map(option => {
+                    return <Option {...option} />
+                })}
+            </OptionsWrap>
         </FlexRow>
-        <OptionsWrap>
-            {options.map(option => {
-                return <Option {...option} />
-            })}
-        </OptionsWrap>
+        
     </ShortcutWrap>
 
 }

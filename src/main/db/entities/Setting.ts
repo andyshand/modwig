@@ -13,7 +13,7 @@ export class Setting {
     @Column()
     category: string
 
-    @Column({type: 'simple-json'})
+    @Column()
     value: string
 
     @Index()

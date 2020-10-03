@@ -106,7 +106,7 @@ var PacketManager = /** @class */ (function () {
                             runAction(actionName);
                         }
                     }
-                    // host.showPopupNotification(packet.type)
+                    println(packet.type);
                     // println('send response???')
                     var errors = [];
                     if (warnNoListeners) {
@@ -860,6 +860,11 @@ function init() {
     new SettingsController(deps);
     deps.packetManager.listen('transport/play', function () { return transport.togglePlay(); });
     deps.packetManager.listen('transport/stop', function () { return transport.stop(); });
+    deps.packetManager.listen('message', function (_a) {
+        var message = _a.data;
+        println(message);
+        host.showPopupNotification(message);
+    });
     host.showPopupNotification("Modwig Connecting...");
     load('mods.js');
     var makeApi = function () {

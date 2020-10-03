@@ -35,6 +35,22 @@ const SectionHeader = styled.div`
     color: #888;
     /* text-align: center; */
 `
+const NoMods = styled.div`
+    text-align: center;
+    border: 1px solid #444;
+    border-left: none;
+    border-right: none;
+    padding: 2em 0;
+    >:first-child {
+        color: #AAA;
+    }
+    >:nth-child(2) {
+        color: #666;
+        font-size: .9em;
+        margin-top: .5em;
+    }
+
+`
 class Shortcuts extends React.Component<any> {
     render() {
         const { settings, title, helpText } = this.props
@@ -48,6 +64,10 @@ class Shortcuts extends React.Component<any> {
                     {settings.map(setting => {
                         return <SettingShortcut key={setting.key} setting={setting} />
                     })}
+                    {settings.length === 0 ? <NoMods>
+                        <div>No mods found.</div>
+                        <div>Adds mods under your Bitwig User Library folder &gt; Modwig &gt; Mods</div>
+                    </NoMods> : null}
                 </div>
             </ShortcutsWrap>
         </div>
@@ -60,7 +80,8 @@ export class SettingsView extends React.Component<Props> {
 
     state = {
         settings: [],
-        mods: []
+        mods: [],
+        loading: true
     }
     async componentWillMount() {
         const { data: settings } = await getSettings({category: this.props.category})
@@ -70,14 +91,15 @@ export class SettingsView extends React.Component<Props> {
         })
         this.setState({
             settings,
-            mods
+            mods,
+            loading: false
         })
     }
 
     render() {
         return <SettingsViewWrap>
-            <Shortcuts settings={this.state.mods} title={`Mods`} helpText={`Please ensure you have disabled any built-in shortcuts using the same keys.`} />
-            <Shortcuts settings={this.state.settings} title={`Actions`} helpText={null} />
+            {this.state.loading ? null : <><Shortcuts settings={this.state.mods} title={`Mods`} helpText={`Please ensure you have disabled any built-in shortcuts using the same keys.`} />
+            <Shortcuts settings={this.state.settings} title={`Actions`} helpText={null} /></>}
         </SettingsViewWrap>
     }
 }

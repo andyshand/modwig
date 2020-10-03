@@ -28,7 +28,7 @@ app.whenReady().then(async () => {
   })
 
   const socketMiddleMan = await registerService(SocketMiddlemanService)
-  const trayService = await registerService(TrayService)
-  const shortcutsService = await registerService(ShortcutsService)
   const modsService = await registerService(ModsService)
+  const shortcutsService = await registerService(ShortcutsService)
+  const trayService = await registerService(TrayService)
 })

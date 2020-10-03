@@ -6,6 +6,7 @@ import { Setting } from "../db/entities/Setting"
 import { BrowserWindow } from "electron"
 import { url } from "../core/Url"
 import { SettingsService } from "../core/SettingsService"
+import { ModsService } from "../mods/ModsService"
 
 const { Keyboard, Mouse, MainWindow, Bitwig } = require('bindings')('bes')
 
@@ -22,6 +23,7 @@ export class ShortcutsService extends BESService {
     actions = this.getActions()
     shortcutCache = {}
     settingsService = getService<SettingsService>('SettingsService')
+    modsService = getService<ModsService>('ModsService')
     searchWindow: BrowserWindow
 
     repeatActionWithRange(name, startIncl, endIncl, genTakesI) {
@@ -44,7 +46,8 @@ export class ShortcutsService extends BESService {
         const results = await settings.find({where: {type: 'shortcut'}})
 
         this.shortcutCache = {}
-        for (const shortcut of results) {
+        for (let shortcut of results) {
+            shortcut = this.settingsService.postload(shortcut)
             if (shortcut.value.keys.length > 0) {
                 const value = shortcut.value
                 const key = shortcut.key
@@ -63,6 +66,23 @@ export class ShortcutsService extends BESService {
             }
         }
 
+        const modShortcuts = await this.modsService.getMods()
+        for (const mod of modShortcuts) {
+            if (mod.value.keys.length > 0) {
+                const code = this.makeShortcutValueCode(mod.value)
+                this.shortcutCache[code] = (this.shortcutCache[code] || []).concat({
+                    runner: async () => {
+                        const value = (await this.settingsService.getSettingValue(mod.key))
+                        sendPacketToBitwig({type: 'message', data: `${mod.name} ${value.enabled ? 'Disabled' : 'Enabled'}`})
+                        await this.settingsService.setSettingValue(mod.key, {
+                            ...value,
+                            enabled: !value.enabled
+                        })
+                    },
+                    keyRepeat: mod.value.keyRepeat || false
+                })
+            }
+        }
         // console.log('Shortcut cache is')
         // console.log(this.shortcutCache)
     }
@@ -472,21 +492,19 @@ export class ShortcutsService extends BESService {
                 this.browserText = ''
             }
         })
-        addAPIMethod('api/shortcuts/category', async ({ data: {category} }) => {
+        addAPIMethod('api/shortcuts/category', async ({ category }) => {
             const db = await getDb()
             const settings = db.getRepository(Setting) 
             const results = await settings.find({where: {type: 'shortcut', category}})
             const actions = this.actions
-            return {
-                data: results.map(res => {
-                    res = {...res}
-                    if (res.key in actions) {
-                        const action = actions[res.key]
-                        res.description = action.description
-                    }
-                    return res
-                })
-            }
+            return results.map(res => {
+                res = this.settingsService.postload(res)
+                if (res.key in actions) {
+                    const action = actions[res.key]
+                    res.description = action.description
+                }
+                return res
+            })
         })
         this.settingsService.events.settingsUpdated.listen(() => this.updateShortcutCache())
     }

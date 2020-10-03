@@ -5,6 +5,7 @@ import { url } from "./Url";
 import { interceptPacket, sendPacketToBitwig, SocketMiddlemanService } from "./WebsocketToSocket";
 import { promises as fs } from 'fs'
 import { SettingsService } from "./SettingsService";
+import { ModsService } from "../mods/ModsService";
 const { Bitwig } = require('bindings')('bes')
 
 let settings = {
@@ -18,6 +19,7 @@ export class TrayService extends BESService {
     settingsWindow
     settingsService = getService<SettingsService>('SettingsService')
     socket = getService<SocketMiddlemanService>('SocketMiddlemanService')
+    modsService = getService<ModsService>('ModsService')
 
     async activate() {
         const tray = new Tray(getResourcePath('/images/tray-0Template.png'))
@@ -59,7 +61,21 @@ export class TrayService extends BESService {
             this.settingsWindow.toggleDevTools()
         }
 
+        
         const updateMenu = async () => {
+            const modItems = (await this.modsService.getMods({inMenu: true})).map(modSetting => {
+                return {
+                    label: modSetting.name,
+                    checked: modSetting.value.enabled,
+                    type: 'checkbox',
+                    click: () => {
+                        this.settingsService.setSettingValue(modSetting.key, {
+                            ...modSetting.value,
+                            enabled: !modSetting.value.enabled
+                        })
+                    }
+                }
+            })
             const contextMenu = Menu.buildFromTemplate([
               { label: `Modwig: ${this.connected ? 'Connected' : 'Connecting...'}`, enabled: false },
               { label: `Report an Issue...`, click: () => {
@@ -70,14 +86,10 @@ export class TrayService extends BESService {
                     Bitwig.isAccessibilityEnabled(true)
                 } },
               ]),
-              { type: 'separator' },
-              { label: 'Exclusive Arm', checked: settings.exclusiveArm, type: "checkbox", click: () => {
-                settings.exclusiveArm = !settings.exclusiveArm
-                sendPacketToBitwig({
-                    type: 'settings/update',
-                    data: settings
-                })
-            } },
+              ...(modItems.length ? [
+                { type: 'separator' },
+                ...modItems
+              ] : []),
             { type: 'separator' },
               { label: 'Preferences...', click: () => openWindow({type: 'settings'}) },
               { label: 'Setup...', click: () => openWindow({type: 'setup'}) },
@@ -127,5 +139,6 @@ export class TrayService extends BESService {
         interceptPacket('api/setup/accessibility', async () => {
             Bitwig.isAccessibilityEnabled(true)
         })
+        this.settingsService.events.settingsUpdated.listen(() => updateMenu())
     }
 }

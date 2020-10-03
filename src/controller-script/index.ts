@@ -90,7 +90,7 @@ class PacketManager {
                             runAction(actionName)
                         }
                     }
-                    // host.showPopupNotification(packet.type)
+                    println(packet.type)
                     // println('send response???')
                     let errors = []
                     if (warnNoListeners) {
@@ -877,6 +877,10 @@ function init() {
 
     deps.packetManager.listen('transport/play', () => transport.togglePlay())
     deps.packetManager.listen('transport/stop', () => transport.stop())
+    deps.packetManager.listen('message', ({data: message}) => {
+        println(message)
+        host.showPopupNotification(message)
+    })
 
     host.showPopupNotification("Modwig Connecting...");
 
