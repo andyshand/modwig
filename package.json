@@ -22,7 +22,6 @@
     "rebuildc": "node-gyp -j 16 rebuild",
     "cleanc": "node-gyp clean",
     "build:controller": "tsc --p tsconfig.controller-script.json",
-    "nodemon:controller": "nodemon -V --watch ./extra-resources/controller-script . --exec 'node ./extra-resources/copyControllerScript.js'",
     "watch:controller": "tsc -w --p tsconfig.controller-script.json"
   },
   "build": {

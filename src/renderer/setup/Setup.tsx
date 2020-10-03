@@ -99,7 +99,7 @@ export class Setup extends React.Component {
         },
         loading: true,
 
-        userLibraryLocation: '',
+        userLibraryPath: '',
         checkingLocation: false,
         invalidLocation: false
     }
@@ -128,7 +128,7 @@ export class Setup extends React.Component {
             return path.join(app.getPath('home'), 'Documents', 'Bitwig Studio')
         }
         this.setState({
-            userLibraryLocation: getDefaultLibraryLocation()
+            userLibraryPath: getDefaultLibraryLocation()
         })
     }
     componentWillUnmount() {
@@ -145,7 +145,7 @@ export class Setup extends React.Component {
                 }
             });
             if (filePaths.length) {
-                this.setState({userLibraryLocation: filePaths[0]})
+                this.setState({userLibraryPath: filePaths[0]})
             }
             this.onCheckLocation()
         } catch (e) {
@@ -156,7 +156,7 @@ export class Setup extends React.Component {
         this.setState({
             checkingLocation: true
         })
-        const dir = this.state.userLibraryLocation
+        const dir = this.state.userLibraryPath
         const subDirs = ['Auto Mappings', 'Controller Scripts', 'Extensions', 'Library', 'Projects']
         let oneExists = false
         for (const subDir of subDirs) {
@@ -179,11 +179,11 @@ export class Setup extends React.Component {
                 </CenterText>
 
                 <FileChooser>
-                    <Input style={{margin: '0 auto', width: '30em'}} type="text" spellCheck={false} autoComplete={'off'} value={this.state.userLibraryLocation} onChange={e => {this.setState({userLibraryLocation: e.target.value})}} />
+                    <Input style={{margin: '0 auto', width: '30em'}} type="text" spellCheck={false} autoComplete={'off'} value={this.state.userLibraryPath} onChange={e => {this.setState({userLibraryPath: e.target.value})}} />
                     <Button onClick={this.onChooseLocation}>Choose</Button>
                 </FileChooser>
 
-                <EndButton disabled={this.state.checkingLocation || this.state.userLibraryLocation === String(this.state.invalidLocation)} onClick={() => !this.state.invalidLocation ? this.onNextStep() : null }>Looks good! Continue</EndButton>
+                <EndButton disabled={this.state.checkingLocation || this.state.userLibraryPath === String(this.state.invalidLocation)} onClick={() => !this.state.invalidLocation ? this.onNextStep({ saveLocation: true }) : null }>Looks good! Continue</EndButton>
                 <StatusMessage>
                     {this.state.checkingLocation ? <><Spinner style={{marginRight: '.3em'}} />Checking Location...</> : null }
                     {this.state.invalidLocation ? <>That location doesn't seem right..</> : null }
@@ -252,7 +252,17 @@ export class Setup extends React.Component {
         }
         return arr
     }
-    onNextStep = async () => {
+    onNextStep = async ({saveLocation} = {} as any) => {
+        if (saveLocation) {
+            send({
+                type: 'api/settings/set',
+                data: {
+                    key: 'userLibraryPath',
+                    value: this.state.userLibraryPath,
+                    type: 'string' // TODO these should be unnecessary from calling code
+                }
+            })
+        }
         const nextI = this.state.step + 1
         if (nextI < this.getStepCount()) {
             this.setState({

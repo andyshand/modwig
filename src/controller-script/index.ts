@@ -3,6 +3,7 @@ declare const loadAPI: any
 declare const println: any
 declare const load: any
 declare const Object2: any
+declare const loadMods: any
 
 loadAPI(10);
 load('es5-shim.min.js')
@@ -63,12 +64,12 @@ class PacketManager {
         this.connection = connection
         println("Created remote connection on port: " + this.connection.getPort())
         this.connection.setClientConnectCallback(connection => {
-            host.showPopupNotification("BES Connected");
+            host.showPopupNotification("Modwig Connected");
             println("Connected to Node");
             this.activeConnection = connection
             this.activeConnection.setDisconnectCallback(() => {
                 println("Disconnected from Node");
-                host.showPopupNotification("BES Disconnected");
+                host.showPopupNotification("Modwig Disconnected");
                 this.activeConnection = null
             })
             this.activeConnection.setReceiveCallback(data => {
@@ -137,7 +138,7 @@ class PacketManager {
 
 type Deps = {
     packetManager: PacketManager
-    globalController: Controller,
+    globalController: GlobalController,
     app: any,
     arranger: any,
     transport: any
@@ -877,7 +878,17 @@ function init() {
     deps.packetManager.listen('transport/play', () => transport.togglePlay())
     deps.packetManager.listen('transport/stop', () => transport.stop())
 
-    host.showPopupNotification("BES Connecting...");
+    host.showPopupNotification("Modwig Connecting...");
 
     load('mods.js')
+    const makeApi = () => {
+        return {
+            tracks: {
+                forEach: ((cb) => {
+                    deps.globalController.mapTracks(cb)
+                })
+            }
+        }
+    }
+    loadMods(makeApi())
 }

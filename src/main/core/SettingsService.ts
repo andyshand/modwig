@@ -24,11 +24,7 @@ export class SettingsService extends BESService {
         this.Settings = this.db.getRepository(Setting)
 
         interceptPacket('api/settings/set', async ({ data: setting }) => {
-            const { key } = setting
-            const { id } = await this.Settings.findOne({where: {key}})
-            const copy = { ...setting }
-            delete setting.id
-            await this.Settings.update(id, copy)
+            await this.setSettingValue(setting.key, setting.value)
         })
     }
 
@@ -85,7 +81,7 @@ export class SettingsService extends BESService {
         })
     }
 
-    async userLibraryLocation() {
+    async userLibraryPath() {
         return await this.getSettingValue('userLibraryPath')
     }
 

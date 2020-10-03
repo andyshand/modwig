@@ -79,12 +79,12 @@ var PacketManager = /** @class */ (function () {
         this.connection = connection;
         println("Created remote connection on port: " + this.connection.getPort());
         this.connection.setClientConnectCallback(function (connection) {
-            host.showPopupNotification("BES Connected");
+            host.showPopupNotification("Modwig Connected");
             println("Connected to Node");
             _this.activeConnection = connection;
             _this.activeConnection.setDisconnectCallback(function () {
                 println("Disconnected from Node");
-                host.showPopupNotification("BES Disconnected");
+                host.showPopupNotification("Modwig Disconnected");
                 _this.activeConnection = null;
             });
             _this.activeConnection.setReceiveCallback(function (data) {
@@ -860,6 +860,16 @@ function init() {
     new SettingsController(deps);
     deps.packetManager.listen('transport/play', function () { return transport.togglePlay(); });
     deps.packetManager.listen('transport/stop', function () { return transport.stop(); });
-    host.showPopupNotification("BES Connecting...");
+    host.showPopupNotification("Modwig Connecting...");
     load('mods.js');
+    var makeApi = function () {
+        return {
+            tracks: {
+                forEach: (function (cb) {
+                    deps.globalController.mapTracks(cb);
+                })
+            }
+        };
+    };
+    loadMods(makeApi());
 }
