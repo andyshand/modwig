@@ -74,7 +74,6 @@ export class ShortcutsService extends BESService {
                 this.shortcutCache[code] = (this.shortcutCache[code] || []).concat({
                     runner: async () => {
                         const value = (await this.settingsService.getSettingValue(mod.key))
-                        sendPacketToBitwig({type: 'message', data: `${mod.name} ${value.enabled ? 'Disabled' : 'Enabled'} (Restarting Modwig...)`})
                         await this.settingsService.setSettingValue(mod.key, {
                             ...value,
                             enabled: !value.enabled

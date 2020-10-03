@@ -181,6 +181,7 @@ export class ModsService extends BESService {
                 this.folderWatcher = null
             }
             const folderPath = await this.getModsFolderPath()
+            console.log('Watching ' + folderPath)
             this.folderWatcher = chokidar.watch(folderPath, {
                 ignoreInitial : true
             }).on('all', (event, path) => {
@@ -192,7 +193,9 @@ export class ModsService extends BESService {
                 this.refreshMods()
             });
             if (process.env.NODE_ENV === 'dev' && !this.devFolderWatcher) {
-                this.devFolderWatcher = chokidar.watch(getResourcePath('/controller-script/bes.control.js'), {
+                const mainScript = getResourcePath('/controller-script/bes.control.js')
+                console.log('Watching ' + mainScript)
+                this.devFolderWatcher = chokidar.watch([mainScript], {
                     ignoreInitial : true
                 }).on('all', (event, path) => {
                     logWithTime(event, path)
@@ -208,6 +211,11 @@ export class ModsService extends BESService {
             const key = data.key!
             if (key === 'userLibraryPath') {
                 refreshFolderWatcher()
+            } else if (key.indexOf('mod') === 0) {
+                const { name, value: { enabled } } = data as any
+                console.log(data)
+                sendPacketToBitwig({type: 'message', data: `Settings changed, restarting Modwig...`})
+                this.refreshMods()
             }
         })
 

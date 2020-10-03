@@ -882,8 +882,6 @@ function init() {
         host.showPopupNotification(message)
     })
 
-    host.showPopupNotification("Modwig Connecting...");
-
     load('mods.js')
     const makeApi = () => {
         return {
