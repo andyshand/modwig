@@ -5,7 +5,7 @@ import { styled } from 'linaria/react'
 import { sendPromise } from '../../bitwig-api/Bitwig'
 import { settingTitle } from '../helpers/settingTitle'
 import { Checkbox } from '../../core/Checkbox'
-
+const borderColor = `#444`;
 const xPad = "1.2rem";
 const ShortcutInput = styled.input`
     width: 100%;
@@ -17,44 +17,20 @@ const ShortcutInput = styled.input`
         outline: none;
     }
     text-align: center;
-    border-left: 1px solid #666 !important;
     cursor: pointer;
 `
-const FlexRow = styled.div`
-    display: flex;
-    position: relative;
-    align-items: center;
-    font-size: .9em;
-    >:first-child {
-        padding: 0 ${xPad};
-        width: 12em;
-    }
-    >:not(:first-child) {
-        flex-grow: 1;
-        color: #AAA;
-    }
-    
-    &:hover {
-        > * div {
-            opacity: 1;
-            transition: opacity .2s;
-        }
-    }
-    > * {
-        div {
-            opacity: 0;
-            position: absolute;
-            top: 50%;
-            right: ${xPad};
-            transform: translateY(-50%);
-        }
-    }
+const Title = styled.div`
 `
+const Description = styled.div`
+    font-size: .8em;
+    color: #AAA;
+`
+
 const ShortcutWrap = styled.div`
     
     /* border-radius: .5em; */
     overflow: hidden;
-    border: 1px solid #666;
+    border: 1px solid ${borderColor};
     user-select: none;
     cursor: default;
     border-left: none;
@@ -67,11 +43,52 @@ const ShortcutWrap = styled.div`
 const InputWrap = styled.div`
     background: ${(props: any) => props.focused ? `#111` : `222`};
     cursor: pointer;    
+    position: relative;
+    input {
+        color: ${(props: any) => props.noShortcut ? `#444` : `666`};
+    }
+    div {
+        opacity: 0;
+        position: absolute;
+        top: 50%;
+        right: ${xPad};
+        transform: translateY(-50%);
+    }
+`
+const FlexRow = styled.table`
+    position: relative;
+    font-size: .9em;
+    width: 100%;
+    > * {
+        padding: 0 ${xPad};
+        display: table-cell;
+        vertical-align: middle;
+    }
+    >:first-child {
+        width: 12em;
+    }
+    >:nth-child(2) {
+        width: 16em;
+        padding: .8em ${xPad};
+    }
+    >:not(:last-child) {
+        border-right: 1px solid ${borderColor};
+    }
+    >:last-child {
+        color: #AAA;
+        /* width: 100%; */
+    }
     
+    &:hover {
+        .setdefault {
+            opacity: 1;
+            transition: opacity .2s;
+        }
+    }
 `
 const OptionsWrap = styled.div`
     display: flex;
-    border-top: 1px solid #777;
+    border-top: 1px solid ${borderColor};
     padding: .2em ${xPad};
     align-items: center;
     color: #666;
@@ -200,6 +217,9 @@ export const SettingShortcut = ({setting}) => {
     }
     
     const shortcutToTextDescription = () => {
+        if ((value.keys || []).length === 0) {
+            return 'No Shortcut Set'
+        }
         return (value.keys || []).join(' + ').replace(/Meta/g, process.platform === 'darwin' ? 'Command' : 'Win')
     }
     
@@ -211,7 +231,8 @@ export const SettingShortcut = ({setting}) => {
         readOnly: true
     }
     const wrapProps = {
-        focused
+        focused,
+        noShortcut: (value.keys || []).length === 0
     }
 
     const optionProps = (key, label) => {
@@ -232,12 +253,15 @@ export const SettingShortcut = ({setting}) => {
 
     return <ShortcutWrap >
         <FlexRow>
-            <div title={setting.description}>
-                {settingTitle(setting)}
+            <div>
+                <Title>{settingTitle(setting)}</Title>
+            </div>
+            <div>
+                <Description>{setting.description}</Description>
             </div>
             <InputWrap {...wrapProps}>
                 <ShortcutInput {...props} />
-                <div><FontAwesomeIcon onClick={() => updateValue({keys: []})} icon={faTimesCircle} /></div>
+                <div className="setdefault"><FontAwesomeIcon onClick={() => updateValue({keys: []})} icon={faTimesCircle} /></div>
             </InputWrap>
         </FlexRow>
         <OptionsWrap>

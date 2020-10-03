@@ -1,4 +1,4 @@
-import { sendPacketToBitwig, interceptPacket, sendPacketToBrowser } from "../core/WebsocketToSocket"
+import { sendPacketToBitwig, interceptPacket, sendPacketToBrowser, addAPIMethod } from "../core/WebsocketToSocket"
 import { BESService, getService } from "../core/Service"
 import { returnMouseAfter } from "../../connector/shared/EventUtils"
 import { getDb } from "../db"
@@ -442,54 +442,11 @@ export class ShortcutsService extends BESService {
         }
     }
 
-    getDefaultSettings() {
-        return {
-            "global": {
-                "Exclusive Arm": {
-                    description: 'Prevents more than one track from being armed at any one time',
-                    defaultSetting: {
-                        value: true,
-                        showInMenu: true
-                    }
-                }
-            },
-            "arranger": {
-                "Middle Click to play from point": {
-                    description: 'Middle click anywhere within the arranger timeline to play from that point. Works by automating a double click with the pointer (1) tool in the timeline ruler. May not work for non-standard scaling/screen layouts.',
-                    defaultSetting: {
-                        value: true
-                    }
-                }
-            },
-            "devices": {
-                "Remember Device View Scroll Position": {
-                    description: 'Return to previous scroll position when switching between tracks. Scroll position is currently tracked by listening for middle click drags on the device view portion of the screen. May not work for non-standard scaling/screen layouts.',
-                    defaultSetting: {
-                        value: true
-                    }
-                }
-            }
-        }
-    }
-
     normalise(label) {
         return label.replace(/[\s]+/g, '-').toLowerCase()
     }
 
     async seedSettings() {
-        const defaultSets = this.getDefaultSettings()
-        for (const category in defaultSets) {
-            for (const key in defaultSets[category]) {
-                const { value } = defaultSets[category][key]
-                await this.settingsService.insertSettingIfNotExist({
-                    key: this.normalise(key),
-                    value,
-                    category,
-                    type: 'boolean'
-                })
-            }
-        }
-
         const actions = this.actions
         for (const actionKey in actions) {
             const action = actions[actionKey]
@@ -515,21 +472,21 @@ export class ShortcutsService extends BESService {
                 this.browserText = ''
             }
         })
-        interceptPacket('api/shortcuts/category', async ({ data: {category}, id }) => {
+        addAPIMethod('api/shortcuts/category', async ({ data: {category} }) => {
             const db = await getDb()
             const settings = db.getRepository(Setting) 
-            const results = await settings.find({where: {category}})
-
+            const results = await settings.find({where: {type: 'shortcut', category}})
             const actions = this.actions
-
-            sendPacketToBrowser({data: results.map(res => {
-                res = {...res}
-                if (res.key in actions) {
-                    const action = actions[res.key]
-                    res.description = action.description
-                }
-                return res
-            }), id})
+            return {
+                data: results.map(res => {
+                    res = {...res}
+                    if (res.key in actions) {
+                        const action = actions[res.key]
+                        res.description = action.description
+                    }
+                    return res
+                })
+            }
         })
         this.settingsService.events.settingsUpdated.listen(() => this.updateShortcutCache())
     }

@@ -1,5 +1,9 @@
-// mod.description = 'Ensures only one track can be armed at any one time'
-// mod.category = 'global'
+/**
+ * @name Exclusive Arm
+ * @id exclusive-arm
+ * @description Ensures only one track can be armed at any one time
+ * @category global
+ */
 
 tracks.forEach((t, i) => {
     t.arm().addValueObserver(armed => {

@@ -59,7 +59,7 @@ export function send(newPacket: any, callback?: Function) {
   sendQueuedPackets()
 }
 
-export function sendPromise(newPacket) {
+export function sendPromise(newPacket) : Promise<any> {
   return new Promise((resolve) => {
     send(newPacket, resolve)
   })

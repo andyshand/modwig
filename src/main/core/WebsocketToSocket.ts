@@ -186,6 +186,15 @@ export function interceptPacket(type: string, toBitwig?: Function, fromBitwig?: 
     }
 }
 
+export function addAPIMethod<T>(typePath: string, handler: (packet: any) => Promise<T>) {
+    interceptPacket(typePath, async (packet) => {
+        const response = await handler(packet)
+        if (response) {
+            sendPacketToBrowser({id: packet.id, ...response})
+        }
+    })
+}
+
 interceptPacket('api/status', ({id}) => {
     console.log('intercepting')
     sendPacketToBrowser({

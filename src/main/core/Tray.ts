@@ -55,8 +55,8 @@ export class TrayService extends BESService {
         if (process.env.NODE_ENV !== 'dev') {
             app.dock.hide()
         } else {
-            // openWindow({type: 'settings'})
-            // this.settingsWindow.toggleDevTools()
+            openWindow({type: 'settings'})
+            this.settingsWindow.toggleDevTools()
         }
 
         const updateMenu = async () => {

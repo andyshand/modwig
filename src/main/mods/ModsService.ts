@@ -1,4 +1,4 @@
-import { sendPacketToBitwig, interceptPacket, sendPacketToBrowser } from "../core/WebsocketToSocket"
+import { sendPacketToBitwig, interceptPacket, sendPacketToBrowser, addAPIMethod } from "../core/WebsocketToSocket"
 import { BESService, getService } from "../core/Service"
 import { returnMouseAfter, whenActiveListener } from "../../connector/shared/EventUtils"
 import { getDb } from "../db"
@@ -9,9 +9,18 @@ import { SettingsService } from "../core/SettingsService"
 import { promises as fs } from 'fs'
 import * as path from 'path'
 import {Notification} from 'electron'
+import { Setting } from "../db/entities/Setting"
 const chokidar = require('chokidar')
 
 const { Keyboard, Mouse, MainWindow, Bitwig } = require('bindings')('bes')
+
+interface ModInfo {
+    name: string
+    version: string
+    description: string
+    category: string
+    id: string
+}
 
 export class ModsService extends BESService {
     currProject: string | null = null
@@ -20,6 +29,7 @@ export class ModsService extends BESService {
     settingsService = getService<SettingsService>('SettingsService')
     folderWatcher?: any
     devFolderWatcher?: any
+    latestModsMap: { [name: string]: Partial<ModInfo> } = {}
 
     async makeApi() {
         const db = await getDb()
@@ -135,6 +145,28 @@ export class ModsService extends BESService {
         interceptPacket('browser/state', undefined, ({ data: {isOpen} }) => {
             this.browserIsOpen = isOpen
         })
+        addAPIMethod('api/mods/category', async ({ data: {category} }) => {
+            const db = await getDb()
+            const settings = db.getRepository(Setting) 
+            const results = await settings.find({where: {type: 'mod', category}})
+            return {
+                data: results.map(res => {
+                    if (res.key in this.latestModsMap) {
+                        const modInfo = this.latestModsMap[res.key]
+                        res = {
+                            ...res,
+                            ...modInfo
+                        }
+                    }
+                    return res
+                })
+            }
+        })
+        // addAPIMethod('api/mods', () => {
+        //   return {
+
+        //   }  
+        // })
 
         const refreshFolderWatcher = async () => {
             console.log('Refreshing folder watcher')
@@ -215,22 +247,55 @@ for (var key in api) {
         let mainScript = ''
         try {
             const files = await fs.readdir(modsFolder)
+            this.latestModsMap = {}
             for (const filePath of files) {
                 try { 
                     const contents = await fs.readFile(path.join(modsFolder, filePath), 'utf8')
-                    if (filePath.indexOf('bitwig.js') >= 0) {
-                        // Controller script mod
-                        controllerScript += `
+                    const checkForTag = (tag, required = true) => {
+                        const result = new RegExp(`@${tag} (.*)`).exec(contents)
+                        if (!result && required) {
+                            throw new Error(`Missing @${tag} tag`)
+                        }
+                        return result ? result[1] : undefined
+                    }
+                    const id = checkForTag('id')
+                    const name = checkForTag('name')
+                    const description = checkForTag('description', false) || ''
+                    const category = checkForTag('category', false) || 'global'
+                    const version = checkForTag('version', false) || '0.0.1'
+                    const settingsKey = `mod/${id}`
+                    await this.settingsService.insertSettingIfNotExist({
+                        key: settingsKey,
+                        value: {
+                            enabled: true,
+                            keys: []
+                        },
+                        type: 'mod',
+                        category
+                    })
+                    this.latestModsMap[settingsKey] = {
+                        id, 
+                        name,
+                        description,
+                        category,
+                        version
+                    }
+                    const isEnabled = (await this.settingsService.getSetting(settingsKey)).value.enabled
+                    if (isEnabled) {
+                        if (filePath.indexOf('bitwig.js') >= 0) {
+                            // Controller script mod
+                            controllerScript += `
 // ${filePath}
 // 
 // 
 // 
 //
 ${contents}
-                        `
-                    } else {
-                        // Standard mods
-                        mainScript += contents
+                            `
+                        } else {
+                            // Standard mods
+                            mainScript += contents
+                        }
                     }
                 } catch (e) {
                     console.error(e)

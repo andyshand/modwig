@@ -5,8 +5,12 @@ import { Checkbox } from '../core/Checkbox'
 import { styled } from 'linaria/react'
 import { SettingShortcut } from './setting/SettingShortcut'
 import { SettingBoolean } from './setting/SettingBoolean'
+import { sendPromise } from '../bitwig-api/Bitwig'
 const SettingsViewWrap = styled.div`
     background: #222;
+    >:not(:last-child) {
+        margin-bottom: 3rem;
+    }
 `
 const ShortcutsWrap = styled.div`
     &:not(:last-child) {
@@ -31,27 +35,17 @@ const SectionHeader = styled.div`
     color: #888;
     /* text-align: center; */
 `
-class Shortcuts extends React.Component {
+class Shortcuts extends React.Component<any> {
     render() {
-        const { settings } = this.props
+        const { settings, title, helpText } = this.props
         return <div>
             <ShortcutsWrap>
                 <SectionHeader>
-                    <div>Settings</div>
+                    <div>{title}</div>
+                    <div>{helpText}</div>
                 </SectionHeader>
                 <div>
-                    {settings.filter(s => s.type === 'boolean').map(setting => {
-                        return <SettingBoolean key={setting.key} setting={setting} />
-                    })}
-                </div>
-             </ShortcutsWrap>
-            <ShortcutsWrap>
-                <SectionHeader>
-                    <div>Actions</div>
-                    <div>Please ensure you have disabled any built-in shortcuts using the same keys.</div>
-                </SectionHeader>
-                <div>
-                    {settings.filter(s => s.type === 'shortcut').map(setting => {
+                    {settings.map(setting => {
                         return <SettingShortcut key={setting.key} setting={setting} />
                     })}
                 </div>
@@ -65,18 +59,25 @@ type Props = {
 export class SettingsView extends React.Component<Props> {
 
     state = {
-        settings: []
+        settings: [],
+        mods: []
     }
     async componentWillMount() {
         const { data: settings } = await getSettings({category: this.props.category})
+        const { data: mods } = await sendPromise({
+            type: `api/mods/category`,
+            data: {category: this.props.category}
+        })
         this.setState({
-            settings
+            settings,
+            mods
         })
     }
 
     render() {
         return <SettingsViewWrap>
-            <Shortcuts settings={this.state.settings} />
+            <Shortcuts settings={this.state.mods} title={`Mods`} helpText={`Please ensure you have disabled any built-in shortcuts using the same keys.`} />
+            <Shortcuts settings={this.state.settings} title={`Actions`} helpText={null} />
         </SettingsViewWrap>
     }
 }
