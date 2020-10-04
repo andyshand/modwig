@@ -7,3 +7,12 @@ export async function createDirIfNotExist(path: string) {
         await fs.mkdir(path)
     }
 }
+
+export async function exists(path: string) {
+    try {
+        await fs.access(path)
+        return true
+    } catch (e) {
+        return false
+    }
+}
