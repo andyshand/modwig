@@ -328,7 +328,7 @@ Napi::Value on(const Napi::CallbackInfo &info) {
     return Napi::Number::New(env, ourInfo->id);
 }
 
-Napi::Value removeEventListener(const Napi::CallbackInfo &info) {
+Napi::Value off(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
     int id = info[0].As<Napi::Number>();
     callbacks.remove_if([=](CallbackInfo *e){ 
@@ -411,7 +411,7 @@ Napi::Value InitKeyboard(Napi::Env env, Napi::Object exports)
 {
     Napi::Object obj = Napi::Object::New(env);
     obj.Set(Napi::String::New(env, "on"), Napi::Function::New(env, on));
-    obj.Set(Napi::String::New(env, "removeEventListener"), Napi::Function::New(env, removeEventListener));
+    obj.Set(Napi::String::New(env, "off"), Napi::Function::New(env, off));
     obj.Set(Napi::String::New(env, "isEnabled"), Napi::Function::New(env, isEnabled));
     obj.Set(Napi::String::New(env, "keyDown"), Napi::Function::New(env, keyDown));
     obj.Set(Napi::String::New(env, "keyUp"), Napi::Function::New(env, keyUp));
