@@ -258,14 +258,14 @@ class GlobalController extends Controller {
             })
         })
 
-        deps.transport.getPosition().addValueObserver(position => {
-            this.deps.packetManager.send({
-                type: 'transport',
-                data: {
-                    position
-                }
-            })
-        })
+        // deps.transport.getPosition().addValueObserver(position => {
+        //     this.deps.packetManager.send({
+        //         type: 'transport',
+        //         data: {
+        //             position
+        //         }
+        //     })
+        // })
     }
 
     mapCueMarkers<T>(cb: (cueMarker, i: number) => T, filterNull = false) {
