@@ -159,7 +159,7 @@ export class SearchPanel extends React.Component {
             onChange={this.onInputChange} value={this.state.query} />
             <Flex>
                 <SidebarWrap>
-                    <CueIndicator>{cueStart.name}</CueIndicator>
+                    {/* <CueIndicator>{cueStart.name}</CueIndicator> */}
                     <SidebarButton {...this.optionProps("onlyNamed")} title="Only show tracks with non-default names" icon={faFont} />
                     <FlexGrow />
                     <SidebarButton {...this.optionProps('lockQuery')} title="Lock search query" icon={faLock} />

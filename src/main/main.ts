@@ -19,6 +19,7 @@ app.whenReady().then(async () => {
   // Service creation order is manually controlled atm, but each
   // has dependencies
   // TODO automate this - is error prone
+  const socketMiddleMan = await registerService(SocketMiddlemanService)
   const settingsService = await registerService<SettingsService>(SettingsService)
   settingsService.insertSettingIfNotExist({
     key: 'userLibraryPath',
@@ -27,7 +28,6 @@ app.whenReady().then(async () => {
     type: 'string',
   })
 
-  const socketMiddleMan = await registerService(SocketMiddlemanService)
   const modsService = await registerService(ModsService)
   const shortcutsService = await registerService(ShortcutsService)
   const trayService = await registerService(TrayService)

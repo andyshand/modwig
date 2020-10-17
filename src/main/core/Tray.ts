@@ -2,15 +2,10 @@ import { BESService, getService } from "./Service";
 import { Tray, Menu, app, BrowserWindow } from 'electron'
 import { getResourcePath } from "../../connector/shared/ResourcePath";
 import { url } from "./Url";
-import { interceptPacket, sendPacketToBitwig, SocketMiddlemanService } from "./WebsocketToSocket";
-import { promises as fs } from 'fs'
+import { interceptPacket, SocketMiddlemanService } from "./WebsocketToSocket";
 import { SettingsService } from "./SettingsService";
 import { ModsService } from "../mods/ModsService";
 const { Bitwig } = require('bindings')('bes')
-
-let settings = {
-    exclusiveArm: true
-}
 
 export class TrayService extends BESService {
     timer: any
@@ -124,17 +119,17 @@ export class TrayService extends BESService {
         updateMenu()
 
         const setupComplete = await isSetupComplete()
+        const isDev = process.env.NODE_ENV === 'dev'
         if (!setupComplete) {
             openWindow({type: 'setup'})
-        } 
-
-        if (process.env.NODE_ENV !== 'dev') {
-            app.dock.hide()
-        } else if (setupComplete) {
-            openWindow({type: 'settings'})
-            this.settingsWindow.toggleDevTools()
-        }
-        
+        } else {
+            if (process.argv.indexOf('--preferences') >= 0 || isDev) {
+                openWindow({type: 'settings'})
+                if (isDev) {
+                    this.settingsWindow.toggleDevTools()
+                } 
+            }
+        }        
 
         interceptPacket('api/setup/finish', async () => {
             await this.settingsService.setSettingValue('setupComplete', true)

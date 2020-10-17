@@ -1,7 +1,7 @@
-import { BESService, makeEvent } from "./Service"
+import { BESService, getService, makeEvent } from "./Service"
 import { getDb } from "../db"
 import { Setting } from "../db/entities/Setting"
-import { interceptPacket } from "./WebsocketToSocket"
+import { interceptPacket, SocketMiddlemanService } from "./WebsocketToSocket"
 import * as path from 'path'
 
 interface SettingTemplate {
@@ -18,6 +18,7 @@ export class SettingsService extends BESService {
         settingsUpdated: makeEvent<void>(),
         settingUpdated: makeEvent<Partial<SettingTemplate>>()
     }
+    socketService = getService<SocketMiddlemanService>('SocketMiddlemanService')
 
     async activate() {
         this.db = await getDb()
@@ -90,6 +91,9 @@ export class SettingsService extends BESService {
         this.events.settingUpdated.emit({
             key,
             ...update
+        })
+        this.socketService.sendPacketToBrowser({
+            type: 'settings/updated'
         })
     }
 

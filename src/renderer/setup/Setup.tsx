@@ -219,8 +219,7 @@ export class Setup extends React.Component {
         return {
             description: <div>
                 <CenterText>
-                    Bitwig needs accessibility access in order to monitor keyboard shortcuts globally.<br /><br />
-                    Please note that you may need to restart Modwig after enabling access.
+                    Modwig needs accessibility access in order to monitor keyboard shortcuts globally.
                 </CenterText>
                 <EndButton onClick={onClick}>{accessibilityEnabled ? `Continue` : `Enable Accessibility Access`}</EndButton>
                 <StatusMessage>{accessibilityEnabled ? <><FontAwesomeIcon icon={faCheck} /> Accessibility Enabled!</> : <><Spinner style={{marginRight: '.3em'}} /> Checking for access...</>}</StatusMessage>
@@ -229,11 +228,18 @@ export class Setup extends React.Component {
         }
     }
     step3() {
+        const relaunch = () => {
+            app.relaunch({ args: process.argv.slice(1).concat(['--preferences']) })
+            app.exit(0)
+        }
         return {
             description: <CenterText>
-                All done! If you ever need to see these steps again, click the icon in the menu bar and choose "Setup..."
+                All done! If you ever need to see these steps again, click the icon in the menu bar and choose "Setup..."<br /><br />
+
+                Restart Modwig to ensure accessibility access has taken effect.
+
+                <EndButton onClick={relaunch}>Restart</EndButton>
             </CenterText>,
-            canContinue: true,
             content: null
         }
     }
@@ -297,8 +303,7 @@ export class Setup extends React.Component {
                     })}
                 </StepCircles>
                 <StepContent>
-                <div>{currStep.description}</div>
-                {currStep.canContinue ? <EndButton onClick={this.onNextStep}>{this.state.step === this.getStepCount() - 1 ? `Finish and Customise Settings` : `Continue`}</EndButton> : null}
+                    <div>{currStep.description}</div>
                 </StepContent>
             </div>
         </StepWrap>

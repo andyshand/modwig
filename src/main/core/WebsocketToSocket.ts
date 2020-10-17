@@ -1,7 +1,6 @@
-import { BESService, getService, makeEvent } from "./Service";
-import { WEBSOCKET_PORT, SOCKET_PORT } from '../../connector/shared/Constants'
-import { app } from "electron";
+import { SOCKET_PORT, WEBSOCKET_PORT } from '../../connector/shared/Constants';
 import { logWithTime } from "./Log";
+import { BESService, getService, makeEvent } from "./Service";
 const { Bitwig } = require('bindings')('bes')
 const async = require('async')
 const WebSocket = require('ws');
@@ -139,6 +138,10 @@ export class SocketMiddlemanService extends BESService {
                 activeWebsockets = activeWebsockets.filter((info) => info.id !== id);
             });
         });
+    }
+
+    sendPacketToBrowser(packet) {
+        sendPacketToBrowser(packet)
     }
 }
 
