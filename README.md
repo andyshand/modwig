@@ -1,58 +1,86 @@
 # Modwig
 
-> In Early Development
+![Screenshot of Modwig](https://github.com/andyshand/modwig/raw/master/github/screenshots/screenshot.png)
 
-BES runs in the background and **adds helpful keyboard shortcuts and features** to Bitwig Studio.
+Modwig adds helpful keyboard shortcuts and extra features to Bitwig Studio.
 
-It is currently **Mac only**, but is built with cross-platform support in mind.
 
-- [Features](#features)
-- [Setup](#setup)
-- [How It Works](#how-it-works)
-- [Contributing](#contributing)
+### Extra Shortcuts 
 
-# Features
+Shortcuts for actions only accessible through Controller API, such as collapsing devices, navigating device slots/layers, closing all plugin windows.
+
+### VST Pass-through for Shortcuts
+
+By default, Bitwig blocks certain shortcuts from working when VST windows are focused. With Modwig, you can bypass this and allow any shortcut to work when you expect.
+
+### Create Custom Macros
+
+Combine all available actions and shortcuts into your own macros using simple Javascript. For example, add a track, open device browser, type "EQ" and hit enter.
+
+### Project Track Search
+
+For projects with many tracks, easily find what you're looking for using the project-wide track search. You can also change volume, solo and mute tracks without losing your place.
+
+### Workflow Features
+
+Middle-click to play from anywhere in the arranger view, exclusive-arm support, persistent device view scroll when switching tracks, and more. 
+
+### Simple, Guided Setup Process
+
+The first time you open Modwig, it will guide you through a simple 3 step process which automatically copies over a controller script to your User Library folder.
+
+## Setup (Coming Soon)
+
+1. Download the latest version of the app from the releases tab and copy it to your Applications folder.
+
+2. Open Modwig and follow the guided setup process. The app is unsigned, so you may get a warning from macOS and go to your "Security & Privacy" settings and click "Open Anyway".
+
+## Complete List of Shortcuts:
 
 ### Global
 
-- [x] Track Search: Ctrl+Space
-- [x] Track Back/Forward: Meta+F1/F2
-- [x] Close All Plugin Windows: Double-tap Escape
-- [ ] Pass-through of keyboard shortcuts when plugin windows up front
-- [x] Exclusive-arm support
+- Open Track Search
+- Toggle Record
+- Go Back
+- Go Forward
+- Select Previous Track
+- Select Next Track
+- Enter
+- Arrow Up
+- Arrow Down
+- Arrow Left
+- Arrow Right
 
-### Devices
+### Arranger
 
-- [x] Collapse selected device (except modulators): Meta+[
-- [x] Expand selected device (except modulators): Meta+]
-- [x] Collapse all devices in chain (except modulators): Meta+Shift+[
-- [x] Expand all devices in chain (except modulators): Meta+Shift+]
-- [x] Select slot: Meta+1/2/3
-- [x] Enter selected slot: Meta+ArrowDown
-- [x] Browse to insert at end of slot: Double-tap Meta+1/2/3
+- Toggle Large Track Height
 
 ### Browser
 
-- [x] Open Popup Browser (regardless of panel focus): B
-- [x] Auto-select first result when confirming
-- [x] Next/Previous Tab (regardless of focus): Ctrl+ArrowLeft/ArrowRight
-- [x] Select Specific Tab: Meta+1/2/3/4/5
-- [x] Clear All Filters: Meta+Escape
-- [x] Confirm Selection (including empty selection): Enter
+- Open Device Browser
+- Clear Browser Filters
+- Confirm Browser
+- Previous Browser Tab
+- Next Browser Tab
+- Select Browser Tab 1...6
 
-### Automation
+### Devices
 
-- [x] Type value for selected points (F1)
+- Focus Device Panel
+- Select First Device
+- Select Last Device
+- Insert Device at Start
+- Insert Device at End
+- Collapse Selected Device
+- Expand Selected Device
+- Collapse All Devices in Chain
+- Expand All Devices in Chain
+- Close All Plugin Windows
+- Navigate to Parent Device
+- Select Device Slot 1...8
+- Select Device Layer 1...8
 
-### Bitwig Bug Fixes
 
-- [x] Incorrect automation state on playback stop (playback position not reset)
-
-# Setup (Coming Soon)
-
-1. Download the latest version of the app from the releases tab and copy it to your Applications folder. 
-
-2. Open BES, and enable our custom controller script from Bitwig Settings (it will be copied to your "Controller Scripts" folder automatically on startup).
 
 # How It Works
 
