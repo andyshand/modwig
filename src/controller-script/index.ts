@@ -767,7 +767,9 @@ class SettingsController extends Controller {
         super(deps)
         const { packetManager, globalController } = deps
         packetManager.listen('settings/update', ({ data }) => {
-            settings = {...settings, ...data}
+            for (const key in data) {
+                settings[key] = data[key]
+            }
         })
     }
 }
@@ -889,7 +891,8 @@ function init() {
                 forEach: ((cb) => {
                     deps.globalController.mapTracks(cb)
                 })
-            }
+            },
+            settings
         }
     }
     loadMods(makeApi())
