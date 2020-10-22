@@ -14,7 +14,7 @@ By default, Bitwig blocks certain shortcuts from working when VST windows are fo
 
 ### Create Custom Macros
 
-Combine all available actions and shortcuts into your own macros using simple Javascript. For example, add a track, open device browser, type "EQ" and hit enter. See [https://github.com/andyshand/modwig/wiki/Creating-a-Custom-Mod#running-other-actions-macros](the wiki) for details.
+Combine all available actions and shortcuts into your own macros using simple Javascript. For example, add a track, open device browser, type "EQ" and hit enter. See [the wiki](https://github.com/andyshand/modwig/wiki/Creating-a-Custom-Mod#running-other-actions-macros) for details.
 
 ### Project Track Search
 
