@@ -1,9 +1,6 @@
-# Modwig
+## Modwig adds helpful keyboard shortcuts and extra features to Bitwig Studio.
 
 ![Screenshot of Modwig](https://github.com/andyshand/modwig/raw/master/github/screenshots/screenshot.png)
-
-Modwig adds helpful keyboard shortcuts and extra features to Bitwig Studio.
-
 
 ### Extra Shortcuts 
 
@@ -29,13 +26,13 @@ Middle-click to play from anywhere in the arranger view, exclusive-arm support, 
 
 The first time you open Modwig, it will guide you through a simple 3 step process which automatically copies over a controller script to your User Library folder.
 
-## Setup (Coming Soon)
+# Setup
 
 1. Download the latest version of the app from the releases tab and copy it to your Applications folder.
 
 2. Open Modwig and follow the guided setup process. The app is unsigned, so you may get a warning from macOS and go to your "Security & Privacy" settings and click "Open Anyway".
 
-## Complete List of Shortcuts:
+# Complete List of Shortcuts:
 
 ### Global
 
@@ -79,8 +76,6 @@ The first time you open Modwig, it will guide you through a simple 3 step proces
 - Navigate to Parent Device
 - Select Device Slot 1...8
 - Select Device Layer 1...8
-
-
 
 # How It Works
 
