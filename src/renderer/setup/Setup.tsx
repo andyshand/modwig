@@ -229,6 +229,7 @@ export class Setup extends React.Component {
     }
     step3() {
         const relaunch = () => {
+            sendPromise({type: `api/setup/finish`})
             app.relaunch({ args: process.argv.slice(1).concat(['--preferences']) })
             app.exit(0)
         }
@@ -278,10 +279,6 @@ export class Setup extends React.Component {
                     [nextI]: true
                 }
             })
-        } else {
-            // we're done!
-            sendPromise({type: `api/setup/finish`})
-            window.location.href = '#/settings'
         }
     }
     setStep = (i) => {

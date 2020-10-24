@@ -253,28 +253,28 @@ export class ModsService extends BESService {
 
     async getModsFolderPaths() : Promise<string[]> {
         const userLibPath = await this.settingsService.userLibraryPath()
-        const exists = await fileExists(userLibPath)
+        const exists = typeof userLibPath === 'string' && await fileExists(userLibPath)
         if (exists) {
-            await createDirIfNotExist(path.join(userLibPath, 'Modwig'))
-            await createDirIfNotExist(path.join(userLibPath, 'Modwig', 'Mods'))
+            await createDirIfNotExist(path.join(userLibPath!, 'Modwig'))
+            await createDirIfNotExist(path.join(userLibPath!, 'Modwig', 'Mods'))
         }
         return [
             getResourcePath('/default-mods'),
-            ...(exists ? [path.join(await this.settingsService.modwigLibraryLocation(), 'Mods')] : [])
+            ...(exists ? [path.join((await this.settingsService.modwigLibraryLocation())!, 'Mods')] : [])
         ]
     }
 
     async copyControllerScript() {
         const userLibPath = await this.settingsService.userLibraryPath()
         try {
-            await fs.access(userLibPath)
+            await fs.access(userLibPath!)
         } catch (e) {
             return logWithTime("Not copying controller script until user library path set")
         }
         
         try {
             const controllerSrcFolder = getResourcePath('/controller-script')
-            const controllerDestFolder = path.join(userLibPath, 'Controller Scripts', 'Modwig')
+            const controllerDestFolder = path.join(userLibPath!, 'Controller Scripts', 'Modwig')
 
             await createDirIfNotExist(controllerDestFolder)
             for (const file of await fs.readdir(controllerSrcFolder)) {

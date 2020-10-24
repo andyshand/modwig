@@ -97,13 +97,21 @@ export class SettingsService extends BESService {
         })
     }
 
-    async userLibraryPath() {
-        return await this.getSettingValue('userLibraryPath')
+    async userLibraryPath() : Promise<string | null> {
+        try {
+            return await this.getSettingValue('userLibraryPath')
+        } catch (e) {
+            return null
+        }
     }
 
-    async modwigLibraryLocation() {
-        const userLib = await this.getSettingValue('userLibraryPath')
-        return path.join(userLib, 'Modwig')
+    async modwigLibraryLocation() : Promise<string | null> {
+        try {
+            const userLib = await this.getSettingValue('userLibraryPath')
+            return path.join(userLib, 'Modwig')
+        } catch (e) {
+            return null
+        }
     }
 
     normalise(label) {
