@@ -2,9 +2,11 @@
 
 _In Early Development_
 
-Modwig adds helpful keyboard shortcuts and extra features to Bitwig Studio. Download the latest version from the [releases page](https://github.com/andyshand/modwig/releases).
+Modwig adds helpful keyboard shortcuts and extra features to Bitwig Studio. 
 
 ![Screenshot of Modwig](https://github.com/andyshand/modwig/raw/master/github/screenshots/screenshot.png)
+
+Currently Mac only. Download the latest version from the [releases page](https://github.com/andyshand/modwig/releases).
 
 ### Extra Shortcuts 
 
