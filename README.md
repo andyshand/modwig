@@ -32,7 +32,7 @@ The first time you open Modwig, it will guide you through a simple 3 step proces
 
 # Setup
 
-1. Download the latest version of the app from the releases tab and copy it to your Applications folder.
+1. Download the latest version of the app from the [releases tab](https://github.com/andyshand/modwig/releases) and copy it to your Applications folder.
 
 2. Open Modwig and follow the guided setup process. The app is unsigned, so you may get a warning from macOS and go to your "Security & Privacy" settings and click "Open Anyway".
 
