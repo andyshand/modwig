@@ -22,12 +22,8 @@
     "rebuildc": "node-gyp -j 16 rebuild",
     "cleanc": "node-gyp clean",
     "build:controller": "tsc --p tsconfig.controller-script.json",
-    "watch:controller": "tsc -w --p tsconfig.controller-script.json"
-  },
-  "build": {
-    "extraResources": [
-      "./extraResources/**"
-    ]
+    "watch:controller": "tsc -w --p tsconfig.controller-script.json",
+    "postinstall": "./scripts/update-cpp-properties.js"
   },
   "repository": "https://github.com/andyshand/modwig",
   "author": "Andrew Shand",

@@ -5,3 +5,4 @@ extra-resources/controller-script/bes.control.js
 extra-resources/controller-script/mods.js
 scripts/install
 .linaria-cache
+.vscode/c_cpp_properties.json
