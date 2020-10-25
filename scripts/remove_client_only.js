@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 const path = require('path')
 const app = path.join(__dirname, '../../producer-tools-app/producer-tools-darwin-x64/producer-tools.app/Contents/Resources/app')
 const packageJSON = require(path.join(app, 'package.json'))

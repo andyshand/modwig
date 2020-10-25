@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 const fs = require('fs')
 const package = require('../package.json')
 package.version = process.argv[2]

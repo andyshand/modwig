@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 const packager = require('electron-packager')
 const path = require('path')
 const { execSync } = require('child_process')
