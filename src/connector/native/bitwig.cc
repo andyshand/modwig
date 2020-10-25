@@ -6,6 +6,7 @@
 AXUIElementRef cachedBitwigRef;
 AXUIElementRef cachedPluginHostRef;
 pid_t pluginHostPID = -1;
+pid_t bitwigPID = -1;
 
 Napi::Value AccessibilityEnabled(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
@@ -66,15 +67,22 @@ bool refIsValidOrRelease(AXUIElementRef cachedRef) {
     return false;
 }
 
-AXUIElementRef GetBitwigAXUIElement() {
-    if (!refIsValidOrRelease(cachedBitwigRef)) {
-        cachedBitwigRef = GetAXUIElement("Bitwig Studio");
-    }
-    return cachedBitwigRef;
-}
-
 bool pidIsAlive(pid_t pid)  {
     return 0 == kill(pid, 0);
+}
+
+AXUIElementRef GetBitwigAXUIElement() {
+    if (bitwigPID == -1 || !pidIsAlive(bitwigPID)) {
+        if (cachedPluginHostRef != NULL) {
+            CFRelease(cachedBitwigRef);
+            cachedBitwigRef = NULL;
+        }
+        bitwigPID = GetPID("Bitwig Studio");
+        if (bitwigPID != -1) {
+            cachedBitwigRef = AXUIElementCreateApplication(bitwigPID);
+        }
+    }
+    return cachedBitwigRef;
 }
 
 AXUIElementRef GetPluginAXUIElement() {
