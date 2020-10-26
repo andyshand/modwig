@@ -180,6 +180,20 @@ Napi::Value IsActiveApplication(const Napi::CallbackInfo &info) {
     );
 }
 
+Napi::Value MakeMainWindowActive(const Napi::CallbackInfo &info) {
+    Napi::Env env = info.Env();
+    auto uiEl = GetBitwigAXUIElement();
+    auto success = false;
+    if (uiEl != NULL) {
+        AXUIElementSetAttributeValue(uiEl, kAXFrontmostAttribute, kCFBooleanTrue);
+        success = true;
+    }
+    return Napi::Boolean::New(
+        env, 
+        success
+    );
+}
+
 Napi::Value IsPluginWindowActive(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
     return Napi::Boolean::New(
@@ -205,6 +219,7 @@ Napi::Value InitBitwig(Napi::Env env, Napi::Object exports)
     Napi::Object obj = Napi::Object::New(env);
     obj.Set(Napi::String::New(env, "isActiveApplication"), Napi::Function::New(env, IsActiveApplication));
     obj.Set(Napi::String::New(env, "isPluginWindowActive"), Napi::Function::New(env, IsPluginWindowActive));
+    obj.Set(Napi::String::New(env, "makeMainWindowActive"), Napi::Function::New(env, MakeMainWindowActive));
     obj.Set(Napi::String::New(env, "closeFloatingWindows"), Napi::Function::New(env, CloseFloatingWindows));
     obj.Set(Napi::String::New(env, "tileFloatingWindows"), Napi::Function::New(env, TileFloatingWindows));
     obj.Set(Napi::String::New(env, "isAccessibilityEnabled"), Napi::Function::New(env, AccessibilityEnabled));

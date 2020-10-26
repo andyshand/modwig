@@ -125,6 +125,9 @@ export class ModsService extends BESService {
                 get currentProject() {
                     return that.currProject
                 },
+                makeMainWindowActive() {
+                    Bitwig.makeMainWindowActive()
+                },
                 ...makeEvents([
                     'selectedTrackChanged'
                 ])

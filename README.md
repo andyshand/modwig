@@ -84,6 +84,15 @@ The first time you open Modwig, it will guide you through a simple 3 step proces
 - Select Device Slot 1...8
 - Select Device Layer 1...8
 
+# Mods
+
+| Mod                               | Description                                                                                                                                                                                                           |   |   |   |
+|-----------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---|---|---|
+| Exclusive Arm                     | Ensures only one track can be armed at any one time.                                                                                                                                                                  |   |   |   |
+| Accept Middle-Click When Inactive | Allow middle-click dragging when Bitwig's main window is not currently active, e.g. when a plugin window has focus.                                                                                                   |   |   |   |
+| Middle-Click Play                 | Middle click anywhere within the arranger timeline to play from that point. Works by automating a double click with the pointer (1) tool in the timeline ruler. May not work for non-standard scaling/screen layouts. |   |   |   |
+
+
 # How It Works
 
 BES in an electron application that uses C++ extensions to listen for global keypresses and communicates with Bitwig via its controller API. For some functions, plain mouse/keyboard automation is used. Some future features will likely require screenshot analysis.
