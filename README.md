@@ -86,11 +86,11 @@ The first time you open Modwig, it will guide you through a simple 3 step proces
 
 # Mods
 
-| Mod                               | Description                                                                                                                                                                                                           |   |   |   |
-|-----------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---|---|---|
-| Exclusive Arm                     | Ensures only one track can be armed at any one time.                                                                                                                                                                  |   |   |   |
-| Accept Middle-Click When Inactive | Allow middle-click dragging when Bitwig's main window is not currently active, e.g. when a plugin window has focus.                                                                                                   |   |   |   |
-| Middle-Click Play                 | Middle click anywhere within the arranger timeline to play from that point. Works by automating a double click with the pointer (1) tool in the timeline ruler. May not work for non-standard scaling/screen layouts. |   |   |   |
+| Mod                               | Description                                                                                                                                                                                                           |
+|-----------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Exclusive Arm                     | Ensures only one track can be armed at any one time.                                                                                                                                                                  |
+| Accept Middle-Click When Inactive | Allow middle-click dragging when Bitwig's main window is not currently active, e.g. when a plugin window has focus.                                                                                                   |
+| Middle-Click Play                 | Middle click anywhere within the arranger timeline to play from that point. Works by automating a double click with the pointer (1) tool in the timeline ruler. May not work for non-standard scaling/screen layouts. |
 
 
 # How It Works
