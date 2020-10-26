@@ -128,6 +128,12 @@ export class ModsService extends BESService {
                 makeMainWindowActive() {
                     Bitwig.makeMainWindowActive()
                 },
+                tileFloatingWindows() {
+                    Bitwig.tileFloatingWindows()
+                },
+                hideFloatingWindows() {
+                    Bitwig.hideFloatingWindows()
+                },
                 ...makeEvents([
                     'selectedTrackChanged'
                 ])

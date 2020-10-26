@@ -2,6 +2,11 @@
 #include "string.h"
 #include <CoreGraphics/CoreGraphics.h>
 #include <ApplicationServices/ApplicationServices.h>
+#include <iostream>
+#include <string>
+#include <cstddef>
+#include <map>
+#include <vector>
 
 AXUIElementRef cachedBitwigRef;
 AXUIElementRef cachedPluginHostRef;
@@ -143,6 +148,81 @@ void tileWindowsForAXUIElement(AXUIElementRef elementRef) {
     }
 }
 
+void smartTileWindowsForAXUIElement(AXUIElementRef elementRef, bool offscreen) {
+    if (elementRef != NULL) {
+        CFArrayRef windowArray = nil;
+        std::map<std::string,std::vector<AXUIElementRef>> windowsByChain;
+        AXUIElementCopyAttributeValue(elementRef, kAXWindowsAttribute, (CFTypeRef*)&windowArray);
+        if (windowArray != nil) { 
+            CFIndex nItems = CFArrayGetCount(windowArray);
+            CGFloat startX = 400;
+            CGFloat x = startX, y = 153;
+            CGFloat nextRowY = y;
+            auto mainDisplayId = CGMainDisplayID();
+            std::string delimiter = "/";
+
+            CGFloat screenWidth = CGDisplayPixelsWide(mainDisplayId);
+            CGFloat screenHeight = CGDisplayPixelsHigh(mainDisplayId);
+            for (int i = 0; i < nItems; i++) {
+                AXUIElementRef itemRef = (AXUIElementRef) CFArrayGetValueAtIndex(windowArray, i);
+                CFStringRef titleRef;
+                AXUIElementCopyAttributeValue(itemRef, kAXTitleAttribute, (CFTypeRef *) &titleRef);
+                auto windowTitle = CFStringToString((CFStringRef)titleRef);
+              
+                auto lastSeparator = windowTitle.find_last_of(delimiter);
+                auto chain = windowTitle.substr(0, lastSeparator);
+                std::cout << "Chain is" << chain << std::endl; 
+                if (windowsByChain.count(chain) == 0) {
+                    windowsByChain[chain] = std::vector<AXUIElementRef>();
+                } 
+                windowsByChain[chain].push_back(itemRef);
+            }
+            std::map<std::string,std::vector<AXUIElementRef>>::iterator it;
+            for ( it = windowsByChain.begin(); it != windowsByChain.end(); it++ )
+            {
+                auto windowsVector = it->second;
+                std::vector<AXUIElementRef>::iterator vecIt;
+                for(auto itemRef : windowsVector)  {
+                    CGPoint newPoint;
+                    CFTypeRef position;
+                    CFTypeRef size;
+                    CGPoint positionPoint;
+                    CGSize sizePoint;
+
+                    if (!offscreen) {
+                        AXUIElementCopyAttributeValue(itemRef, kAXPositionAttribute, (CFTypeRef *)&position);
+                        AXValueGetValue((AXValueRef)position, (AXValueType)kAXValueCGPointType, &positionPoint);
+                        AXUIElementCopyAttributeValue(itemRef, kAXSizeAttribute, (CFTypeRef *)&size);
+                        AXValueGetValue((AXValueRef)size, (AXValueType)kAXValueCGSizeType, &sizePoint);
+
+                        if (x + sizePoint.width > screenWidth) {
+                            // next row
+                            x = startX;
+                            y = nextRowY;
+                        }
+                    } else {
+                        x = screenWidth - 1;
+                        y = screenHeight - 1;
+                    }
+                    
+                    newPoint.x = x;
+                    newPoint.y = y;
+                    position = (CFTypeRef)(AXValueCreate((AXValueType)kAXValueCGPointType, (const void *)&newPoint));
+                    AXUIElementSetAttributeValue(itemRef, kAXPositionAttribute, position);
+
+                    if (!offscreen) {
+                        x += sizePoint.width;
+                        nextRowY = fmaxf(nextRowY, y + sizePoint.height);
+                    }
+                }
+                y = nextRowY;
+                x = startX;
+            }
+            CFRelease(windowArray);
+        }
+    }
+}
+
 void closeWindowsForAXUIElement(AXUIElementRef elementRef) {
     if (elementRef != NULL) {
         CFArrayRef windowArray = nil;
@@ -210,7 +290,13 @@ Napi::Value CloseFloatingWindows(const Napi::CallbackInfo &info) {
 
 Napi::Value TileFloatingWindows(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
-    tileWindowsForAXUIElement(GetPluginAXUIElement());
+    smartTileWindowsForAXUIElement(GetPluginAXUIElement(), false);
+    return Napi::Boolean::New(env, true);
+}
+
+Napi::Value HideFloatingWindows(const Napi::CallbackInfo &info) {
+    Napi::Env env = info.Env();
+    smartTileWindowsForAXUIElement(GetPluginAXUIElement(), true);
     return Napi::Boolean::New(env, true);
 }
 
@@ -222,6 +308,7 @@ Napi::Value InitBitwig(Napi::Env env, Napi::Object exports)
     obj.Set(Napi::String::New(env, "makeMainWindowActive"), Napi::Function::New(env, MakeMainWindowActive));
     obj.Set(Napi::String::New(env, "closeFloatingWindows"), Napi::Function::New(env, CloseFloatingWindows));
     obj.Set(Napi::String::New(env, "tileFloatingWindows"), Napi::Function::New(env, TileFloatingWindows));
+    obj.Set(Napi::String::New(env, "hideFloatingWindows"), Napi::Function::New(env, HideFloatingWindows));
     obj.Set(Napi::String::New(env, "isAccessibilityEnabled"), Napi::Function::New(env, AccessibilityEnabled));
     exports.Set("Bitwig", obj);
     return exports;

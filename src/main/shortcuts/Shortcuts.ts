@@ -57,7 +57,11 @@ export class ShortcutsService extends BESService {
                 const runner = () => {
                     logWithTime('Running shortcut code: ' + code + ' with action: ' + key)
                     if (value.vstPassThrough || !Bitwig.isPluginWindowActive()) {
-                        this.actions[key].action()
+                        try {
+                            this.actions[key].action()
+                        } catch (e) {
+                            console.error(e)
+                        }
                     }
                 }
                 this.shortcutCache[code] = (this.shortcutCache[code] || []).concat({
@@ -311,12 +315,21 @@ export class ShortcutsService extends BESService {
                     },
                     action: () =>  Bitwig.closeFloatingWindows()
                 },
-                tileAllPluginWindows: {
+                tilePluginWindows: {
                     defaultSetting: {
                         keys: ['Shift', 'T'],
                         vstPassThrough: true
                     },
+                    description: 'Pseudo-intelligently tile plugin windows, creating a new row for each device chain.',
                     action: () =>  Bitwig.tileFloatingWindows()
+                },
+                hidePluginWindows: {
+                    defaultSetting: {
+                        keys: ['Meta', 'Shift', 'T'],
+                        vstPassThrough: true
+                    },
+                    description: 'Move plugin windows offscreen (to the bottom-right corner). Show again with "Tile Plugin Windows".',
+                    action: () =>  Bitwig.hideFloatingWindows()
                 },
                 navigateToParentDevice: {
                     description: `Selects the parent device of the currently selected device.`,

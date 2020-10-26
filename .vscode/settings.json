@@ -55,7 +55,9 @@
         "system_error": "cpp",
         "mutex": "cpp",
         "thread": "cpp",
-        "map": "cpp"
+        "map": "cpp",
+        "iomanip": "cpp",
+        "set": "cpp"
     },
     "search.exclude": {
         "**/node_modules": true,
