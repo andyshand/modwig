@@ -171,7 +171,6 @@ void smartTileWindowsForAXUIElement(AXUIElementRef elementRef, bool offscreen) {
               
                 auto lastSeparator = windowTitle.find_last_of(delimiter);
                 auto chain = windowTitle.substr(0, lastSeparator);
-                std::cout << "Chain is" << chain << std::endl; 
                 if (windowsByChain.count(chain) == 0) {
                     windowsByChain[chain] = std::vector<AXUIElementRef>();
                 } 
