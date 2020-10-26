@@ -69,6 +69,8 @@ The first time you open Modwig, it will guide you through a simple 3 step proces
 
 ### Devices
 
+- Close All Plugin Windows
+- Tile All Plugin Windows
 - Focus Device Panel
 - Select First Device
 - Select Last Device
@@ -78,7 +80,6 @@ The first time you open Modwig, it will guide you through a simple 3 step proces
 - Expand Selected Device
 - Collapse All Devices in Chain
 - Expand All Devices in Chain
-- Close All Plugin Windows
 - Navigate to Parent Device
 - Select Device Slot 1...8
 - Select Device Layer 1...8

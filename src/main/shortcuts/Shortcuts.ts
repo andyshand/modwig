@@ -311,6 +311,13 @@ export class ShortcutsService extends BESService {
                     },
                     action: () =>  Bitwig.closeFloatingWindows()
                 },
+                tileAllPluginWindows: {
+                    defaultSetting: {
+                        keys: ['Shift', 'T'],
+                        vstPassThrough: true
+                    },
+                    action: () =>  Bitwig.tileFloatingWindows()
+                },
                 navigateToParentDevice: {
                     description: `Selects the parent device of the currently selected device.`,
                     defaultSetting: {

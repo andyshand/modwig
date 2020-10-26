@@ -99,6 +99,50 @@ AXUIElementRef GetPluginAXUIElement() {
     return cachedPluginHostRef;
 }
 
+void tileWindowsForAXUIElement(AXUIElementRef elementRef) {
+    if (elementRef != NULL) {
+        CFArrayRef windowArray = nil;
+        AXUIElementCopyAttributeValue(elementRef, kAXWindowsAttribute, (CFTypeRef*)&windowArray);
+        if (windowArray != nil) { 
+            CFIndex nItems = CFArrayGetCount(windowArray);
+            CGFloat startX = 400;
+            CGFloat x = startX, y = 153;
+            CGFloat nextRowY = y;
+            auto mainDisplayId = CGMainDisplayID();
+            CGFloat screenWidth = CGDisplayPixelsWide(mainDisplayId);
+            for (int i = 0; i < nItems; i++) {
+                AXUIElementRef itemRef = (AXUIElementRef) CFArrayGetValueAtIndex(windowArray, i);
+
+                CFTypeRef position;
+                CFTypeRef size;
+                CGPoint positionPoint;
+                CGSize sizePoint;
+                AXUIElementCopyAttributeValue(itemRef, kAXPositionAttribute, (CFTypeRef *)&position);
+                AXValueGetValue((AXValueRef)position, (AXValueType)kAXValueCGPointType, &positionPoint);
+                AXUIElementCopyAttributeValue(itemRef, kAXSizeAttribute, (CFTypeRef *)&size);
+                AXValueGetValue((AXValueRef)size, (AXValueType)kAXValueCGSizeType, &sizePoint);
+
+                CGPoint newPoint;
+                if (x + sizePoint.width > screenWidth) {
+                    // next row
+                    x = startX;
+                    y = nextRowY;
+                }
+
+                newPoint.x = x;
+                newPoint.y = y;
+                position = (CFTypeRef)(AXValueCreate((AXValueType)kAXValueCGPointType, (const void *)&newPoint));
+                AXUIElementSetAttributeValue(itemRef, kAXPositionAttribute, position);
+
+                x += sizePoint.width;
+                nextRowY = fmaxf(nextRowY, y + sizePoint.height);
+            }
+
+            CFRelease(windowArray);
+        }
+    }
+}
+
 void closeWindowsForAXUIElement(AXUIElementRef elementRef) {
     if (elementRef != NULL) {
         CFArrayRef windowArray = nil;
@@ -150,12 +194,19 @@ Napi::Value CloseFloatingWindows(const Napi::CallbackInfo &info) {
     return Napi::Boolean::New(env, true);
 }
 
+Napi::Value TileFloatingWindows(const Napi::CallbackInfo &info) {
+    Napi::Env env = info.Env();
+    tileWindowsForAXUIElement(GetPluginAXUIElement());
+    return Napi::Boolean::New(env, true);
+}
+
 Napi::Value InitBitwig(Napi::Env env, Napi::Object exports)
 {
     Napi::Object obj = Napi::Object::New(env);
     obj.Set(Napi::String::New(env, "isActiveApplication"), Napi::Function::New(env, IsActiveApplication));
     obj.Set(Napi::String::New(env, "isPluginWindowActive"), Napi::Function::New(env, IsPluginWindowActive));
     obj.Set(Napi::String::New(env, "closeFloatingWindows"), Napi::Function::New(env, CloseFloatingWindows));
+    obj.Set(Napi::String::New(env, "tileFloatingWindows"), Napi::Function::New(env, TileFloatingWindows));
     obj.Set(Napi::String::New(env, "isAccessibilityEnabled"), Napi::Function::New(env, AccessibilityEnabled));
     exports.Set("Bitwig", obj);
     return exports;
