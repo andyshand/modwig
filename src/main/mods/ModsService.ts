@@ -12,6 +12,7 @@ import {Notification} from 'electron'
 import { Setting } from "../db/entities/Setting"
 import { createDirIfNotExist, exists as fileExists } from "../core/Files"
 import { logWithTime } from "../core/Log"
+import { ShortcutsService } from "../shortcuts/Shortcuts"
 const chokidar = require('chokidar')
 
 const { Keyboard, Mouse, MainWindow, Bitwig } = require('bindings')('bes')
@@ -35,6 +36,7 @@ export class ModsService extends BESService {
     devFolderWatcher?: any
     latestModsMap: { [name: string]: Partial<ModInfo> } = {}
     onReloadMods: Function[] = []
+    shortcutsService = getService<ShortcutsService>("ShortcutsService")
 
     async makeApi() {
         const db = await getDb()
@@ -134,6 +136,9 @@ export class ModsService extends BESService {
                 hideFloatingWindows() {
                     Bitwig.hideFloatingWindows()
                 },
+                sendPacket: (packet) => {
+                    return sendPacketToBitwig(packet)
+                },
                 ...makeEvents([
                     'selectedTrackChanged'
                 ])
@@ -157,6 +162,11 @@ export class ModsService extends BESService {
                 setCurrentTrackData: (data) => {
                     return api.Db.setTrackData(api.Bitwig.currentTrack, data)
                 },
+            },
+            Mod: {
+                registerAction: (action) => {
+                    this.shortcutsService.registerAction(action)
+                }
             }
         }
         return api
@@ -183,7 +193,7 @@ export class ModsService extends BESService {
             return inMenu ? mod.value.showInMenu : true
         })
     }
-    activate() {
+    async activate() {
         // Listen out for the current track/project state from the controller script
         interceptPacket('trackselected', undefined, async ({ data: { name: newTrackName, selected, project } }) => {
             if (selected) {
@@ -258,6 +268,20 @@ export class ModsService extends BESService {
 
         this.refreshMods()
         refreshFolderWatcher()
+
+        // Register shortcuts for disabling/enabling mods
+        const modShortcuts = await this.getMods()
+        for (const mod of modShortcuts) {
+            if (mod.value.keys.length > 0) {
+                this.shortcutsService.registerShortcut(mod.value, async () => {
+                    const value = (await this.settingsService.getSettingValue(mod.key))
+                    await this.settingsService.setSettingValue(mod.key, {
+                        ...value,
+                        enabled: !value.enabled
+                    })
+                })
+            }
+        }
     }
 
     async getModsFolderPaths() : Promise<string[]> {
@@ -294,115 +318,84 @@ export class ModsService extends BESService {
         }
     }
 
-    async refreshMods() {
-        logWithTime('Refreshing mods')
-        
-        // Handlers to disconnect any dangling callbacks etc
-        for (const func of this.onReloadMods) {
-            try {
-                func()
-            } catch (e) {
-                console.error('Error when running onReloadMod', e)
+    async gatherModsFromPaths(paths: string[], {type}: {type: 'bitwig' | 'local'}) {
+        let modsById = {}
+        // Load mods from all folders, with latter folders having higher precedence (overwriting by id)
+        for (const modsFolder of paths) {
+            const files = await fs.readdir(modsFolder)
+            this.latestModsMap = {}
+            for (const filePath of files) {
+                const actualType = filePath.indexOf('bitwig.js') >= 0 ? 'bitwig' : 'local'
+                if (actualType !== type) {
+                    continue;
+                }
+                try { 
+                    const contents = await fs.readFile(path.join(modsFolder, filePath), 'utf8')
+                    const checkForTag = (tag, required = true) => {
+                        const result = new RegExp(`@${tag} (.*)`).exec(contents)
+                        if (!result && required) {
+                            throw new Error(`Missing @${tag} tag`)
+                        }
+                        return result ? result[1] : undefined
+                    }
+                    const id = checkForTag('id')!
+                    const name = checkForTag('name')!
+                    const description = checkForTag('description', false) || ''
+                    const category = checkForTag('category', false) || 'global'
+                    const version = checkForTag('version', false) || '0.0.1'
+                    const noReload = contents.indexOf('@noReload') >= 0
+                    const settingsKey = `mod/${id}`
+                    modsById[id] = {
+                        id,
+                        name,
+                        settingsKey,
+                        description,
+                        category,
+                        version,
+                        contents,
+                        noReload,
+                        path: path.join(modsFolder, filePath)
+                    }
+                } catch (e) {
+                    console.error(e)
+                }
             }
         }
-        this.onReloadMods = []
-
-        const modsFolders = await this.getModsFolderPaths()
-        let controllerScript = `
-// AUTO GENERATED BY MODWIG
-function loadMods(api) {
-
-
-function modsImpl(api) {
-    for (var key in api) {
-        var toRun = key + ' = api["' + key + '"]'
-        println(toRun)
-        eval(toRun)
+        return modsById
     }
-        `
+
+    async initMod(mod) {
+        await this.settingsService.insertSettingIfNotExist({
+            key: mod.settingsKey,
+            value: {
+                enabled: true,
+                keys: []
+            },
+            type: 'mod',
+            category: mod.category
+        })
+        this.latestModsMap[mod.settingsKey] = mod
+    }
+
+    async isModEnabled(mod) {
+        return (await this.settingsService.getSetting(mod.settingsKey)).value.enabled
+    }
+
+    async refreshLocalMods() {
+        const modsFolders = await this.getModsFolderPaths()
+
         let mainScript = ''
         try {
-            const modsById = {}
-            const defaultControllerScriptSettings = {}
-
-            // Load mods from all folders, with latter folders having higher precedence (overwriting by id)
-            for (const modsFolder of modsFolders) {
-                const files = await fs.readdir(modsFolder)
-                this.latestModsMap = {}
-                for (const filePath of files) {
-                    try { 
-                        const contents = await fs.readFile(path.join(modsFolder, filePath), 'utf8')
-                        const checkForTag = (tag, required = true) => {
-                            const result = new RegExp(`@${tag} (.*)`).exec(contents)
-                            if (!result && required) {
-                                throw new Error(`Missing @${tag} tag`)
-                            }
-                            return result ? result[1] : undefined
-                        }
-                        const id = checkForTag('id')!
-                        const name = checkForTag('name')!
-                        const description = checkForTag('description', false) || ''
-                        const category = checkForTag('category', false) || 'global'
-                        const version = checkForTag('version', false) || '0.0.1'
-                        const noReload = contents.indexOf('@noReload') >= 0
-                        const settingsKey = `mod/${id}`
-                        modsById[id] = {
-                            id,
-                            name,
-                            settingsKey,
-                            description,
-                            category,
-                            version,
-                            contents,
-                            noReload,
-                            path: path.join(modsFolder, filePath)
-                        }
-                    } catch (e) {
-                        console.error(e)
-                    }
-                }
-            }
-
+            const modsById = await this.gatherModsFromPaths(modsFolders, { type: 'local'})
             for (const modId in modsById) {
                 const mod = modsById[modId]
-                await this.settingsService.insertSettingIfNotExist({
-                    key: mod.settingsKey,
-                    value: {
-                        enabled: true,
-                        keys: []
-                    },
-                    type: 'mod',
-                    category: mod.category
-                })
-                this.latestModsMap[mod.settingsKey] = mod
-                const isEnabled = (await this.settingsService.getSetting(mod.settingsKey)).value.enabled
-                if (isEnabled || mod.noReload) {
-                    if (mod.path.indexOf('bitwig.js') >= 0) {
-                        // Controller script mod
-                        defaultControllerScriptSettings[modId] = isEnabled
-                        controllerScript += `
-// ${mod.path}
-// 
-// 
-// 
-//
-${mod.contents.replace(/Mod\.enabled/g, `settings['${modId}']`)}
-                        `
-                    } else {
-                        // Standard mods
-                        mainScript += mod.contents
-                    }
+                this.initMod(mod)
+                const isEnabled = await this.isModEnabled(mod)
+                if (isEnabled) {
+                    logWithTime('Enabled local mod: ' + modId)
+                    mainScript += mod.contents
                 }
             }
-            controllerScript += `}
-${Object.keys(defaultControllerScriptSettings).map(key => {
-    return `settings['${key}'] = ${defaultControllerScriptSettings[key]}`
-}).join('\n')}            
-modsImpl(api)            
-\n}`
-            const controllerScriptMods = getResourcePath('/controller-script/mods.js')
-            await fs.writeFile(controllerScriptMods, controllerScript)
-            await this.copyControllerScript()
 
             ;(async () => {
                 const api = await this.makeApi()
@@ -421,5 +414,67 @@ modsImpl(api)
         } catch (e) {
             console.error(e)
         }
+    }
+
+    async refreshBitwigMods() {
+        const modsFolders = await this.getModsFolderPaths()
+        let controllerScript = `
+// AUTO GENERATED BY MODWIG
+function loadMods(api) {
+
+
+function modsImpl(api) {
+    for (var key in api) {
+        var toRun = key + ' = api["' + key + '"]'
+        println(toRun)
+        eval(toRun)
+    }
+        `
+        const modsById = await this.gatherModsFromPaths(modsFolders, { type: 'bitwig'})
+        const defaultControllerScriptSettings = {}
+
+        for (const modId in modsById) {
+            const mod = modsById[modId]
+            this.initMod(mod)
+            const isEnabled = await this.isModEnabled(mod)
+            if (isEnabled || mod.noReload) {
+                logWithTime('Enabled Bitwig Mod: ' + modId)
+                defaultControllerScriptSettings[modId] = isEnabled
+                controllerScript += `
+// ${mod.path}
+// 
+// 
+// 
+//
+${mod.contents.replace(/Mod\.enabled/g, `settings['${modId}']`)}
+                    `
+            }
+        }
+        controllerScript += `}
+${Object.keys(defaultControllerScriptSettings).map(key => {
+return `settings['${key}'] = ${defaultControllerScriptSettings[key]}`
+}).join('\n')}            
+modsImpl(api)            
+\n}`
+        const controllerScriptMods = getResourcePath('/controller-script/mods.js')
+        await fs.writeFile(controllerScriptMods, controllerScript)
+        await this.copyControllerScript()
+    }
+
+    async refreshMods() {
+        logWithTime('Refreshing mods')
+        
+        // Handlers to disconnect any dangling callbacks etc
+        for (const func of this.onReloadMods) {
+            try {
+                func()
+            } catch (e) {
+                console.error('Error when running onReloadMod', e)
+            }
+        }
+        this.onReloadMods = []
+
+        this.refreshLocalMods()
+        this.refreshBitwigMods()
     }
 }

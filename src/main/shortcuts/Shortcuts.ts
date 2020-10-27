@@ -6,7 +6,6 @@ import { Setting } from "../db/entities/Setting"
 import { BrowserWindow } from "electron"
 import { url } from "../core/Url"
 import { SettingsService } from "../core/SettingsService"
-import { ModsService } from "../mods/ModsService"
 import { logWithTime } from "../core/Log"
 
 const { Keyboard, Mouse, MainWindow, Bitwig } = require('bindings')('bes')
@@ -24,8 +23,8 @@ export class ShortcutsService extends BESService {
     actions = this.getActions()
     shortcutCache = {}
     settingsService = getService<SettingsService>('SettingsService')
-    modsService = getService<ModsService>('ModsService')
     searchWindow: BrowserWindow
+    extraShortcuts: any[]
 
     repeatActionWithRange(name, startIncl, endIncl, genTakesI) {
         let out = {}
@@ -65,30 +64,10 @@ export class ShortcutsService extends BESService {
                     }
                 }
                 this.shortcutCache[code] = (this.shortcutCache[code] || []).concat({
-                    runner,
-                    keyRepeat: value.keyRepeat || false
+                    runner
                 })
             }
-        }
-
-        const modShortcuts = await this.modsService.getMods()
-        for (const mod of modShortcuts) {
-            if (mod.value.keys.length > 0) {
-                const code = this.makeShortcutValueCode(mod.value)
-                this.shortcutCache[code] = (this.shortcutCache[code] || []).concat({
-                    runner: async () => {
-                        const value = (await this.settingsService.getSettingValue(mod.key))
-                        await this.settingsService.setSettingValue(mod.key, {
-                            ...value,
-                            enabled: !value.enabled
-                        })
-                    },
-                    keyRepeat: mod.value.keyRepeat || false
-                })
-            }
-        }
-        // logWithTime('Shortcut cache is')
-        // logWithTime(this.shortcutCache)
+        }        
     }
 
     actionsWithCategory(cat, actions) {
@@ -317,8 +296,7 @@ export class ShortcutsService extends BESService {
                 },
                 tilePluginWindows: {
                     defaultSetting: {
-                        keys: ['T'],
-                        doubleTap: true,
+                        keys: ['F1'],
                         vstPassThrough: true
                     },
                     description: 'Tile all open plugin windows.',
@@ -326,8 +304,7 @@ export class ShortcutsService extends BESService {
                 },
                 tilePluginWindowsByChain: {
                     defaultSetting: {
-                        keys: ['Shift', 'T'],
-                        doubleTap: true,
+                        keys: ['F2'],
                         vstPassThrough: true
                     },
                     description: 'Tile plugin windows by chain, creating a new row for each device chain.',
@@ -499,19 +476,37 @@ export class ShortcutsService extends BESService {
         const actions = this.actions
         for (const actionKey in actions) {
             const action = actions[actionKey]
-            const value = action.defaultSetting || {keys: []}
-            if (process.env.NODE_ENV !== 'dev') {
-                delete value.keys
-            }
-            await this.settingsService.insertSettingIfNotExist({
-                key: actionKey,
-                category: action.category,
-                type: 'shortcut',
-                value
-            })
+            this.registerAction({
+                ...action,
+                id: actionKey
+            }, true)
         }
 
         await this.updateShortcutCache()
+    }
+
+    async registerAction(action, skipUpdate = false) {
+        const value = action.defaultSetting || {keys: []}
+        if (process.env.NODE_ENV !== 'dev') {
+            delete value.keys
+        }
+        await this.settingsService.insertSettingIfNotExist({
+            key: action.id,
+            category: action.category,
+            type: 'shortcut',
+            value
+        })
+        this.actions[action.id] = action
+        if (!skipUpdate) {
+            await this.updateShortcutCache()
+        }
+    }
+
+    async registerShortcut(shortcut, action) {
+        const code = this.makeShortcutValueCode(shortcut)
+        this.shortcutCache[code] = (this.shortcutCache[code] || []).concat({
+            runner: action
+        })
     }
 
     setupPacketListeners() {

@@ -8,14 +8,17 @@
 let middleDown = false
 let startPos = ''
 const makePos = event => JSON.stringify({x: event.x, y: event.y})
+let downTime = new Date(0)
 
 Mouse.on('mousedown', event => {
     middleDown = Bitwig.isActiveApplication && !Bitwig.isBrowserOpen && event.x > 390 && event.button === 1
     startPos = makePos(event)
+    downTime = new Date()
 })
 
 Mouse.on('mouseup', event => {
-    if (middleDown && makePos(event) === startPos) {
+    let timeDifference = new Date().getTime() - downTime.getTime()
+    if (middleDown && makePos(event) === startPos && timeDifference < 200) {
         Mouse.returnAfter(() => {
             Keyboard.keyDown('1')
             Mouse.doubleClick(0, {x: event.x, y: 125})

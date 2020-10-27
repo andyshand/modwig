@@ -28,7 +28,7 @@ app.whenReady().then(async () => {
     type: 'string',
   })
 
-  const modsService = await registerService(ModsService)
   const shortcutsService = await registerService(ShortcutsService)
+  const modsService = await registerService(ModsService)
   const trayService = await registerService(TrayService)
 })

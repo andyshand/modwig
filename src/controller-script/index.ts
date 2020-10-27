@@ -90,7 +90,7 @@ class PacketManager {
                             runAction(actionName)
                         }
                     }
-                    println(packet.type)
+                    println(`Received packet of type: ${packet.type}`)
                     // println('send response???')
                     let errors = []
                     if (warnNoListeners) {
@@ -126,6 +126,7 @@ class PacketManager {
         });
     }
     listen(type: string, cb: (p: Packet) => void) {
+        println(`Added packet listener for type: ${type}`)
         this.listenersByType[type] = this.listenersByType[type] || [].concat(cb)
     }
     send(packet: Packet) {
@@ -892,7 +893,10 @@ function init() {
                     deps.globalController.mapTracks(cb)
                 })
             },
-            settings
+            settings,
+            runAction,
+            transport,
+            ...deps
         }
     }
     loadMods(makeApi())

@@ -252,7 +252,6 @@ export const SettingShortcut = ({setting}) => {
             optionProps('showInMenu', 'Show in Menu'),
         ] : []),
         optionProps('doubleTap', 'Double-tap'),
-        // optionProps('keyRepeat', 'Key Repeat'),
         optionProps('vstPassThrough', 'Pass through VSTs')
     ]
 
