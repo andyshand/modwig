@@ -1,12 +1,12 @@
 # Modwig 
 
-_In Early Development_
-
 Modwig adds helpful keyboard shortcuts and extra features to Bitwig Studio. 
 
 ![Screenshot of Modwig](https://github.com/andyshand/modwig/raw/master/github/screenshots/screenshot.png)
 
-Currently Mac only. Download the latest version from the [releases page](https://github.com/andyshand/modwig/releases).
+Currently Mac only and in early development. Although far from production ready, I am using it successfully every day without many issues, only occassionally restarting. YMMV of course!
+
+Download the latest version from the [releases page](https://github.com/andyshand/modwig/releases).
 
 ### Extra Shortcuts 
 
@@ -56,6 +56,7 @@ The first time you open Modwig, it will guide you through a simple 3 step proces
 
 ### Arranger
 
+- Play from Selection
 - Toggle Large Track Height
 
 ### Browser
