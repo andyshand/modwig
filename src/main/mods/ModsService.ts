@@ -136,8 +136,11 @@ export class ModsService extends BESService {
                 hideFloatingWindows() {
                     Bitwig.hideFloatingWindows()
                 },
-                sendPacket: (packet) => {
+                sendPacket: packet => {
                     return sendPacketToBitwig(packet)
+                },
+                showMessage: message => {
+                    sendPacketToBitwig({type: 'message', data: message})
                 },
                 ...makeEvents([
                     'selectedTrackChanged'

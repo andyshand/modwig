@@ -15,3 +15,13 @@ Mod.registerAction({
     },
     action: () => Bitwig.sendPacket({type: 'play-from-selection'})
 })
+
+Mod.registerAction({
+    title: "Jump to Playback Start Time",
+    id: "jump-to-playback-start-time",
+    category: "arranger",
+    defaultSetting: {
+        keys: ["Alt", "Space"]
+    },
+    action: () => Bitwig.sendPacket({type: 'action', data: 'jump_to_playback_start_time'})
+})
