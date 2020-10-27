@@ -317,18 +317,27 @@ export class ShortcutsService extends BESService {
                 },
                 tilePluginWindows: {
                     defaultSetting: {
-                        keys: ['Shift', 'T'],
+                        keys: ['T'],
+                        doubleTap: true,
                         vstPassThrough: true
                     },
-                    description: 'Pseudo-intelligently tile plugin windows, creating a new row for each device chain.',
+                    description: 'Tile all open plugin windows.',
                     action: () =>  Bitwig.tileFloatingWindows()
+                },
+                tilePluginWindowsByChain: {
+                    defaultSetting: {
+                        keys: ['Shift', 'T'],
+                        doubleTap: true,
+                        vstPassThrough: true
+                    },
+                    description: 'Tile plugin windows by chain, creating a new row for each device chain.',
+                    action: () =>  Bitwig.tileFloatingWindows({group: 'chain'})
                 },
                 hidePluginWindows: {
                     defaultSetting: {
-                        keys: ['Meta', 'Shift', 'T'],
                         vstPassThrough: true
                     },
-                    description: 'Move plugin windows offscreen (to the bottom-right corner). Show again with "Tile Plugin Windows".',
+                    description: 'Move plugin windows offscreen (to the top-right corner). Show again with "Tile Plugin Windows".',
                     action: () =>  Bitwig.hideFloatingWindows()
                 },
                 navigateToParentDevice: {

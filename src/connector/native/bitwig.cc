@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <map>
 #include <vector>
+using namespace std::string_literals;
 
 AXUIElementRef cachedBitwigRef;
 AXUIElementRef cachedPluginHostRef;
@@ -183,35 +184,30 @@ void smartTileWindowsForAXUIElement(AXUIElementRef elementRef, bool offscreen) {
                 std::vector<AXUIElementRef>::iterator vecIt;
                 for(auto itemRef : windowsVector)  {
                     CGPoint newPoint;
-                    CFTypeRef position;
                     CFTypeRef size;
-                    CGPoint positionPoint;
-                    CGSize sizePoint;
+                    CGSize sizeValue;
+                    AXUIElementCopyAttributeValue(itemRef, kAXSizeAttribute, (CFTypeRef *)&size);
+                    AXValueGetValue((AXValueRef)size, (AXValueType)kAXValueCGSizeType, &sizeValue);
 
                     if (!offscreen) {
-                        AXUIElementCopyAttributeValue(itemRef, kAXPositionAttribute, (CFTypeRef *)&position);
-                        AXValueGetValue((AXValueRef)position, (AXValueType)kAXValueCGPointType, &positionPoint);
-                        AXUIElementCopyAttributeValue(itemRef, kAXSizeAttribute, (CFTypeRef *)&size);
-                        AXValueGetValue((AXValueRef)size, (AXValueType)kAXValueCGSizeType, &sizePoint);
-
-                        if (x + sizePoint.width > screenWidth) {
+                        if (x + sizeValue.width > screenWidth) {
                             // next row
                             x = startX;
                             y = nextRowY;
                         }
                     } else {
                         x = screenWidth - 1;
-                        y = screenHeight - 1;
+                        y = 0;
                     }
                     
                     newPoint.x = x;
                     newPoint.y = y;
-                    position = (CFTypeRef)(AXValueCreate((AXValueType)kAXValueCGPointType, (const void *)&newPoint));
+                    auto position = (CFTypeRef)(AXValueCreate((AXValueType)kAXValueCGPointType, (const void *)&newPoint));
                     AXUIElementSetAttributeValue(itemRef, kAXPositionAttribute, position);
 
                     if (!offscreen) {
-                        x += sizePoint.width;
-                        nextRowY = fmaxf(nextRowY, y + sizePoint.height);
+                        x += sizeValue.width;
+                        nextRowY = fmaxf(nextRowY, y + sizeValue.height);
                     }
                 }
                 y = nextRowY;
@@ -289,7 +285,17 @@ Napi::Value CloseFloatingWindows(const Napi::CallbackInfo &info) {
 
 Napi::Value TileFloatingWindows(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
-    smartTileWindowsForAXUIElement(GetPluginAXUIElement(), false);
+
+    if (info[0].IsObject()) {
+        Napi::Value groupBy = info[0].As<Napi::Object>()["group"];
+        if (!((std::string)groupBy.As<Napi::String>()).compare("chain"s)) {
+            smartTileWindowsForAXUIElement(GetPluginAXUIElement(), false);
+        } else {
+            tileWindowsForAXUIElement(GetPluginAXUIElement());
+        }
+    } else {
+        tileWindowsForAXUIElement(GetPluginAXUIElement());
+    }
     return Napi::Boolean::New(env, true);
 }
 
