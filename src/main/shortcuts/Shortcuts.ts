@@ -7,6 +7,8 @@ import { BrowserWindow } from "electron"
 import { url } from "../core/Url"
 import { SettingsService } from "../core/SettingsService"
 import { logWithTime } from "../core/Log"
+import { ModsService } from "../mods/ModsService"
+import { In } from 'typeorm'
 
 const { Keyboard, Mouse, MainWindow, Bitwig } = require('bindings')('bes')
 
@@ -85,6 +87,11 @@ export class ShortcutsService extends BESService {
                     action: () => {
                         this.searchWindow.show()
                     }                
+                },
+                restoreAutomationControl: {
+                    action: () => {
+                        sendPacketToBitwig({type: 'action', data: 'restore_automation_control'})
+                    } 
                 },
                 toggleRecord: {            
                     description: `This "Toggle Record" shortcut can optionally pass through VSTs, whereas the built-in shortcut cannot.`,
@@ -312,6 +319,7 @@ export class ShortcutsService extends BESService {
                 },
                 hidePluginWindows: {
                     defaultSetting: {
+                        keys: ['Escape'],
                         vstPassThrough: true
                     },
                     description: 'Move plugin windows offscreen (to the top-right corner). Show again with "Tile Plugin Windows".',
@@ -492,6 +500,7 @@ export class ShortcutsService extends BESService {
         }
         await this.settingsService.insertSettingIfNotExist({
             key: action.id,
+            mod: action.mod || null,
             category: action.category,
             type: 'shortcut',
             value
@@ -517,9 +526,17 @@ export class ShortcutsService extends BESService {
             }
         })
         addAPIMethod('api/shortcuts/category', async ({ category }) => {
+            const modsService = getService<ModsService>('ModsService')
             const db = await getDb()
             const settings = db.getRepository(Setting) 
-            const results = await settings.find({where: {type: 'shortcut', category}})
+            const enabledMods = (await modsService.getMods({category})).filter(mod => mod.value.enabled)
+            const enabledModIds = new Set(enabledMods.map(mod => mod.key.substr(4)))
+            const results = (await settings.find({where: {
+                type: 'shortcut', 
+                category
+            }})).filter(result => {
+                return result.mod === null || enabledModIds.has(result.mod)
+            })
             const actions = this.actions
             return results.map(res => {
                 res = this.settingsService.postload(res)
@@ -527,6 +544,7 @@ export class ShortcutsService extends BESService {
                     const action = actions[res.key]
                     res.description = action.description
                 }
+                res.modName = res.mod ? modsService.latestModsMap['mod/' + res.mod]?.name ?? null : null
                 return res
             })
         })

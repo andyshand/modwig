@@ -9,6 +9,7 @@ interface SettingTemplate {
     value: any
     type: "boolean" | "shortcut" | "string" | "mod"
     category: string
+    mod?: string
 }
 
 export class SettingsService extends BESService {

@@ -1,13 +1,18 @@
-class EventEmitter<T> {
+export class EventEmitter<T> {
     nextId = 0
-    listenersById: {[id: number]: (data: T) => void} = {}
+    listenersById: {[id: number]: (...values: [T, ...any[]]) => void} = {}
     listen(cb: (data: T) => void) {
         let nowId = this.nextId++
         this.listenersById[nowId] = cb
+        console.log(this.listenersById)
+        return nowId
     }
-    emit(value: T) {
+    stopListening(id: number) {
+        delete this.listenersById[id] 
+    }
+    emit(...values: [T, ...any[]]) {
         for (const listener of Object.values(this.listenersById)) {
-            listener(value)
+            listener(...values)
         }
     }
 }

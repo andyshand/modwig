@@ -51,19 +51,15 @@ const NoMods = styled.div`
     }
 
 `
+const ModItem = ({mod}) => {
+    return <div>
+        {mod.notFound ? 'Not found' : null}
+    </div>
+}
+
 class Shortcuts extends React.Component<any> {
     render() {
         const { settings, title, helpText } = this.props
-        let byMod = {}
-        let noInMod = []
-        settings.forEach(setting => {
-            if (setting.modName) {
-                byMod[setting.modName] = (byMod[setting.modName] || []).concat(setting)
-            } else {
-                noInMod.push(setting)
-            }
-        })
-
         return <div>
             <ShortcutsWrap>
                 <SectionHeader>
@@ -71,18 +67,10 @@ class Shortcuts extends React.Component<any> {
                     <div>{helpText}</div>
                 </SectionHeader>
                 <div>
-                    {noInMod.map(setting => {
-                        return <SettingShortcut key={setting.key} setting={setting} />
-                    })}
-                    {Object.keys(byMod).map(modName => {
-                        return <div key={modName}>
-                            <SectionHeader>
-                                <div>Provided by {modName}</div>
-                                {/* <div>{helpText}</div> */}
-                            </SectionHeader>
-                            {byMod[modName].map(setting => {
-                                return <SettingShortcut key={setting.key} setting={setting} />
-                            })}
+                    {settings.map(setting => {
+                        return <div>
+                            <ModItem mod={setting} />
+                            <SettingShortcut key={setting.key} setting={setting} />
                         </div>
                     })}
                     {settings.length === 0 ? <NoMods>
@@ -95,9 +83,9 @@ class Shortcuts extends React.Component<any> {
     }
 }
 type Props = {
-    category: string
+
 }
-export class SettingsView extends React.Component<Props> {
+export class ModsView extends React.Component<Props> {
 
     state = {
         settings: [],
@@ -105,18 +93,18 @@ export class SettingsView extends React.Component<Props> {
         loading: true
     }
     async componentWillMount() {
-        const { data: settings } = await getSettings({category: this.props.category})
+        const { data: mods } = await sendPromise({
+            type: `api/mods`
+        })
         this.setState({
-            settings,
+            mods,
             loading: false
         })
     }
 
     render() {
         return <SettingsViewWrap>
-            {this.state.loading ? null : <>
-                <Shortcuts settings={this.state.settings} title={`Built-in`} helpText={null} />
-            </>}
+            {this.state.loading ? null : <><Shortcuts settings={this.state.mods} /></>}
         </SettingsViewWrap>
     }
 }

@@ -111,7 +111,7 @@ void tileWindowsForAXUIElement(AXUIElementRef elementRef) {
         AXUIElementCopyAttributeValue(elementRef, kAXWindowsAttribute, (CFTypeRef*)&windowArray);
         if (windowArray != nil) { 
             CFIndex nItems = CFArrayGetCount(windowArray);
-            CGFloat startX = 400;
+            CGFloat startX = 454;
             CGFloat x = startX, y = 153;
             CGFloat nextRowY = y;
             auto mainDisplayId = CGMainDisplayID();
@@ -156,7 +156,7 @@ void smartTileWindowsForAXUIElement(AXUIElementRef elementRef, bool offscreen) {
         AXUIElementCopyAttributeValue(elementRef, kAXWindowsAttribute, (CFTypeRef*)&windowArray);
         if (windowArray != nil) { 
             CFIndex nItems = CFArrayGetCount(windowArray);
-            CGFloat startX = 400;
+            CGFloat startX = 454;
             CGFloat x = startX, y = 153;
             CGFloat nextRowY = y;
             auto mainDisplayId = CGMainDisplayID();
@@ -196,7 +196,7 @@ void smartTileWindowsForAXUIElement(AXUIElementRef elementRef, bool offscreen) {
                             y = nextRowY;
                         }
                     } else {
-                        x = screenWidth - 1;
+                        x = screenWidth - sizeValue.width;
                         y = 0;
                     }
                     

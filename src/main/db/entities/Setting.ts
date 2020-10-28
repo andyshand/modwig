@@ -16,6 +16,9 @@ export class Setting {
     @Column()
     value: string
 
+    @Column({nullable: true})
+    mod: string
+
     @Index()
     @Column()
     type: string
