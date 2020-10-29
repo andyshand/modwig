@@ -15,6 +15,9 @@ export class Setting {
 
     @Column()
     value: string
+    
+    @Column({nullable: true})
+    userCreated: boolean
 
     @Column({nullable: true})
     mod: string

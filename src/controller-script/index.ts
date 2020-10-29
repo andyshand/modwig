@@ -884,6 +884,24 @@ function init() {
         println(message)
         host.showPopupNotification(message)
     })
+    deps.packetManager.listen('actions', () => {
+        const actions = app.getActions()
+        let out = []
+        for (const action of actions) {
+            out.push(action)
+        }
+        return {
+            type: 'actions',
+            data: out.map(action => {
+                return {
+                    id: action.getId(),
+                    name: action.getName(),
+                    description: action.getMenuItemText(),
+                    category: action.getCategory().getName()
+                }
+            })
+        }
+    })
 
     load('mods.js')
     const makeApi = () => {

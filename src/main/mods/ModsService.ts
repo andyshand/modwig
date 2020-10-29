@@ -8,7 +8,6 @@ import { getResourcePath } from '../../connector/shared/ResourcePath'
 import { SettingsService } from "../core/SettingsService"
 import { promises as fs } from 'fs'
 import * as path from 'path'
-import {Notification} from 'electron'
 import { Setting } from "../db/entities/Setting"
 import { createDirIfNotExist, exists as fileExists } from "../core/Files"
 import { logWithTime } from "../core/Log"
@@ -102,7 +101,7 @@ export class ModsService extends BESService {
                         return id
                     },
                     off: (id) => {
-                        console.log('Removing listener id:' + id)
+                        // console.log('Removing listener id:' + id)
                         emitter.stopListening(id)
                     }
                 }            
@@ -160,6 +159,9 @@ export class ModsService extends BESService {
                 },
                 sendPacket: packet => {
                     return sendPacketToBitwig(packet)
+                },
+                runAction: action => {
+                    return sendPacketToBitwig({type: 'action', data: action})
                 },
                 showMessage: message => {
                     sendPacketToBitwig({type: 'message', data: message})

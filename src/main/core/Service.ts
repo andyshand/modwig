@@ -4,7 +4,6 @@ export class EventEmitter<T> {
     listen(cb: (data: T) => void) {
         let nowId = this.nextId++
         this.listenersById[nowId] = cb
-        console.log(this.listenersById)
         return nowId
     }
     stopListening(id: number) {

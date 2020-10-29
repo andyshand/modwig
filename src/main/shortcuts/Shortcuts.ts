@@ -525,7 +525,7 @@ export class ShortcutsService extends BESService {
                 this.browserText = ''
             }
         })
-        addAPIMethod('api/shortcuts/category', async ({ category }) => {
+        addAPIMethod('api/shortcuts/category', async ({ category } = {}) => {
             const modsService = getService<ModsService>('ModsService')
             const db = await getDb()
             const settings = db.getRepository(Setting) 
@@ -533,7 +533,7 @@ export class ShortcutsService extends BESService {
             const enabledModIds = new Set(enabledMods.map(mod => mod.key.substr(4)))
             const results = (await settings.find({where: {
                 type: 'shortcut', 
-                category
+                ...(category ? {category} : {})
             }})).filter(result => {
                 return result.mod === null || enabledModIds.has(result.mod)
             })
