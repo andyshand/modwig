@@ -4,7 +4,7 @@ Modwig adds helpful keyboard shortcuts and extra features to Bitwig Studio.
 
 ![Upcoming v0.0.3](https://github.com/andyshand/modwig/raw/master/github/screenshots/screenshot.png)
 
-### Extra Shortcuts
+### Extra Configurable Shortcuts
 
 - Play selected notes
 - Close all plugin windows
@@ -15,7 +15,7 @@ Modwig adds helpful keyboard shortcuts and extra features to Bitwig Studio.
 - Track back/forward navigation
 - And many more!
 
-### Workflow Features
+### Optional Workflow Features
 
 - Middle click to play from anywhere in the arranger view
 - Remember scroll position for device view when switching tracks
