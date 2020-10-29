@@ -410,7 +410,7 @@ export class ModsService extends BESService {
         await this.settingsService.insertSettingIfNotExist({
             key: mod.settingsKey,
             value: {
-                enabled: true,
+                enabled: false,
                 keys: []
             },
             type: 'mod',
