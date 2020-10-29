@@ -239,7 +239,18 @@ export class ModsService extends BESService {
             this.browserIsOpen = isOpen
         })
         addAPIMethod('api/mods', async () => {
-            return await this.getMods()
+            const mods = await this.getMods()
+            const db = await getDb()
+            const settings = db.getRepository(Setting) 
+            for (const mod of mods) {
+                const settingsForMod = await settings.find({where: {
+                    mod: mod.id
+                }})
+                mod.actions = settingsForMod.map(setting => {
+                    return this.settingsService.postload(setting)
+                })
+            }
+            return mods
         })
 
         const refreshFolderWatcher = async () => {

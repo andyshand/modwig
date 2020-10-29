@@ -1,4 +1,4 @@
-import { sendPacketToBitwig, interceptPacket, sendPacketToBrowser, addAPIMethod } from "../core/WebsocketToSocket"
+import { sendPacketToBitwig, interceptPacket, sendPacketToBrowser, addAPIMethod, sendPacketToBitwigPromise } from "../core/WebsocketToSocket"
 import { BESService, getService } from "../core/Service"
 import { returnMouseAfter } from "../../connector/shared/EventUtils"
 import { getDb } from "../db"
@@ -9,6 +9,7 @@ import { SettingsService } from "../core/SettingsService"
 import { logWithTime } from "../core/Log"
 import { ModsService } from "../mods/ModsService"
 import { In } from 'typeorm'
+import { exists } from "fs"
 
 const { Keyboard, Mouse, MainWindow, Bitwig } = require('bindings')('bes')
 
@@ -19,6 +20,7 @@ let renaming = false
 const MODS_MESSAGE = `Modulators are currently inaccessible from the controller API. This shortcut is also limited to a single device at any time.`
 const MODS_MESSAGE_2 = `Modulators are currently inaccessible from the controller API.`
 const PROXY_MESSAGE = key => `Proxy key for the "${key}" key for convenient remapping.`
+
 export class ShortcutsService extends BESService {
     browserIsOpen
     browserText = ''
@@ -538,7 +540,7 @@ export class ShortcutsService extends BESService {
                 return result.mod === null || enabledModIds.has(result.mod)
             })
             const actions = this.actions
-            return results.map(res => {
+            let returned = results.map(res => {
                 res = this.settingsService.postload(res)
                 if (res.key in actions) {
                     const action = actions[res.key]
@@ -547,6 +549,26 @@ export class ShortcutsService extends BESService {
                 res.modName = res.mod ? modsService.latestModsMap['mod/' + res.mod]?.name ?? null : null
                 return res
             })
+            if (category === 'bitwig') {
+                const { data: actions } = await sendPacketToBitwigPromise({type: 'actions'})
+                let existingSettingIds = new Set(returned.map(r => r.key))
+                let i = 0
+                for (const action of actions) {
+                    if (!existingSettingIds.has('bitwig/' + action.id)) {
+                        returned.push({
+                            id: -1 - i,
+                            key: 'bitwig/' + action.id,
+                            name: action.name,
+                            description: action.description,
+                            mod: action.category,
+                            modName: action.category,
+                            value: {}
+                        })
+                    }
+                    i++
+                }
+            }
+            return returned
         })
         this.settingsService.events.settingsUpdated.listen(() => this.updateShortcutCache())
     }

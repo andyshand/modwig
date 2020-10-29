@@ -8,6 +8,9 @@ export class Setting {
     @Index()
     @Column()
     key: string
+
+    // @Column()
+    // name: string
     
     @Index()
     @Column()

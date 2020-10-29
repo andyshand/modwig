@@ -1,14 +1,11 @@
-import { faCross, faSearch, faTimesCircle } from '@fortawesome/free-solid-svg-icons'
+import { faTimesCircle } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import React, {useState} from 'react'
+import React, {useEffect, useState} from 'react'
 import { styled } from 'linaria/react'
 import { sendPromise } from '../../bitwig-api/Bitwig'
-import { settingTitle } from '../helpers/settingTitle'
+import { shortcutToTextDescription } from '../helpers/settingTitle'
 import { Checkbox } from '../../core/Checkbox'
-const { shell } = require('electron')
 
-const borderColor = `#444`;
-const xPad = "1.2rem";
 const ShortcutInput = styled.input`
     width: 7rem;
     padding: 1rem .5rem;
@@ -20,40 +17,40 @@ const ShortcutInput = styled.input`
     text-align: center;
     cursor: pointer;
 `
-const Title = styled.div`
-`
-const Description = styled.div`
-    font-size: .8em;
-    color: #AAA;
-`
-
 const ShortcutWrap = styled.div`
-    
-
-    overflow: hidden;
     user-select: none;
     cursor: default;
 `
 const InputWrap = styled.div`
-    background: ${(props: any) => props.focused ? `#000` : `#272727`};
+    border: 1px solid ${(props: any) => props.focused ? `#CCC` : `transparent`};
+    background: #272727;
     border-radius: 0.3rem;
     cursor: pointer;    
     position: relative;
     input {
-        color: ${(props: any) => props.noShortcut ? `#777` : `#a6a6a6`};
+        color: ${(props: any) => props.noShortcut ? `#555` : `#a6a6a6`};
     }
     font-size: ${(props: any) => props.noShortcut ? `.8em` : `1em`};
     div {
         opacity: 0;
         position: absolute;
         top: 50%;
-        right: ${xPad};
+        right: .8em;
         transform: translateY(-50%);
+        font-size: .8em;
+    }
+    &:hover {
+        div {
+            transition: opacity .3s;
+            opacity: ${(props: any) => props.noShortcut ? `0` : `1`};
+        }
     }
 `
 const OptionsWrap = styled.div`
     align-items: center;
     color: #666;
+    display: table;
+    margin: 0 auto;
     margin-top: .5rem;
 `
 const OptionWrap = styled.div`
@@ -63,7 +60,9 @@ const OptionWrap = styled.div`
         color: #AAA;
     }
     align-items: center;
-    margin-bottom: .2rem;
+    &:not(:last-child) {
+        margin-bottom: .1rem;
+    }
     font-size: .7em;
 `
 const ignoreSet = new Set(['Meta', 'Shift', 'Control', 'Alt', 'CapsLock'])
@@ -129,6 +128,10 @@ export const SettingShortcut = ({setting}) => {
     const [value, setValue] = useState(setting.value)
     const [focused, setFocused] = useState(false)
 
+    useEffect (() => {
+        setValue(setting.value)
+    }, [setting.key]);
+
     const updateValue = value => {
         sendPromise({
             type: 'api/settings/set',
@@ -182,31 +185,20 @@ export const SettingShortcut = ({setting}) => {
     const onFocus = () => {
         setFocused(true)
     }
-    
-    const shortcutToTextDescription = () => {
-        if ((value.keys || []).length === 0) {
-            return 'Click to set...'
+
+    const getValue = () => {
+        if (value.keys.length === 0) {
+            return focused ? 'Listening...' : 'Click to set...'
+        } else {
+            return shortcutToTextDescription({value})
         }
-        const mac = process.platform === 'darwin'
-        return (value.keys || []).map(key => {
-            if (key === 'Meta' && mac) {
-                return '⌘'
-            } else if (key === 'Control') {
-                return '⌃'
-            } else if (key === 'Alt') {
-                return '⌥'
-            } else if (key === 'Shift') {
-                return '⇧'
-            }
-            return key
-        }).join('')
     }
-    
+
     const props = {
         onBlur,
         onFocus,
         onKeyDown,
-        value: (focused && shortcutToTextDescription() === 'Click to set...') ? 'Press keys...' : shortcutToTextDescription(),
+        value: getValue(),
         readOnly: true
     }
     const wrapProps = {
@@ -226,7 +218,6 @@ export const SettingShortcut = ({setting}) => {
 
     const options = [
         ...(setting.type === 'mod' ? [
-            optionProps('enabled', 'Enabled'),
             optionProps('showInMenu', 'Show in Menu'),
         ] : []),
         optionProps('doubleTap', 'Double-tap'),
