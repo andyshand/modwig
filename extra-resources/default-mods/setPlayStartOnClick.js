@@ -1,7 +1,7 @@
 /**
  * @name Set Play Start On Click
  * @id set-play-start-on-click
- * @description Play from the currently selected item (anything that can be used with Bitwig's "Set Arranger Loop").
+ * @description Automatically set the playhead to the currently selected note.
  * @category arranger
  */
 

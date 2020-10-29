@@ -70,10 +70,8 @@ packetManager.listen('play-from-selection', (packet) => {
             restoreLoop(saved)
         }
         if (transport.isPlaying().get()) {
-            if (!justSet) {
-                transport.stop()
-                host.scheduleTask(doIt, 100)
-            }
+            transport.stop()
+            host.scheduleTask(doIt, 100)
         } else {
             doIt()
         }
