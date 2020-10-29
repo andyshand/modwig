@@ -1,4 +1,4 @@
-import { sendPacketToBitwig, interceptPacket, sendPacketToBrowser, addAPIMethod } from "../core/WebsocketToSocket"
+import { sendPacketToBitwig, interceptPacket, sendPacketToBrowser, addAPIMethod, sendPacketToBitwigPromise } from "../core/WebsocketToSocket"
 import { BESService, getService } from "../core/Service"
 import { returnMouseAfter } from "../../connector/shared/EventUtils"
 import { getDb } from "../db"
@@ -7,6 +7,9 @@ import { BrowserWindow } from "electron"
 import { url } from "../core/Url"
 import { SettingsService } from "../core/SettingsService"
 import { logWithTime } from "../core/Log"
+import { ModsService } from "../mods/ModsService"
+import { In } from 'typeorm'
+import { exists } from "fs"
 
 const { Keyboard, Mouse, MainWindow, Bitwig } = require('bindings')('bes')
 
@@ -17,6 +20,7 @@ let renaming = false
 const MODS_MESSAGE = `Modulators are currently inaccessible from the controller API. This shortcut is also limited to a single device at any time.`
 const MODS_MESSAGE_2 = `Modulators are currently inaccessible from the controller API.`
 const PROXY_MESSAGE = key => `Proxy key for the "${key}" key for convenient remapping.`
+
 export class ShortcutsService extends BESService {
     browserIsOpen
     browserText = ''
@@ -85,6 +89,11 @@ export class ShortcutsService extends BESService {
                     action: () => {
                         this.searchWindow.show()
                     }                
+                },
+                restoreAutomationControl: {
+                    action: () => {
+                        sendPacketToBitwig({type: 'action', data: 'restore_automation_control'})
+                    } 
                 },
                 toggleRecord: {            
                     description: `This "Toggle Record" shortcut can optionally pass through VSTs, whereas the built-in shortcut cannot.`,
@@ -312,6 +321,7 @@ export class ShortcutsService extends BESService {
                 },
                 hidePluginWindows: {
                     defaultSetting: {
+                        keys: ['Escape'],
                         vstPassThrough: true
                     },
                     description: 'Move plugin windows offscreen (to the top-right corner). Show again with "Tile Plugin Windows".',
@@ -492,6 +502,7 @@ export class ShortcutsService extends BESService {
         }
         await this.settingsService.insertSettingIfNotExist({
             key: action.id,
+            mod: action.mod || null,
             category: action.category,
             type: 'shortcut',
             value
@@ -516,19 +527,48 @@ export class ShortcutsService extends BESService {
                 this.browserText = ''
             }
         })
-        addAPIMethod('api/shortcuts/category', async ({ category }) => {
+        addAPIMethod('api/shortcuts/category', async ({ category } = {}) => {
+            const modsService = getService<ModsService>('ModsService')
             const db = await getDb()
             const settings = db.getRepository(Setting) 
-            const results = await settings.find({where: {type: 'shortcut', category}})
+            const enabledMods = (await modsService.getMods({category})).filter(mod => mod.value.enabled)
+            const enabledModIds = new Set(enabledMods.map(mod => mod.key.substr(4)))
+            const results = (await settings.find({where: {
+                type: 'shortcut', 
+                ...(category ? {category} : {})
+            }})).filter(result => {
+                return result.mod === null || enabledModIds.has(result.mod)
+            })
             const actions = this.actions
-            return results.map(res => {
+            let returned = results.map(res => {
                 res = this.settingsService.postload(res)
                 if (res.key in actions) {
                     const action = actions[res.key]
                     res.description = action.description
                 }
+                res.modName = res.mod ? modsService.latestModsMap['mod/' + res.mod]?.name ?? null : null
                 return res
             })
+            if (category === 'bitwig') {
+                const { data: actions } = await sendPacketToBitwigPromise({type: 'actions'})
+                let existingSettingIds = new Set(returned.map(r => r.key))
+                let i = 0
+                for (const action of actions) {
+                    if (!existingSettingIds.has('bitwig/' + action.id)) {
+                        returned.push({
+                            id: -1 - i,
+                            key: 'bitwig/' + action.id,
+                            name: action.name,
+                            description: action.description,
+                            mod: action.category,
+                            modName: action.category,
+                            value: {}
+                        })
+                    }
+                    i++
+                }
+            }
+            return returned
         })
         this.settingsService.events.settingsUpdated.listen(() => this.updateShortcutCache())
     }

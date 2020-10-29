@@ -1,5 +1,5 @@
 import { sendPacketToBitwig, interceptPacket, sendPacketToBrowser, addAPIMethod } from "../core/WebsocketToSocket"
-import { BESService, getService } from "../core/Service"
+import { BESService, getService, makeEvent } from "../core/Service"
 import { returnMouseAfter, whenActiveListener } from "../../connector/shared/EventUtils"
 import { getDb } from "../db"
 import { ProjectTrack } from "../db/entities/ProjectTrack"
@@ -8,7 +8,6 @@ import { getResourcePath } from '../../connector/shared/ResourcePath'
 import { SettingsService } from "../core/SettingsService"
 import { promises as fs } from 'fs'
 import * as path from 'path'
-import {Notification} from 'electron'
 import { Setting } from "../db/entities/Setting"
 import { createDirIfNotExist, exists as fileExists } from "../core/Files"
 import { logWithTime } from "../core/Log"
@@ -37,8 +36,11 @@ export class ModsService extends BESService {
     latestModsMap: { [name: string]: Partial<ModInfo> } = {}
     onReloadMods: Function[] = []
     shortcutsService = getService<ShortcutsService>("ShortcutsService")
+    events = {
+        selectedTrackChanged: makeEvent<any>()
+    }
 
-    async makeApi() {
+    async makeApi(mod) {
         const db = await getDb()
         const projectTracks = db.getRepository(ProjectTrack)
         const projects = db.getRepository(Project)
@@ -64,7 +66,7 @@ export class ModsService extends BESService {
 
             const existingTrack = await projectTracks.findOne({ where: { name: track } })
             if (existingTrack) {
-                logWithTime(`updating track (${existingTrack.name}) with data: ` + data)
+                logWithTime(`updating track (${existingTrack.name}) with data: `, data)
                 await projectTracks.update(existingTrack.id, { data });
             } else {
                 const newTrack = projectTracks.create({
@@ -76,22 +78,41 @@ export class ModsService extends BESService {
                 await projectTracks.save(newTrack);
             }
         }
-
-        const makeEvents = (eventMap) => {
-            // TODO
-            return {
-                on() {
-                    // Add listener to current mod script context
-                }
-            }
-        }
-
+        
         const wrappedOnForReloadDisconnect = (parent) => {
             return (...args) => {
                 const id = parent.on(...args)
                 this.onReloadMods.push(() => {
                     parent.off(id)
                 })
+            }
+        }
+
+        const makeEmitterEvents = (mapOfKeysAndEmitters: {[key: string]: any}) => {
+            let handlers = {}
+            for (const key in mapOfKeysAndEmitters) {
+                const emitter = mapOfKeysAndEmitters[key]
+                handlers[key] = {
+                    on: (cb: Function) => {
+                        let id = emitter.listen(cb)
+                        this.onReloadMods.push(() => {
+                            handlers[key].off(id)
+                        })
+                        return id
+                    },
+                    off: (id) => {
+                        // console.log('Removing listener id:' + id)
+                        emitter.stopListening(id)
+                    }
+                }            
+            }
+            return {
+                on: (eventName: string, cb: Function) => {
+                    return handlers[eventName].on(cb)
+                },
+                off: (eventName: string, id: number) => {
+                    handlers[eventName].off(id)
+                }
             }
         }
 
@@ -139,12 +160,15 @@ export class ModsService extends BESService {
                 sendPacket: packet => {
                     return sendPacketToBitwig(packet)
                 },
+                runAction: action => {
+                    return sendPacketToBitwig({type: 'action', data: action})
+                },
                 showMessage: message => {
                     sendPacketToBitwig({type: 'message', data: message})
                 },
-                ...makeEvents([
-                    'selectedTrackChanged'
-                ])
+                ...makeEmitterEvents({
+                    selectedTrackChanged: this.events.selectedTrackChanged
+                })
             },
             Db: {
                 getTrackData: (name) => {
@@ -168,7 +192,7 @@ export class ModsService extends BESService {
             },
             Mod: {
                 registerAction: (action) => {
-                    this.shortcutsService.registerAction(action)
+                    this.shortcutsService.registerAction({...action, mod: mod.id})
                 }
             }
         }
@@ -190,6 +214,8 @@ export class ModsService extends BESService {
                     ...res,
                     ...modInfo
                 }
+            } else {
+                res.notFound = true
             }
             return res
         }).filter((mod) => {
@@ -200,8 +226,10 @@ export class ModsService extends BESService {
         // Listen out for the current track/project state from the controller script
         interceptPacket('trackselected', undefined, async ({ data: { name: newTrackName, selected, project } }) => {
             if (selected) {
+                const prev = this.currTrack
                 this.currProject = project.name
                 this.currTrack = newTrackName
+                this.events.selectedTrackChanged.emit(this.currTrack, prev)
             }
         })
         interceptPacket('project', undefined, async ({ data: { name: projectName } }) => {
@@ -210,8 +238,19 @@ export class ModsService extends BESService {
         interceptPacket('browser/state', undefined, ({ data: {isOpen} }) => {
             this.browserIsOpen = isOpen
         })
-        addAPIMethod('api/mods/category', async ({ category }) => {
-            return await this.getMods({category})
+        addAPIMethod('api/mods', async () => {
+            const mods = await this.getMods()
+            const db = await getDb()
+            const settings = db.getRepository(Setting) 
+            for (const mod of mods) {
+                const settingsForMod = await settings.find({where: {
+                    mod: mod.id
+                }})
+                mod.actions = settingsForMod.map(setting => {
+                    return this.settingsService.postload(setting)
+                })
+            }
+            return mods
         })
 
         const refreshFolderWatcher = async () => {
@@ -390,28 +429,26 @@ export class ModsService extends BESService {
         let mainScript = ''
         try {
             const modsById = await this.gatherModsFromPaths(modsFolders, { type: 'local'})
-            for (const modId in modsById) {
-                const mod = modsById[modId]
-                this.initMod(mod)
-                const isEnabled = await this.isModEnabled(mod)
-                if (isEnabled) {
-                    logWithTime('Enabled local mod: ' + modId)
-                    mainScript += mod.contents
-                }
-            }
-
+            
             ;(async () => {
-                const api = await this.makeApi()
-                // Populate function scope with api objects
-                try { 
-                    let setVars = ''
-                    for (const key in api) {
-                        setVars += `const ${key} = api["${key}"]
-`
+                for (const modId in modsById) {
+                    const mod = modsById[modId]
+                    this.initMod(mod)
+                    const isEnabled = await this.isModEnabled(mod)
+                    if (isEnabled) {
+                        const api = await this.makeApi(mod)
+                        // Populate function scope with api objects
+                        try { 
+                            let setVars = ''
+                            for (const key in api) {
+                                setVars += `const ${key} = api["${key}"]\n`
+                            }
+                            eval(setVars + mod.contents)
+                            logWithTime('Enabled local mod: ' + modId)
+                        } catch (e) {
+                            console.error(e)   
+                        }
                     }
-                    eval(setVars + mainScript)
-                } catch (e) {
-                    console.error(e)   
                 }
             })()
         } catch (e) {

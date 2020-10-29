@@ -13,7 +13,8 @@ let waiting = 0
 let partialMsg = ''
 let bitwigClient: any = null
 let activeWebsockets: {ws:any,id:number}[] = [];
-
+let nextPacketId = 0
+let waitingForResponseById: {[id: string] : Function} = {}
 /**
  * We have to have a queue here because our interceptors can be async, which means our
  * data processor could end up out of order (as we process multiple packets in one function call)
@@ -56,6 +57,15 @@ let fromBWInterceptors: {[type: string]: BitwigToClientInterceptor[]} = {}
 
 async function processInterceptors(packetStr, ceptors: {[type: string]: Function[]}) {
     const packet = JSON.parse(packetStr)
+    if (packet.id in waitingForResponseById) {
+        try {
+            waitingForResponseById[packet.id](packet)
+        } catch (e) {
+            console.error(e)
+        }
+        delete waitingForResponseById[packet.id]
+    }
+
     let didIntercept = false
     if ((ceptors[packet.type] || []).length) {
         const ceptorsForPacket = ceptors[packet.type]
@@ -160,8 +170,17 @@ function sendToBitwig(str) {
   }
 }
 
-export function sendPacketToBitwig(packet) {
-  return sendToBitwig(JSON.stringify(packet))
+export function sendPacketToBitwig(packet, cb?: Function) {
+    if (cb) {
+        let packetId = `internal` + (nextPacketId++)
+        packet.id = packetId
+        waitingForResponseById[packetId] = cb
+    }
+    return sendToBitwig(JSON.stringify(packet))
+}
+
+export function sendPacketToBitwigPromise(packet) : Promise<any> {
+    return new Promise(res => sendPacketToBitwig(packet, res))
 }
 
 export function sendPacketToBrowser(packet) {

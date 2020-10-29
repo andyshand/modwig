@@ -8,6 +8,9 @@ export class Setting {
     @Index()
     @Column()
     key: string
+
+    // @Column()
+    // name: string
     
     @Index()
     @Column()
@@ -15,6 +18,12 @@ export class Setting {
 
     @Column()
     value: string
+    
+    @Column({nullable: true})
+    userCreated: boolean
+
+    @Column({nullable: true})
+    mod: string
 
     @Index()
     @Column()

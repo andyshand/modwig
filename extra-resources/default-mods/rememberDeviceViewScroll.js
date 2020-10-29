@@ -1,7 +1,7 @@
 /**
  * @name Remember Device View Scroll
  * @id device-view-scroll
- * @description Return to previous scroll position when switching between tracks. Scroll position is currently tracked by listening for middle click drags on the device view portion of the screen. May not work for non-standard scaling/screen layouts.
+ * @description Return to previous scroll position when switching between tracks. Scroll position is currently tracked by listening for middle click drags on the device view portion of the screen.
  * @category devices
  */
 

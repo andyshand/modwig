@@ -1,19 +1,15 @@
-import { faCross, faSearch, faTimesCircle } from '@fortawesome/free-solid-svg-icons'
+import { faTimesCircle } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import React, {useState} from 'react'
+import React, {useEffect, useState} from 'react'
 import { styled } from 'linaria/react'
 import { sendPromise } from '../../bitwig-api/Bitwig'
-import { settingTitle } from '../helpers/settingTitle'
+import { shortcutToTextDescription } from '../helpers/settingTitle'
 import { Checkbox } from '../../core/Checkbox'
-const { shell } = require('electron')
 
-const borderColor = `#444`;
-const xPad = "1.2rem";
 const ShortcutInput = styled.input`
-    width: 100%;
+    width: 7rem;
+    padding: 1rem .5rem;
     background: transparent;
-    padding: 1em .5em;
-    color: #AAA;
     &, &:focus {
         border: none;
         outline: none;
@@ -21,84 +17,53 @@ const ShortcutInput = styled.input`
     text-align: center;
     cursor: pointer;
 `
-const Title = styled.div`
-`
-const Description = styled.div`
-    font-size: .8em;
-    color: #AAA;
-`
-
 const ShortcutWrap = styled.div`
-    
-    /* border-radius: .5em; */
-    overflow: hidden;
-    border: 1px solid ${borderColor};
     user-select: none;
     cursor: default;
-    border-left: none;
-    border-right: none;
-
-    &:not(:last-child) {
-        border-bottom: none;
-    }
 `
 const InputWrap = styled.div`
-    background: ${(props: any) => props.focused ? `#111` : `222`};
+    border: 1px solid ${(props: any) => props.focused ? `#CCC` : `transparent`};
+    background: #272727;
+    border-radius: 0.3rem;
     cursor: pointer;    
     position: relative;
     input {
-        color: ${(props: any) => props.noShortcut ? `#444` : `666`};
+        color: ${(props: any) => props.noShortcut ? `#555` : `#a6a6a6`};
     }
+    font-size: ${(props: any) => props.noShortcut ? `.8em` : `1em`};
     div {
         opacity: 0;
         position: absolute;
         top: 50%;
-        right: ${xPad};
+        right: .8em;
         transform: translateY(-50%);
+        font-size: .8em;
     }
-`
-const FlexRow = styled.div`
-    display: table;
-    position: relative;
-    font-size: .9em;
-    width: 100%;
-    > * {
-        padding: 0 ${xPad};
-        display: table-cell;
-        vertical-align: middle;
-    }
-    >:first-child {
-        width: 12em;
-    }
-    >:nth-child(2) {
-        width: 16em;
-        padding: .8em ${xPad};
-    }
-    >:not(:last-child) {
-        border-right: 1px solid ${borderColor};
-    }
-    >:last-child {
-        color: #AAA;
-        /* width: 100%; */
-    }
-    
     &:hover {
-        .setdefault {
-            opacity: 1;
-            transition: opacity .2s;
+        div {
+            transition: opacity .3s;
+            opacity: ${(props: any) => props.noShortcut ? `0` : `1`};
         }
     }
 `
 const OptionsWrap = styled.div`
-    padding: .2em ${xPad};
     align-items: center;
     color: #666;
+    display: table;
+    margin: 0 auto;
+    margin-top: .5rem;
 `
 const OptionWrap = styled.div`
     display: flex;
+    cursor: pointer !important;
+    &:hover {
+        color: #AAA;
+    }
     align-items: center;
-    margin-right: 2em;
-    font-size: .8em;
+    &:not(:last-child) {
+        margin-bottom: .1rem;
+    }
+    font-size: .7em;
 `
 const ignoreSet = new Set(['Meta', 'Shift', 'Control', 'Alt', 'CapsLock'])
 const charMap = {
@@ -163,6 +128,10 @@ export const SettingShortcut = ({setting}) => {
     const [value, setValue] = useState(setting.value)
     const [focused, setFocused] = useState(false)
 
+    useEffect (() => {
+        setValue(setting.value)
+    }, [setting.key]);
+
     const updateValue = value => {
         sendPromise({
             type: 'api/settings/set',
@@ -216,19 +185,20 @@ export const SettingShortcut = ({setting}) => {
     const onFocus = () => {
         setFocused(true)
     }
-    
-    const shortcutToTextDescription = () => {
-        if ((value.keys || []).length === 0) {
-            return 'Click to set shortcut...'
+
+    const getValue = () => {
+        if (value.keys.length === 0) {
+            return focused ? 'Listening...' : 'Click to set...'
+        } else {
+            return shortcutToTextDescription({value})
         }
-        return (value.keys || []).join(' + ').replace(/Meta/g, process.platform === 'darwin' ? 'Command' : 'Win')
     }
-    
+
     const props = {
         onBlur,
         onFocus,
         onKeyDown,
-        value: (focused && shortcutToTextDescription() === 'Click to set shortcut...') ? 'Press any key combination to set...' : shortcutToTextDescription(),
+        value: getValue(),
         readOnly: true
     }
     const wrapProps = {
@@ -248,7 +218,6 @@ export const SettingShortcut = ({setting}) => {
 
     const options = [
         ...(setting.type === 'mod' ? [
-            optionProps('enabled', 'Enabled'),
             optionProps('showInMenu', 'Show in Menu'),
         ] : []),
         optionProps('doubleTap', 'Double-tap'),
@@ -256,25 +225,15 @@ export const SettingShortcut = ({setting}) => {
     ]
 
     return <ShortcutWrap >
-        <FlexRow>
-            <div>
-                <Title>{settingTitle(setting)}</Title>
-                {setting.path ? <div className="setdefault"><FontAwesomeIcon onClick={() => shell.showItemInFolder(setting.path)} icon={faSearch} /></div> : null}
-            </div>
-            <div>
-                <Description>{setting.description}</Description>
-            </div>
-            <InputWrap {...wrapProps}>
-                <ShortcutInput {...props} />
-                <div className="setdefault"><FontAwesomeIcon onClick={() => updateValue({...value, keys: []})} icon={faTimesCircle} /></div>
-            </InputWrap>
-            <OptionsWrap>
-                {options.map(option => {
-                    return <Option {...option} />
-                })}
-            </OptionsWrap>
-        </FlexRow>
-        
+        <InputWrap {...wrapProps}>
+            <ShortcutInput {...props} />
+            <div className="setdefault"><FontAwesomeIcon onClick={() => updateValue({...value, keys: []})} icon={faTimesCircle} /></div>
+        </InputWrap>
+        <OptionsWrap>
+            {options.map(option => {
+                return <Option {...option} />
+            })}
+        </OptionsWrap>
     </ShortcutWrap>
 
 }

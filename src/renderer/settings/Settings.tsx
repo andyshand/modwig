@@ -1,15 +1,29 @@
 import React from 'react'
 import { styled } from 'linaria/react'
 import { SettingsView } from './SettingsView'
+import { ModsView } from './ModsView'
+import { Spinner } from '../core/Spinner'
 
-const SettingsWrap = styled.div`
-    display: flex;
-    height: 100%;
+const WholeWrap = styled.div`
     position: fixed;
     top: 0;
     bottom: 0;
     left: 0;
     right: 0;
+    display: flex;
+    flex-direction: column;
+    >:nth-child(1) {
+        flex-grow: 1;
+        overflow-y: auto;
+    }
+    >:nth-child(2) {
+
+    }
+`
+const SettingsWrap = styled.div`
+    display: flex;
+    height: 100%;
+    width: 100%;
     >:nth-child(2) {
         flex-grow: 1;
         overflow-y: auto;
@@ -18,6 +32,7 @@ const SettingsWrap = styled.div`
         flex-shrink: 0;
     }
 `
+const Footer = styled.div``
 const Tabs = styled.div`
     background: #444;
     padding-top: 6rem;
@@ -36,52 +51,30 @@ const TabInner = styled.div`
     cursor: pointer;
     user-select: none;
 `
-
-const Tab = ({tab, setTab, ...rest}) => {
-    return <TabInner {...rest} onClick={() => setTab(tab)}>
-        {tab.name}
-    </TabInner>
-}
-
-const tabs = [
-    {
-        name: "Global",
-        component: () => <SettingsView category={`global`} />
-    },
-    {
-        name: "Arranger",
-        component: () => <SettingsView category={`arranger`} />
-    },
-    {
-        name: "Browser",
-        component: () => <SettingsView category={`browser`} />
-    },
-    {
-        name: "Devices",
-        component: () => <SettingsView category={`devices`} />
-    },
-    // {
-    //     name: "Macros",
-    //     component: () => <SettingsView category={`macros`} />
-    // }
-]
-
 export class Settings extends React.Component {
     state = {
-        activeTab: tabs[0]
     }
     setTab = tab => {
-        this.setState({activeTab: tab})
+
     }
     render() {       
-        const Active = this.state.activeTab.component
-        return <SettingsWrap>
-            <Tabs>
-                {tabs.map(tab => {
-                    return <Tab tab={tab} key={tab.name} isActive={tab === this.state.activeTab} setTab={this.setTab} />
-                })}
-            </Tabs>
-            <Active />
-        </SettingsWrap>
+        return <WholeWrap>
+            <SettingsWrap>
+                <SettingsView />
+            </SettingsWrap>
+            <Footer>
+                {/* <Spinner style={{marginRight: '.3em'}} /> 
+                hello */}
+                Bitwig UI Scale
+                <select>
+                    <option>100%</option>
+                    <option>125%</option>
+                    <option>150%</option>
+                    <option>175%</option>
+                    <option>200%</option>
+                    <option>225%</option>
+                </select>
+            </Footer>
+        </WholeWrap>
     }
 }
