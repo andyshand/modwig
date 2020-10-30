@@ -451,6 +451,7 @@ class DeviceController extends Controller {
     drumPadBank
     cursorSlotDeviceBank
     cursorLayerDeviceBank
+    cursorTrackDeviceBank
 
     mapDevices(cb) {
         for (let i = 0; i < DEVICE_BANK_SIZE; i++) {
@@ -496,6 +497,7 @@ class DeviceController extends Controller {
         this.cursorDevice = this.cursorTrack.createCursorDevice()
         this.deviceChain = this.cursorDevice.deviceChain()
         this.deviceBank = this.deviceChain.createDeviceBank(DEVICE_BANK_SIZE)
+        this.cursorTrackDeviceBank = this.cursorTrack.createDeviceBank(1)
 
         this.cursorDevice.isExpanded().markInterested()
         this.cursorDevice.isRemoteControlsSectionVisible().markInterested()
@@ -540,7 +542,7 @@ class DeviceController extends Controller {
 
         const ensureDeviceSelected = () => {
             if (this.cursorDevice.name().get().trim() === '') {
-                this.deviceBank.getDevice(0).selectInEditor()
+                this.cursorTrackDeviceBank.getDevice(0).selectInEditor()
             }            
         }
 
@@ -602,6 +604,9 @@ class DeviceController extends Controller {
                             input.getChannel(i).selectInEditor()
                         }
                     }
+                    host.scheduleTask(() => {
+                        this.cursorLayerDeviceBank.getDevice(0).selectInEditor()
+                    }, 0)
                 }
                 if (hasLayers) {
                     withDrumPadsOrLayers(this.layerBank)
@@ -631,7 +636,7 @@ class DeviceController extends Controller {
         
                 const slotNames = this.cursorDevice.slotNames().get()
                 const slotName = slotNames[i]
-                if (this.cursorDevice.hasSlots()) {
+                if (this.cursorDevice.hasSlots().get()) {
                     const currentlySelected = this.cursorDevice.getCursorSlot().name().get()
                     if (currentlySelected === slotName) {
                         const firstDevice = this.cursorSlotDeviceBank.getDevice(0)
@@ -671,8 +676,12 @@ class DeviceController extends Controller {
         })
 
         packetManager.listen('devices/selected/layer/select-first', () => {
-            this.cursorLayer.selectFirst()
+            this.cursorLayerDeviceBank.getDevice(0).selectInEditor()
         })
+
+        packetManager.listen('tracks/selected/devices/select-first', () => {
+            this.cursorTrackDeviceBank.getDevice(0).selectInEditor()
+        })        
     }
 }
 

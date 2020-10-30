@@ -22,8 +22,8 @@ const ShortcutWrap = styled.div`
     cursor: default;
 `
 const InputWrap = styled.div`
-    border: 1px solid ${(props: any) => props.focused ? `#CCC` : `transparent`};
-    background: #272727;
+    border: 1px solid ${(props: any) => props.focused ? `#CCC` : `#272727`};
+    background: ${(props: any) => props.noShortcut ? `transparent` : `#272727`};;
     border-radius: 0.3rem;
     cursor: pointer;    
     position: relative;

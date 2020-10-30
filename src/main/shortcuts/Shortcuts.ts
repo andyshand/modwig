@@ -220,6 +220,17 @@ export class ShortcutsService extends BESService {
                         })
                     }
                 },
+                selectFirstTrackDevice: {
+                    description: `Select the first device for the currently selected track.`,
+                    defaultSetting: {
+                        keys: []
+                    },
+                    action: () => {
+                        sendPacketToBitwig({
+                            type: 'tracks/selected/devices/select-first'
+                        })
+                    }
+                },
                 selectLastDevice: {
                     description: `Select the last device for the currently selected device chain.`,
                     defaultSetting: {

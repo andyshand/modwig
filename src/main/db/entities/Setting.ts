@@ -20,9 +20,6 @@ export class Setting {
     value: string
     
     @Column({nullable: true})
-    userCreated: boolean
-
-    @Column({nullable: true})
     mod: string
 
     @Index()

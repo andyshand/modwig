@@ -268,7 +268,7 @@ const Toggle = ({value, onChange}) => {
 export class SettingsView extends React.Component<Props> {
 
     state = {
-        category: 'mod',
+        category: undefined,
         settings: [],
         loading: true,
         searchQuery: '',
