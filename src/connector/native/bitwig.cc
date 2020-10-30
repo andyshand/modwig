@@ -105,113 +105,66 @@ AXUIElementRef GetPluginAXUIElement() {
     return cachedPluginHostRef;
 }
 
-void tileWindowsForAXUIElement(AXUIElementRef elementRef) {
+Napi::Value GetPluginWindowsPosition(const Napi::CallbackInfo &info) {
+    Napi::Env env = info.Env();
+    auto elementRef = GetPluginAXUIElement();
+    Napi::Object outObj = Napi::Object::New(env);
     if (elementRef != NULL) {
         CFArrayRef windowArray = nil;
         AXUIElementCopyAttributeValue(elementRef, kAXWindowsAttribute, (CFTypeRef*)&windowArray);
         if (windowArray != nil) { 
             CFIndex nItems = CFArrayGetCount(windowArray);
-            CGFloat startX = 454;
-            CGFloat x = startX, y = 153;
-            CGFloat nextRowY = y;
-            auto mainDisplayId = CGMainDisplayID();
-            CGFloat screenWidth = CGDisplayPixelsWide(mainDisplayId);
             for (int i = 0; i < nItems; i++) {
                 AXUIElementRef itemRef = (AXUIElementRef) CFArrayGetValueAtIndex(windowArray, i);
-
                 CFTypeRef position;
                 CFTypeRef size;
                 CGPoint positionPoint;
                 CGSize sizePoint;
+                CFStringRef titleRef;
                 AXUIElementCopyAttributeValue(itemRef, kAXPositionAttribute, (CFTypeRef *)&position);
                 AXValueGetValue((AXValueRef)position, (AXValueType)kAXValueCGPointType, &positionPoint);
                 AXUIElementCopyAttributeValue(itemRef, kAXSizeAttribute, (CFTypeRef *)&size);
                 AXValueGetValue((AXValueRef)size, (AXValueType)kAXValueCGSizeType, &sizePoint);
-
-                CGPoint newPoint;
-                if (x + sizePoint.width > screenWidth) {
-                    // next row
-                    x = startX;
-                    y = nextRowY;
-                }
-
-                newPoint.x = x;
-                newPoint.y = y;
-                position = (CFTypeRef)(AXValueCreate((AXValueType)kAXValueCGPointType, (const void *)&newPoint));
-                AXUIElementSetAttributeValue(itemRef, kAXPositionAttribute, position);
-
-                x += sizePoint.width;
-                nextRowY = fmaxf(nextRowY, y + sizePoint.height);
+                AXUIElementCopyAttributeValue(itemRef, kAXTitleAttribute, (CFTypeRef *) &titleRef);
+                auto windowTitle = CFStringToString((CFStringRef)titleRef);
+                
+                auto obj = Napi::Object::New(env);
+                obj.Set(Napi::String::New(env, "x"), Napi::Number::New(env, positionPoint.x));
+                obj.Set(Napi::String::New(env, "y"), Napi::Number::New(env, positionPoint.y));
+                obj.Set(Napi::String::New(env, "w"), Napi::Number::New(env, sizePoint.width));
+                obj.Set(Napi::String::New(env, "h"), Napi::Number::New(env, sizePoint.height));
+                obj.Set(Napi::String::New(env, "id"), Napi::String::New(env, windowTitle));
+                outObj.Set(Napi::String::New(env, windowTitle), obj);
             }
-
             CFRelease(windowArray);
+            return outObj;
         }
     }
+    return outObj;
 }
 
-void smartTileWindowsForAXUIElement(AXUIElementRef elementRef, bool offscreen) {
+Napi::Value SetPluginWindowsPosition(const Napi::CallbackInfo &info) {
+    Napi::Env env = info.Env();
+    auto inObject = info[0].As<Napi::Object>();
+    auto elementRef = GetPluginAXUIElement();
+
     if (elementRef != NULL) {
         CFArrayRef windowArray = nil;
-        std::map<std::string,std::vector<AXUIElementRef>> windowsByChain;
         AXUIElementCopyAttributeValue(elementRef, kAXWindowsAttribute, (CFTypeRef*)&windowArray);
         if (windowArray != nil) { 
             CFIndex nItems = CFArrayGetCount(windowArray);
-            CGFloat startX = 454;
-            CGFloat x = startX, y = 153;
-            CGFloat nextRowY = y;
-            auto mainDisplayId = CGMainDisplayID();
-            std::string delimiter = "/";
-
-            CGFloat screenWidth = CGDisplayPixelsWide(mainDisplayId);
-            CGFloat screenHeight = CGDisplayPixelsHigh(mainDisplayId);
             for (int i = 0; i < nItems; i++) {
                 AXUIElementRef itemRef = (AXUIElementRef) CFArrayGetValueAtIndex(windowArray, i);
                 CFStringRef titleRef;
                 AXUIElementCopyAttributeValue(itemRef, kAXTitleAttribute, (CFTypeRef *) &titleRef);
                 auto windowTitle = CFStringToString((CFStringRef)titleRef);
-              
-                auto lastSeparator = windowTitle.find_last_of(delimiter);
-                auto chain = windowTitle.substr(0, lastSeparator);
-                if (windowsByChain.count(chain) == 0) {
-                    windowsByChain[chain] = std::vector<AXUIElementRef>();
-                } 
-                windowsByChain[chain].push_back(itemRef);
-            }
-            std::map<std::string,std::vector<AXUIElementRef>>::iterator it;
-            for ( it = windowsByChain.begin(); it != windowsByChain.end(); it++ )
-            {
-                auto windowsVector = it->second;
-                std::vector<AXUIElementRef>::iterator vecIt;
-                for(auto itemRef : windowsVector)  {
-                    CGPoint newPoint;
-                    CFTypeRef size;
-                    CGSize sizeValue;
-                    AXUIElementCopyAttributeValue(itemRef, kAXSizeAttribute, (CFTypeRef *)&size);
-                    AXValueGetValue((AXValueRef)size, (AXValueType)kAXValueCGSizeType, &sizeValue);
 
-                    if (!offscreen) {
-                        if (x + sizeValue.width > screenWidth) {
-                            // next row
-                            x = startX;
-                            y = nextRowY;
-                        }
-                    } else {
-                        x = screenWidth - sizeValue.width;
-                        y = 0;
-                    }
-                    
-                    newPoint.x = x;
-                    newPoint.y = y;
-                    auto position = (CFTypeRef)(AXValueCreate((AXValueType)kAXValueCGPointType, (const void *)&newPoint));
-                    AXUIElementSetAttributeValue(itemRef, kAXPositionAttribute, position);
-
-                    if (!offscreen) {
-                        x += sizeValue.width;
-                        nextRowY = fmaxf(nextRowY, y + sizeValue.height);
-                    }
-                }
-                y = nextRowY;
-                x = startX;
+                auto posForWindow = inObject.Get(windowTitle).As<Napi::Object>();
+                CGPoint newPoint;
+                newPoint.x = posForWindow.Get("x").As<Napi::Number>();
+                newPoint.y = posForWindow.Get("y").As<Napi::Number>();
+                auto position = (CFTypeRef)(AXValueCreate((AXValueType)kAXValueCGPointType, (const void *)&newPoint));
+                AXUIElementSetAttributeValue(itemRef, kAXPositionAttribute, position);
             }
             CFRelease(windowArray);
         }
@@ -283,28 +236,6 @@ Napi::Value CloseFloatingWindows(const Napi::CallbackInfo &info) {
     return Napi::Boolean::New(env, true);
 }
 
-Napi::Value TileFloatingWindows(const Napi::CallbackInfo &info) {
-    Napi::Env env = info.Env();
-
-    if (info[0].IsObject()) {
-        Napi::Value groupBy = info[0].As<Napi::Object>()["group"];
-        if (!((std::string)groupBy.As<Napi::String>()).compare("chain"s)) {
-            smartTileWindowsForAXUIElement(GetPluginAXUIElement(), false);
-        } else {
-            tileWindowsForAXUIElement(GetPluginAXUIElement());
-        }
-    } else {
-        tileWindowsForAXUIElement(GetPluginAXUIElement());
-    }
-    return Napi::Boolean::New(env, true);
-}
-
-Napi::Value HideFloatingWindows(const Napi::CallbackInfo &info) {
-    Napi::Env env = info.Env();
-    smartTileWindowsForAXUIElement(GetPluginAXUIElement(), true);
-    return Napi::Boolean::New(env, true);
-}
-
 Napi::Value InitBitwig(Napi::Env env, Napi::Object exports)
 {
     Napi::Object obj = Napi::Object::New(env);
@@ -312,9 +243,9 @@ Napi::Value InitBitwig(Napi::Env env, Napi::Object exports)
     obj.Set(Napi::String::New(env, "isPluginWindowActive"), Napi::Function::New(env, IsPluginWindowActive));
     obj.Set(Napi::String::New(env, "makeMainWindowActive"), Napi::Function::New(env, MakeMainWindowActive));
     obj.Set(Napi::String::New(env, "closeFloatingWindows"), Napi::Function::New(env, CloseFloatingWindows));
-    obj.Set(Napi::String::New(env, "tileFloatingWindows"), Napi::Function::New(env, TileFloatingWindows));
-    obj.Set(Napi::String::New(env, "hideFloatingWindows"), Napi::Function::New(env, HideFloatingWindows));
     obj.Set(Napi::String::New(env, "isAccessibilityEnabled"), Napi::Function::New(env, AccessibilityEnabled));
+    obj.Set(Napi::String::New(env, "getPluginWindowsPosition"), Napi::Function::New(env, GetPluginWindowsPosition));
+    obj.Set(Napi::String::New(env, "setPluginWindowsPosition"), Napi::Function::New(env, SetPluginWindowsPosition));
     exports.Set("Bitwig", obj);
     return exports;
 }

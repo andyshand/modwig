@@ -38,6 +38,19 @@ Napi::Value GetFrame(const Napi::CallbackInfo &info) {
     return env.Null();
 }
 
+Napi::Value GetMainScreen(const Napi::CallbackInfo &info) {
+    Napi::Env env = info.Env();
+
+    auto mainDisplayId = CGMainDisplayID();
+    CGFloat screenWidth = CGDisplayPixelsWide(mainDisplayId);
+    CGFloat screenHeight = CGDisplayPixelsHigh(mainDisplayId);
+    
+    auto obj = Napi::Object::New(env);
+    obj.Set(Napi::String::New(env, "w"), Napi::Number::New(env, screenWidth));
+    obj.Set(Napi::String::New(env, "h"), Napi::Number::New(env, screenHeight));
+    return obj;
+}
+
 Napi::Value ClosePluginWindows(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
 
@@ -60,6 +73,7 @@ Napi::Value InitWindow(Napi::Env env, Napi::Object exports)
 {
     Napi::Object obj = Napi::Object::New(env);
     obj.Set(Napi::String::New(env, "getFrame"), Napi::Function::New(env, GetFrame));
+    obj.Set(Napi::String::New(env, "getMainScreen"), Napi::Function::New(env, GetMainScreen));
     obj.Set(Napi::String::New(env, "closePluginWindows"), Napi::Function::New(env, ClosePluginWindows));
     exports.Set("MainWindow", obj);
     return exports;

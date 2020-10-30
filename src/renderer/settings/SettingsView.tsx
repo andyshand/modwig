@@ -325,7 +325,7 @@ export class SettingsView extends React.Component<Props> {
     renderMods() {
         return <ModsWrap>
             <div style={{width: '100%'}}>
-            {this.state.mods.filter(mod => mod.name).map(mod => {
+            {this.state.mods.map(mod => {
                 const onToggleChange = async enabled => {
                     await sendPromise({
                         type: 'api/settings/set',

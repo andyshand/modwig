@@ -6,13 +6,14 @@ import { ProjectTrack } from "../db/entities/ProjectTrack"
 import { Project } from "../db/entities/Project"
 import { getResourcePath } from '../../connector/shared/ResourcePath'
 import { SettingsService } from "../core/SettingsService"
-import { promises as fs } from 'fs'
+import { exists, promises as fs } from 'fs'
 import * as path from 'path'
 import { Setting } from "../db/entities/Setting"
 import { createDirIfNotExist, exists as fileExists } from "../core/Files"
 import { logWithTime } from "../core/Log"
 import { ShortcutsService } from "../shortcuts/Shortcuts"
 import { debounce } from '../../connector/shared/engine/Debounce'
+import _ from 'underscore'
 const chokidar = require('chokidar')
 
 const { Keyboard, Mouse, MainWindow, Bitwig } = require('bindings')('bes')
@@ -57,19 +58,22 @@ export class ModsService extends BESService {
                     name
                 }
             });
-            return saved?.data || defaultData
+            let data = saved ? saved.data : defaultData
+            return data
         }
         async function createOrUpdateTrack(track: string, project: string, data: any) {
             const existingProject = await projects.findOne({ where: { name: project } })
-            let projectId = existingProject?.id
-            if (!projectId) {
-                projectId = await projects.save(projects.create({ name: project }))
+            let projectId: number
+            if (!existingProject) {
+                projectId = (await projects.save(projects.create({ name: project }))).id
+            } else {
+                projectId = existingProject.id
             }
 
-            const existingTrack = await projectTracks.findOne({ where: { name: track } })
+            const existingTrack = await projectTracks.findOne({ where: { name: track, project_id: projectId } })
             if (existingTrack) {
                 logWithTime(`updating track (${existingTrack.name}) with data: `, data)
-                await projectTracks.update(existingTrack.id, { data });
+                await projectTracks.update(existingTrack.id, { data: {...existingTrack.data, ...data} });
             } else {
                 const newTrack = projectTracks.create({
                     name: track,
@@ -118,8 +122,17 @@ export class ModsService extends BESService {
             }
         }
 
+        const addNotAlreadyIn = (obj, parent) => {
+            for (const key in parent) {
+                if (!(key in obj)) {
+                    obj[key] = parent[key]
+                }
+            }
+            return obj
+        }
         const that = this
         const api = {
+            _,
             Keyboard: {
                 ...Keyboard,
                 on: wrappedOnForReloadDisconnect(Keyboard),
@@ -129,7 +142,7 @@ export class ModsService extends BESService {
                 ...Mouse,
                 on: wrappedOnForReloadDisconnect(Keyboard),
                 returnAfter: returnMouseAfter            },
-            Bitwig: {
+            Bitwig: addNotAlreadyIn({
                 closeFloatingWindows: Bitwig.closeFloatingWindows,
                 get isAccessibilityOpen() {
                     return Bitwig.isAccessibilityOpen()
@@ -150,15 +163,6 @@ export class ModsService extends BESService {
                 get currentProject() {
                     return that.currProject
                 },
-                makeMainWindowActive() {
-                    Bitwig.makeMainWindowActive()
-                },
-                tileFloatingWindows() {
-                    Bitwig.tileFloatingWindows()
-                },
-                hideFloatingWindows() {
-                    Bitwig.hideFloatingWindows()
-                },
                 sendPacket: packet => {
                     return sendPacketToBitwig(packet)
                 },
@@ -172,19 +176,26 @@ export class ModsService extends BESService {
                     selectedTrackChanged: this.events.selectedTrackChanged,
                     browserOpen: this.events.browserOpen
                 })
+            }, Bitwig),
+            MainDisplay: {
+                getDimensions() {
+                    return MainWindow.getMainScreen()
+                }
             },
             Db: {
-                getTrackData: (name) => {
+                getTrackData: async (name) => {
                     if (!this.currProject) {
+                        console.warn('Tried to get track data but no project loaded')
                         return null
                     }
-                    return loadDataForTrack(name, this.currProject)
+                    return (await loadDataForTrack(name, this.currProject))[mod.id] || {}
                 },
                 setTrackData: (name, data) => {
                     if (!this.currProject) {
+                        console.warn('Tried to set track data but no project loaded')
                         return null
                     }
-                    return createOrUpdateTrack(name, this.currProject, data)
+                    return createOrUpdateTrack(name, this.currProject, {[mod.id]: data})
                 },
                 getCurrentTrackData: () => {
                     return api.Db.getTrackData(api.Bitwig.currentTrack)
@@ -195,6 +206,7 @@ export class ModsService extends BESService {
             },
             Mod: {
                 registerAction: (action) => {
+                    action.category = action.category || mod.category
                     this.shortcutsService.registerAction({...action, mod: mod.id})
                 }
             },
@@ -371,9 +383,9 @@ export class ModsService extends BESService {
         // Load mods from all folders, with latter folders having higher precedence (overwriting by id)
         for (const modsFolder of paths) {
             const files = await fs.readdir(modsFolder)
-            this.latestModsMap = {}
             for (const filePath of files) {
                 const actualType = filePath.indexOf('bitwig.js') >= 0 ? 'bitwig' : 'local'
+                // console.log(filePath, actualType)
                 if (actualType !== type) {
                     continue;
                 }
@@ -405,6 +417,7 @@ export class ModsService extends BESService {
                         path: path.join(modsFolder, filePath)
                     }
                 } catch (e) {
+                    console.error(`Error with ${filePath}`)
                     console.error(e)
                 }
             }
@@ -432,7 +445,6 @@ export class ModsService extends BESService {
     async refreshLocalMods() {
         const modsFolders = await this.getModsFolderPaths()
 
-        let mainScript = ''
         try {
             const modsById = await this.gatherModsFromPaths(modsFolders, { type: 'local'})
             
@@ -445,6 +457,7 @@ export class ModsService extends BESService {
                         const api = await this.makeApi(mod)
                         // Populate function scope with api objects
                         try { 
+                            logWithTime('Enabling local mod: ' + modId)
                             let setVars = ''
                             for (const key in api) {
                                 setVars += `const ${key} = api["${key}"]\n`
@@ -520,7 +533,7 @@ modsImpl(api)
         }
         this.onReloadMods = []
 
-        this.refreshLocalMods()
-        this.refreshBitwigMods()
+        await this.refreshLocalMods()
+        await this.refreshBitwigMods()
     }
 }
