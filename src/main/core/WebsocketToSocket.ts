@@ -33,17 +33,13 @@ const bitwigToClientQueue = async.queue(async function ({data}, callback) {
         partialMsg += thisTime
         waiting -= thisTime.length 
         if (waiting === 0) {
-            if (activeWebsockets.length) {
-                if (logInOut) logWithTime('Bitwig sent: ' + partialMsg.substr(0, 50));
-                try {
-                    partialMsg = (await processInterceptors(partialMsg, fromBWInterceptors)).string
-                } catch (e) {
-                    console.error("Error intercepting packet", e)
-                }
-                activeWebsockets.forEach(info => info.ws.send(partialMsg))
-            } else {
-                logWithTime('Websocket not active, packet lost')
+            if (logInOut) logWithTime('Bitwig sent: ' + partialMsg.substr(0, 50));
+            try {
+                partialMsg = (await processInterceptors(partialMsg, fromBWInterceptors)).string
+            } catch (e) {
+                console.error("Error intercepting packet", e)
             }
+            activeWebsockets.forEach(info => info.ws.send(partialMsg))
             partialMsg = ''
         }
     }

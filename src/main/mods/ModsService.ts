@@ -12,6 +12,7 @@ import { Setting } from "../db/entities/Setting"
 import { createDirIfNotExist, exists as fileExists } from "../core/Files"
 import { logWithTime } from "../core/Log"
 import { ShortcutsService } from "../shortcuts/Shortcuts"
+import { debounce } from '../../connector/shared/engine/Debounce'
 const chokidar = require('chokidar')
 
 const { Keyboard, Mouse, MainWindow, Bitwig } = require('bindings')('bes')
@@ -37,7 +38,8 @@ export class ModsService extends BESService {
     onReloadMods: Function[] = []
     shortcutsService = getService<ShortcutsService>("ShortcutsService")
     events = {
-        selectedTrackChanged: makeEvent<any>()
+        selectedTrackChanged: makeEvent<any>(),
+        browserOpen: makeEvent<boolean>(),
     }
 
     async makeApi(mod) {
@@ -167,7 +169,8 @@ export class ModsService extends BESService {
                     sendPacketToBitwig({type: 'message', data: message})
                 },
                 ...makeEmitterEvents({
-                    selectedTrackChanged: this.events.selectedTrackChanged
+                    selectedTrackChanged: this.events.selectedTrackChanged,
+                    browserOpen: this.events.browserOpen
                 })
             },
             Db: {
@@ -194,7 +197,8 @@ export class ModsService extends BESService {
                 registerAction: (action) => {
                     this.shortcutsService.registerAction({...action, mod: mod.id})
                 }
-            }
+            },
+            debounce
         }
         return api
     }
@@ -236,7 +240,9 @@ export class ModsService extends BESService {
             this.currProject = projectName
         })
         interceptPacket('browser/state', undefined, ({ data: {isOpen} }) => {
+            const previous = this.browserIsOpen
             this.browserIsOpen = isOpen
+            this.events.browserOpen.emit(isOpen, previous)
         })
         addAPIMethod('api/mods', async () => {
             const mods = await this.getMods()
