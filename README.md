@@ -39,6 +39,8 @@ Disclaimer: please note modwig is currently Mac only and in early development. A
 
 2. Open Modwig and follow the guided setup process. The app is unsigned, so you may get a warning from macOS and go to your "Security & Privacy" settings and click "Open Anyway".
 
+A general overview of Modwig's functionality can be found [in the wiki](https://github.com/andyshand/modwig/wiki/Overview).
+
 # How It Works
 
 BES in an electron application that uses C++ extensions to listen for global keypresses and communicates with Bitwig via its controller API. For some functions, plain mouse/keyboard automation is used. Some future features will likely require screenshot analysis.
