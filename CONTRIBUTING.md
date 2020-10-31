@@ -1,6 +1,6 @@
 ## Contributing
 
-Feel free to fork and pull request with any fixes. If you're looking for any guidance with the codebase or would like to discuss a new feature free to ask any questions on the [discord](https://discord.gg/6Wetp3ZsKv)
+Feel free to fork and pull request with any fixes. If you're looking for any guidance with the codebase or would like to discuss a new feature free to ask any questions on the [discord](https://discord.gg/6Wetp3ZsKv).
 
 ## App Setup
 
