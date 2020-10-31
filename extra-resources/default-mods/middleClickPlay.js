@@ -10,19 +10,20 @@ let startPos = ''
 let startPosObj
 const makePos = event => JSON.stringify({x: event.x, y: event.y})
 let downTime = new Date(0)
-let editorIsOpen = false
+let editorIsProbablyOpen = false
 let editorBorderLineY = 9999
 let draggingBorderLine = false
-let eDown = false
+let shiftEDown = false
 
 Keyboard.on('keydown', event => {
     const { lowerKey, Shift } = event
-    eDown = Shift && lowerKey === 'e'
+    shiftEDown = Shift && lowerKey === 'e'
 })
 
 Keyboard.on('keyup', event => {
     const { lowerKey } = event
-    eDown = eDown && lowerKey !== 'e'
+    shiftEDown = false
+    editorIsProbablyOpen = lowerKey === 'e' && lowerKey !== 'd'
 })
 
 Mouse.on('mousedown', event => {
@@ -38,17 +39,18 @@ Mouse.on('mousedown', event => {
 })
 
 Mouse.on('mouseup', event => {
-    if (draggingBorderLine || eDown) {
+    if (draggingBorderLine || shiftEDown) {
         // Mouse up from dragging border line or manually setting it with 'e' key
         editorBorderLineY = event.y
         Bitwig.showMessage(`Set editor border Y to: ${event.y}px`)
+        editorIsProbablyOpen = true
     } else {
         let timeDifference = new Date().getTime() - downTime.getTime()
         if (middleDown && makePos(event) === startPos && timeDifference < 200) {
             Mouse.returnAfter(() => {
                 Keyboard.keyDown('1')
                 let timelineClickPosition
-                if (event.y > editorBorderLineY) {
+                if (event.y > editorBorderLineY && editorIsProbablyOpen) {
                     // We're in the note editor
                     timelineClickPosition = {x: event.x, y: editorBorderLineY + 7}
                 } else {

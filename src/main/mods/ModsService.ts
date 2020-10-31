@@ -122,6 +122,12 @@ export class ModsService extends BESService {
             }
         }
 
+        const KeyboardEvent = {
+            noModifiers() {
+                return !(this.Meta || this.Control || this.Alt || this.Shift)
+            }
+        }
+
         const addNotAlreadyIn = (obj, parent) => {
             for (const key in parent) {
                 if (!(key in obj)) {
@@ -135,7 +141,13 @@ export class ModsService extends BESService {
             _,
             Keyboard: {
                 ...Keyboard,
-                on: wrappedOnForReloadDisconnect(Keyboard),
+                on: (eventName: string, cb: Function) => {
+                    const wrappedCb = (event, ...rest) => {
+                        Object.setPrototypeOf(event, KeyboardEvent)
+                        cb(event, ...rest)
+                    }
+                    wrappedOnForReloadDisconnect(Keyboard)(eventName, wrappedCb)
+                },
             },
             whenActiveListener: whenActiveListener,
             Mouse: {
