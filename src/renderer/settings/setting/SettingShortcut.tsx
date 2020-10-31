@@ -220,8 +220,7 @@ export const SettingShortcut = ({setting}) => {
         ...(setting.type === 'mod' ? [
             optionProps('showInMenu', 'Show in Menu'),
         ] : []),
-        optionProps('doubleTap', 'Double-tap'),
-        optionProps('vstPassThrough', 'Pass through VSTs')
+        optionProps('doubleTap', 'Double-tap')
     ]
 
     return <ShortcutWrap >

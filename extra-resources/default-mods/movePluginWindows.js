@@ -10,8 +10,7 @@ Mod.registerAction({
     id: "move-plugin-windows-offscreen",
     description: `Moves plugin windows offscreen, remembering their location for later restoration.`,
     defaultSetting: {
-        keys: ["Escape"],
-        vstPassThrough: true
+        keys: ["Escape"]
     },
     action: async () => {
         const pluginWindows = Bitwig.getPluginWindowsPosition()
@@ -38,8 +37,7 @@ Mod.registerAction({
     id: "restore-plugin-windows-onscreen",
     description: `Restores the position of plugin windows previously moved offscreen.`,
     defaultSetting: {
-        keys: ["F1"],
-        vstPassThrough: true
+        keys: ["F1"]
     },
     action: async () => {
         const { positions, state } = await Db.getCurrentTrackData()
@@ -59,8 +57,7 @@ Mod.registerAction({
     id: "tile-plugin-windows",
     description: `Tile plugin windows in the center of the arranger.`,
     defaultSetting: {
-        keys: ["F2"],
-        vstPassThrough: true
+        keys: ["F2"]
     },
     action: () => {
         const pluginWindows = Object.values(Bitwig.getPluginWindowsPosition())

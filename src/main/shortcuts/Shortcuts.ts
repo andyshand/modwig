@@ -59,12 +59,10 @@ export class ShortcutsService extends BESService {
                 // code is our ID, key is the action to run
                 const runner = () => {
                     logWithTime('Running shortcut code: ' + code + ' with action: ' + key)
-                    if (value.vstPassThrough || !Bitwig.isPluginWindowActive()) {
-                        try {
-                            this.actions[key].action()
-                        } catch (e) {
-                            console.error(e)
-                        }
+                    try {
+                        this.actions[key].action()
+                    } catch (e) {
+                        console.error(e)
                     }
                 }
                 this.shortcutCache[code] = (this.shortcutCache[code] || []).concat({
@@ -309,8 +307,7 @@ export class ShortcutsService extends BESService {
                 closeAllPluginWindows: {
                     defaultSetting: {
                         keys: ['Escape'],
-                        doubleTap: true,
-                        vstPassThrough: true
+                        doubleTap: true
                     },
                     action: () =>  Bitwig.closeFloatingWindows()
                 },
@@ -433,8 +430,7 @@ export class ShortcutsService extends BESService {
                 toggleLargeTrackHeight: {
                     description: `Toggles large track height, ensuring the arranger is focused first so the shortcut works when expected.`,
                     defaultSetting: {
-                        keys: ['Shift', 'C'],
-                        vstPassThrough: true
+                        keys: ['Shift', 'C']
                     },
                     action: () => {
                         sendPacketToBitwig({
@@ -446,6 +442,15 @@ export class ShortcutsService extends BESService {
                         })
                     }
                 },
+                focusTrackHeaderArea: {
+                    defaultSetting: {
+                        keys: ['T']
+                    },
+                    action: () => {
+                        sendPacketToBitwig({type: 'action', data: 'focus_track_header_area'})
+                        Bitwig.makeMainWindowActive()
+                    } 
+                }
             })),
 
             // MISC

@@ -222,18 +222,13 @@ export class ModsService extends BESService {
             where.category = category
         }
         const results = await settings.find({where})
-        return results.map(res => {
+        return results.filter(mod => mod.key in this.latestModsMap).map(res => {
             res = this.settingsService.postload(res)
-            if (res.key in this.latestModsMap) {
-                const modInfo = this.latestModsMap[res.key]
-                res = {
-                    ...res,
-                    ...modInfo
-                }
-            } else {
-                res.notFound = true
+            const modInfo = this.latestModsMap[res.key]
+            return {
+                ...res,
+                ...modInfo
             }
-            return res
         }).filter((mod) => {
             return inMenu ? mod.value.showInMenu : true
         })

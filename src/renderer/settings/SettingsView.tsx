@@ -6,7 +6,7 @@ import { styled } from 'linaria/react'
 import { SettingShortcut } from './setting/SettingShortcut'
 import { SettingBoolean } from './setting/SettingBoolean'
 import { sendPromise } from '../bitwig-api/Bitwig'
-import { settingShortDescription, settingTitle, shortcutToTextDescription } from './helpers/settingTitle'
+import { humanise, settingShortDescription, settingTitle, shortcutToTextDescription } from './helpers/settingTitle'
 import _ from 'underscore'
 const xPad = `4rem`
 const SettingsViewWrap = styled.div`
@@ -117,7 +117,7 @@ const SidebarSetting = styled.div`
     color: ${(props: any) => props.focused ? '#CCC' : ''};
     display: flex;
     >:nth-child(1) {
-        width: 5rem;
+        width: 4rem;
         flex-shrink: 0;
         margin-right: .5rem;
     }
@@ -212,7 +212,12 @@ const ModRow = styled.div`
         justify-content: space-between;
         flex-wrap: wrap;
         > * {
-            width: 48%;
+            @media (max-width: 1199px) {
+                width: 100%;
+            }
+            @media (min-width: 1200px) {
+                width: 48%;
+            }
 
         }
     }
@@ -312,7 +317,6 @@ export class SettingsView extends React.Component<Props> {
                     </div>
                 </ShortcutSection>
             })}
-            
         </div>
     }
 
@@ -323,9 +327,33 @@ export class SettingsView extends React.Component<Props> {
     }
 
     renderMods() {
-        return <ModsWrap>
-            <div style={{width: '100%'}}>
-            {this.state.mods.map(mod => {
+        const filteredMods = this.state.mods.filter(mod => this.state.searchQuery === '' || (mod.key + mod.description).toLowerCase().indexOf(this.state.searchQuery) >= 0)
+        const modsByCategory = _.groupBy(filteredMods, 'category')
+        return <NavSplit>
+            <div>
+                {Object.keys(modsByCategory).map(category => {
+                    const mods = modsByCategory[category]
+                    return <SidebarSection key={category}>
+                        <div style={{color: '#777'}}>{humanise(category)}</div>
+                        <div>
+                            {mods.map(mod => {
+                                const onClick = () => {
+                                    this.setState({
+                                        focusedSettingKey: mod.key
+                                    })
+                                    document.getElementById(mod.key).scrollIntoView({behavior: 'auto', block: 'start'})
+                                }
+                                return <SidebarSetting focused={mod.key === this.state.focusedSettingKey} title={mod.name || mod.key} onClick={onClick} key={mod.key}>
+                                    <span>{mod.value.enabled ? 'On' : 'Off'}</span>
+                                    <span>{mod.name || mod.key}</span>
+                                </SidebarSetting>
+                            })}
+                        </div>
+                    </SidebarSection>
+                })}
+            </div>
+            <div>
+            {filteredMods.map(mod => {
                 const onToggleChange = async enabled => {
                     await sendPromise({
                         type: 'api/settings/set',
@@ -339,9 +367,9 @@ export class SettingsView extends React.Component<Props> {
                     })
                     this.fetchData()
                 }
-                return <ModRow key={mod.id}>
+                return <ModRow key={mod.id} id={mod.key}>
                     <ModContent>
-                        <div style={{fontSize: '1.1em'}}>
+                        <div>
                             <SettingTitle style={{fontSize: '1.1em'}}>{mod.name}</SettingTitle>
                             <SettingDesc style={{maxWidth: '40rem', fontSize: '1em', marginTop: `1.2rem`}}>{mod.description}</SettingDesc>
                         </div>
@@ -359,7 +387,9 @@ export class SettingsView extends React.Component<Props> {
                 </ModRow>
             })}
             </div>
-        </ModsWrap>
+        </NavSplit>
+   
+            
     }
 
     renderSettings() {
@@ -372,7 +402,7 @@ export class SettingsView extends React.Component<Props> {
                 {Object.keys(addedByMod).map(mod => {
                     const settings = addedByMod[mod]
                     return <SidebarSection key={mod}>
-                        <div style={{color: '#777'}}>{mod == 'null' ? 'Default' : mod}</div>
+                        <div style={{color: '#777'}}>{mod == 'null' ? 'Modwig Core' : mod}</div>
                         <div>
                             {settings.map(setting => {
                                 const onClick = () => {
@@ -389,7 +419,6 @@ export class SettingsView extends React.Component<Props> {
                         </div>
                     </SidebarSection>
                 })}
-                
             </div>
             <div>
                 {this.renderShortcutList(addedByMod)}

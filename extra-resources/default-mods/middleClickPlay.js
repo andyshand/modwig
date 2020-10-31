@@ -26,7 +26,7 @@ Keyboard.on('keyup', event => {
 })
 
 Mouse.on('mousedown', event => {
-    middleDown = Bitwig.isActiveApplication && !Bitwig.isBrowserOpen && event.x > 390 && event.button === 1
+    middleDown = Bitwig.isActiveApplication && !Bitwig.isBrowserOpen && event.button === 1
     startPosObj = {
         x: event.x,
         y: event.y
