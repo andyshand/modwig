@@ -23,7 +23,11 @@ Keyboard.on('keydown', event => {
 Keyboard.on('keyup', event => {
     const { lowerKey } = event
     shiftEDown = false
-    editorIsProbablyOpen = lowerKey === 'e' && lowerKey !== 'd'
+    if (lowerKey === 'd') {
+        editorIsProbablyOpen = false
+    } else if (lowerKey === 'e') {
+        editorIsProbablyOpen = true
+    }
 })
 
 Mouse.on('mousedown', event => {

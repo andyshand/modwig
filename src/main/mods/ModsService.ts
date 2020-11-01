@@ -43,6 +43,13 @@ export class ModsService extends BESService {
         browserOpen: makeEvent<boolean>(),
     }
 
+    get simplifiedProjectName() {
+        if (!this.currProject) {
+            return null
+        }
+        return this.currProject.split(/v[0-9]+/)[0].trim().toLowerCase()
+    }
+
     async makeApi(mod) {
         const db = await getDb()
         const projectTracks = db.getRepository(ProjectTrack)
@@ -173,7 +180,7 @@ export class ModsService extends BESService {
                     return that.currTrack
                 },
                 get currentProject() {
-                    return that.currProject
+                    return that.simplifiedProjectName
                 },
                 sendPacket: packet => {
                     return sendPacketToBitwig(packet)
@@ -196,18 +203,18 @@ export class ModsService extends BESService {
             },
             Db: {
                 getTrackData: async (name) => {
-                    if (!this.currProject) {
+                    if (!this.simplifiedProjectName) {
                         console.warn('Tried to get track data but no project loaded')
                         return null
                     }
-                    return (await loadDataForTrack(name, this.currProject))[mod.id] || {}
+                    return (await loadDataForTrack(name, this.simplifiedProjectName))[mod.id] || {}
                 },
                 setTrackData: (name, data) => {
-                    if (!this.currProject) {
+                    if (!this.simplifiedProjectName) {
                         console.warn('Tried to set track data but no project loaded')
                         return null
                     }
-                    return createOrUpdateTrack(name, this.currProject, {[mod.id]: data})
+                    return createOrUpdateTrack(name, this.simplifiedProjectName, {[mod.id]: data})
                 },
                 getCurrentTrackData: () => {
                     return api.Db.getTrackData(api.Bitwig.currentTrack)
