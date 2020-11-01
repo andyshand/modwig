@@ -41,7 +41,7 @@ export class ShortcutsService extends BESService {
     }
 
     makeShortcutValueCode = (value) => {
-        return value.keys.sort().join('') + (value.doubleTap || false)
+        return value.keys.sort().join('') + String(value.doubleTap || false) + String(value.fn || false)
     }
 
     async updateShortcutCache() {
@@ -614,7 +614,7 @@ export class ShortcutsService extends BESService {
         }
 
         Keyboard.on('keydown', event => {
-            const { lowerKey, nativeKeyCode, Meta, Shift, Control, Alt } = event
+            const { lowerKey, nativeKeyCode, Meta, Shift, Control, Alt, Fn } = event
             // logWithTime(event)
             const noMods = !(Meta || Control || Alt)
 
@@ -642,7 +642,8 @@ export class ShortcutsService extends BESService {
                     lastKeyPressed = new Date(0)
                     ranDouble = this.maybeRunActionForState({
                         keys,
-                        doubleTap: true
+                        doubleTap: true,
+                        fn: Fn
                     })
                 } 
                 if (!ranDouble) {
@@ -653,7 +654,8 @@ export class ShortcutsService extends BESService {
                     // setTimeout(() => {
                         this.maybeRunActionForState({
                             keys,
-                            doubleTap: false
+                            doubleTap: false,
+                            fn: Fn
                         })
                     // }, 100)
                 }

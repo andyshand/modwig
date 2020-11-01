@@ -7,28 +7,35 @@
  */
 
 
+let lastTrigger = new Date(0)
 tracks.forEach((t, i) => {
     t.name().addValueObserver(name => {
         if (!Mod.enabled) { 
             return
         }
+        if (new Date() - lastTrigger < 1000) {
+            // If we changed a name less than a second ago
+            // assume we triggered the observer ourselves somehow
+            return
+        }
+        lastTrigger = new Date()
         let existingNames = {}
-        tracks.forEach((t, thisI) => {
-            if (thisI !== i) {
-                existingNames[t.name().get()] = true
+        tracks.forEach((thisTrack) => {
+            let name = thisTrack.name().get()
+            log(name)
+            while (name in existingNames && name !== '') {
+                log(`${name} was in existing names`)
+                const searchRes = /[0-9]+/.exec(name)
+                let nextI = parseInt(searchRes ? searchRes[0] : 0, 10) + 1
+                name = name.split(/[0-9]+/)[0] + nextI
+                log(`Changed to ${name}`)
             }
-        })
-        if (name in existingNames) {
-            let newName = name
-            while (newName in existingNames) {
-                existingNames[newName] = true
-                const searchRes = /[0-9]+/.exec(newName)
-                let nextI = parseInt(searchRes ? searchRes[0] : 0, 0) + 1
-                newName = newName.split(/[0-9]+/)[0] + nextI
-            }
-            t.name().set(newName)
-        } else {
+
             existingNames[name] = true
-        }  
+            if (thisTrack.name().get() !== name) {
+                thisTrack.name().set(name)
+            }
+        }) 
+
     })
 })

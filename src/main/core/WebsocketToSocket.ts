@@ -220,3 +220,7 @@ interceptPacket('api/status', ({id}) => {
         id
     })
 })
+
+interceptPacket('log', undefined, (packet) => {
+    logWithTime(`Bitwig: ` + packet.data)
+})

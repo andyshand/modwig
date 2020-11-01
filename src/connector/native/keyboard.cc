@@ -167,7 +167,7 @@ struct CallbackInfo {
 struct JSEvent {
     UInt16 nativeKeyCode;
     std::string lowerKey;
-    bool Meta, Shift, Control, Alt;
+    bool Meta, Shift, Control, Alt, Fn;
     int button, x, y;
 };
 
@@ -206,6 +206,9 @@ CGEventRef eventtap_callback(CGEventTapProxy proxy, CGEventType type, CGEventRef
     if ((flags & kCGEventFlagMaskCommand) != 0) {
         jsEvent->Meta = true;
     }
+    if ((flags & kCGEventFlagMaskSecondaryFn) != 0) {
+        jsEvent->Fn = true;
+    }
 
     // TODO Check other thread access is 100% ok
     if (type == kCGEventKeyDown || 
@@ -222,6 +225,7 @@ CGEventRef eventtap_callback(CGEventTapProxy proxy, CGEventType type, CGEventRef
             obj.Set(Napi::String::New(env, "Shift"), Napi::Boolean::New(env, value->Shift));
             obj.Set(Napi::String::New(env, "Control"), Napi::Boolean::New(env, value->Control));
             obj.Set(Napi::String::New(env, "Alt"), Napi::Boolean::New(env, value->Alt));
+            obj.Set(Napi::String::New(env, "Fn"), Napi::Boolean::New(env, value->Fn));
 
             jsCallback.Call( {obj} );
 
@@ -254,6 +258,7 @@ CGEventRef eventtap_callback(CGEventTapProxy proxy, CGEventType type, CGEventRef
             obj.Set(Napi::String::New(env, "Shift"), Napi::Boolean::New(env, value->Shift));
             obj.Set(Napi::String::New(env, "Control"), Napi::Boolean::New(env, value->Control));
             obj.Set(Napi::String::New(env, "Alt"), Napi::Boolean::New(env, value->Alt));
+            obj.Set(Napi::String::New(env, "Fn"), Napi::Boolean::New(env, value->Fn));
 
             obj.Set(Napi::String::New(env, "x"), Napi::Number::New(env, value->x));
             obj.Set(Napi::String::New(env, "y"), Napi::Number::New(env, value->y));
@@ -384,6 +389,9 @@ Napi::Value keyPresser(const Napi::CallbackInfo &info, bool down) {
         }
         if (obj.Has("Control")) {
             flags |= kCGEventFlagMaskControl;
+        }
+        if (obj.Has("Fn")) {
+            flags |= kCGEventFlagMaskSecondaryFn;
         }
     }
     CGEventRef keyevent = CGEventCreateKeyboardEvent(getCGEventSource(), keyCode, down);

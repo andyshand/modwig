@@ -10,6 +10,12 @@ load('es5-shim.min.js')
 load('json3.min.js')
 load('Object2.js')
 
+const log = (msg: string) => {
+    const d = new Date()
+    const pad0 = input => ('0' + input).substr(-2)
+    println(`${d.getHours()}:${pad0(d.getMinutes())}:${pad0(d.getSeconds())}:` + msg)
+}
+
 const FX_TRACK_BANK_SIZE = 16
 const MAIN_TRACK_BANK_SIZE = 128
 const CUE_MARKER_BANK_SIZE = 32
@@ -47,13 +53,18 @@ class EventEmitter<T> {
     }
 }
 
-function runAction(actionName: string) {
-    const action = app.getAction(actionName)
-    if (action) {
-        println(`Running action: ` + actionName)
-        action.invoke()
-    } else {
-        host.showPopupNotification(`Action ${actionName} not found`)
+function runAction(actionNames: string | string[]) {
+    if (typeof actionNames === 'string') {
+        actionNames = [actionNames]
+    }
+    for (const actionName of actionNames) {
+        const action = app.getAction(actionName)
+        if (action) {
+            log(`Running action: ` + actionName)
+            action.invoke()
+        } else {
+            host.showPopupNotification(`Action ${actionName} not found`)
+        }
     }
 }
 
@@ -63,22 +74,22 @@ class PacketManager {
     listenersByType: {[type: string]: ((packet: Packet) => void)[]} = {}
     constructor({app}) {
         this.connection = connection
-        println("Created remote connection on port: " + this.connection.getPort())
+        log("Created remote connection on port: " + this.connection.getPort())
         this.connection.setClientConnectCallback(connection => {
             host.showPopupNotification("Modwig Connected");
-            println("Connected to Node");
+            log("Connected to Node");
             this.activeConnection = connection
             this.activeConnection.setDisconnectCallback(() => {
-                println("Disconnected from Node");
+                log("Disconnected from Node");
                 host.showPopupNotification("Modwig Disconnected");
                 this.activeConnection = null
             })
             this.activeConnection.setReceiveCallback(data => {
                 try {
                     const str = bytesToString(data)
-                    // println('string is ' + str)
+                    // log('string is ' + str)
                     const packet = JSON.parse(str)
-                    // println('parsed the packet')
+                    // log('parsed the packet')
                     const listeners = this.listenersByType[packet.type] || []
                     let warnNoListeners = listeners.length === 0
                     if (packet.type === 'ping') {
@@ -91,8 +102,9 @@ class PacketManager {
                             runAction(actionName)
                         }
                     }
-                    println(`Received packet of type: ${packet.type}`)
-                    // println('send response???')
+                    log(`Received packet of type: ${packet.type}`)
+                    // log('send response???')
+                    let noAutoRespond = false
                     let errors = []
                     if (warnNoListeners) {
                         host.showPopupNotification('No listeners attached for packet type: ' + packet.type)
@@ -105,30 +117,41 @@ class PacketManager {
                                     id: packet.id,
                                     ...response
                                 })
+                            } else if (response === false) {
+                                noAutoRespond = true
                             }
                         } catch (e) {
                             errors.push(e)
-                            println(e)
+                            log(e)
                         }
                     }
-                    // Send back the packet with additional info so we have a way
-                    // of tracking when things have been processed
-                    this.send({
-                        id: packet.id,
-                        data: packet.data,
-                        type: packet.type,
-                        status: errors.length ? 500 : 200,
-                        errors
-                    })
+                    if (!noAutoRespond) {
+                        // Send back the packet with additional info so we have a way
+                        // of tracking when things have been processed
+                        this.send({
+                            id: packet.id,
+                            data: packet.data,
+                            type: packet.type,
+                            status: errors.length ? 500 : 200,
+                            errors
+                        })
+                    }
                 } catch(e) {
-                    println(e)
+                    log(e)
                 }            
             })
         });
     }
     listen(type: string, cb: (p: Packet) => void) {
-        println(`Added packet listener for type: ${type}`)
+        log(`Added packet listener for type: ${type}`)
         this.listenersByType[type] = this.listenersByType[type] || [].concat(cb)
+    }
+    replyWithData(packet: Packet, data: any) {
+        this.send({
+            type: packet.type,
+            id: packet.id,
+            data
+        })
     }
     send(packet: Packet) {
         if (this.activeConnection) {
@@ -829,7 +852,7 @@ class BackForwardController extends Controller {
             this.historyIndex--
         }
         this.trackHistory = this.trackHistory.slice(0, this.historyIndex + 1)
-        // println('track name changed to ' + value)
+        // log('track name changed to ' + value)
         this.trackHistory.push({ name })
         this.historyIndex++
     }
@@ -872,7 +895,7 @@ function init() {
     const arranger = host.createArranger()
 
     connection = host.createRemoteConnection("name", 8888)
-    println("Created the host")
+    log("Created the host")
 
     // fix for bug that doesn't reset automation at specific point
     transport.getPosition().markInterested()
@@ -905,7 +928,7 @@ function init() {
     deps.packetManager.listen('transport/play', () => transport.togglePlay())
     deps.packetManager.listen('transport/stop', () => transport.stop())
     deps.packetManager.listen('message', ({data: message}) => {
-        println(message)
+        log(message)
         host.showPopupNotification(message)
     })
     deps.packetManager.listen('actions', () => {
@@ -942,6 +965,14 @@ function init() {
             // cursorSiblingsTrackBank: deps.globalController.cursorSiblingsTrackBank,
             settings,
             runAction,
+            log: (msg: string) => {
+                deps.packetManager.send({
+                    type: 'log',
+                    data: msg
+                })
+                println(msg)
+            },
+            findTrackByName: deps.globalController.findTrackByName.bind(deps.globalController),
             transport,
             ...deps,
             afterUpdates: (fn) => host.scheduleTask(fn, 25),
