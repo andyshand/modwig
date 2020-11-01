@@ -50,6 +50,7 @@ class EventEmitter<T> {
 function runAction(actionName: string) {
     const action = app.getAction(actionName)
     if (action) {
+        println(`Running action: ` + actionName)
         action.invoke()
     } else {
         host.showPopupNotification(`Action ${actionName} not found`)
@@ -159,6 +160,7 @@ class GlobalController extends Controller {
     trackBank = host.createMainTrackBank(MAIN_TRACK_BANK_SIZE, 0, 0)
     fxBank = host.createEffectTrackBank(FX_TRACK_BANK_SIZE, 0)
     cursorTrack = host.createCursorTrack("selectedTrack", "selectedTrack", 0, 0, true)
+    // cursorSiblingsTrackBank = this.cursorTrack.createcreateSiblingsTrackBank(16, 0, 0, true, false)
     cueMarkerBank: any
     lastSelectedTrack: string = ''
     masterTrack = host.createMasterTrack( 0 );
@@ -850,6 +852,19 @@ function convertBWColorToHex(color) {
     return `#${componentToHex(red)}${componentToHex(green)}${componentToHex(blue)}`
 }
 
+let waitingOnFlush = []
+function flush() {
+    for (const cb of waitingOnFlush) {
+        cb()
+    }
+    waitingOnFlush = []
+}
+
+function onFlush(cb) {
+    waitingOnFlush.push(cb)
+    host.requestFlush()
+}
+
 function init() {
     // var app = host.createApplication()
     const transport = host.createTransport()
@@ -918,12 +933,19 @@ function init() {
             tracks: {
                 forEach: ((cb) => {
                     deps.globalController.mapTracks(cb)
-                })
+                }),
+                map: (cb) => {
+                    return deps.globalController.mapTracks(cb)
+                }
             },
+            cursorTrack: deps.globalController.cursorTrack,
+            // cursorSiblingsTrackBank: deps.globalController.cursorSiblingsTrackBank,
             settings,
             runAction,
             transport,
-            ...deps
+            ...deps,
+            afterUpdates: (fn) => host.scheduleTask(fn, 25),
+            onFlush
         }
     }
     loadMods(makeApi())

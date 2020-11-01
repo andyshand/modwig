@@ -58,8 +58,9 @@ export class ShortcutsService extends BESService {
                 const code = this.makeShortcutValueCode(value)
                 // code is our ID, key is the action to run
                 const runner = () => {
-                    logWithTime('Running shortcut code: ' + code + ' with action: ' + key)
+                    logWithTime('Running shortcut code: ' + code + ' with action key: ' + key)
                     try {
+                        // console.log(`Action data is: `, this.actions[key])
                         this.actions[key].action()
                     } catch (e) {
                         console.error(e)
@@ -499,6 +500,7 @@ export class ShortcutsService extends BESService {
             type: 'shortcut',
             value
         })
+        console.log(`Registering action: ${action.id}`)
         this.actions[action.id] = action
         if (!skipUpdate) {
             await this.updateShortcutCache()

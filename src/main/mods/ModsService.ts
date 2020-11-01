@@ -1,4 +1,4 @@
-import { sendPacketToBitwig, interceptPacket, sendPacketToBrowser, addAPIMethod } from "../core/WebsocketToSocket"
+import { sendPacketToBitwig, interceptPacket, sendPacketToBrowser, addAPIMethod, sendPacketToBitwigPromise } from "../core/WebsocketToSocket"
 import { BESService, getService, makeEvent } from "../core/Service"
 import { returnMouseAfter, whenActiveListener } from "../../connector/shared/EventUtils"
 import { getDb } from "../db"
@@ -34,7 +34,7 @@ export class ModsService extends BESService {
     browserIsOpen = false
     settingsService = getService<SettingsService>('SettingsService')
     folderWatcher?: any
-    devFolderWatcher?: any
+    controllerScriptFolderWatcher?: any
     latestModsMap: { [name: string]: Partial<ModInfo> } = {}
     onReloadMods: Function[] = []
     shortcutsService = getService<ShortcutsService>("ShortcutsService")
@@ -79,7 +79,7 @@ export class ModsService extends BESService {
 
             const existingTrack = await projectTracks.findOne({ where: { name: track, project_id: projectId } })
             if (existingTrack) {
-                logWithTime(`updating track (${existingTrack.name}) with data: `, data)
+                logWithTime(`updating track (${existingTrack.name} (id: ${existingTrack.id})) with data: `, data)
                 await projectTracks.update(existingTrack.id, { data: {...existingTrack.data, ...data} });
             } else {
                 const newTrack = projectTracks.create({
@@ -185,8 +185,11 @@ export class ModsService extends BESService {
                 sendPacket: packet => {
                     return sendPacketToBitwig(packet)
                 },
+                sendPacketPromise: packet => {
+                    return sendPacketToBitwigPromise(packet)
+                },
                 runAction: action => {
-                    return sendPacketToBitwig({type: 'action', data: action})
+                    return sendPacketToBitwigPromise({type: 'action', data: action})
                 },
                 showMessage: message => {
                     sendPacketToBitwig({type: 'message', data: message})
@@ -216,6 +219,22 @@ export class ModsService extends BESService {
                     }
                     return createOrUpdateTrack(name, this.simplifiedProjectName, {[mod.id]: data})
                 },
+                setExistingTracksData: async (data) => {
+                    if (!this.simplifiedProjectName) {
+                        console.warn('Tried to set track data but no project loaded')
+                        return null
+                    }
+                    const project = this.simplifiedProjectName
+                    const existingProject = await projects.findOne({ where: { name: project } })
+                    if (!existingProject) {
+                        return
+                    }
+          
+                    const tracksInProject = await projectTracks.find({ where: { project_id: existingProject.id } })
+                    for (const track of tracksInProject) {
+                        await api.Db.setTrackData(track.name, data)
+                    }
+                },
                 getCurrentTrackData: () => {
                     return api.Db.getTrackData(api.Bitwig.currentTrack)
                 },
@@ -229,6 +248,9 @@ export class ModsService extends BESService {
                     this.shortcutsService.registerAction({...action, mod: mod.id})
                 }
             },
+            wait: ms => new Promise(res => {
+                setTimeout(res, ms)
+            }),
             debounce
         }
         return api
@@ -297,23 +319,15 @@ export class ModsService extends BESService {
                 ignoreInitial : true
             }).on('all', (event, path) => {
                 logWithTime(event, path)
-                // new Notification({
-                //     title: 'Reloading mods',
-                //     body: `${path} changed`
-                // }).show()
-                this.refreshMods()
+                this.refreshMods(path.indexOf('bitwig.js') === -1)
             });
-            if (process.env.NODE_ENV === 'dev' && !this.devFolderWatcher) {
+            if (process.env.NODE_ENV === 'dev' && !this.controllerScriptFolderWatcher) {
                 const mainScript = getResourcePath('/controller-script/bes.control.js')
                 console.log('Watching ' + mainScript)
-                this.devFolderWatcher = chokidar.watch([mainScript], {
+                this.controllerScriptFolderWatcher = chokidar.watch([mainScript], {
                     ignoreInitial : true
                 }).on('all', (event, path) => {
                     logWithTime(event, path)
-                    // new Notification({
-                    //     title: 'Reloading controller script',
-                    //     body: `${path} changed`
-                    // }).show()
                     this.refreshMods()
                 });
             }
@@ -534,7 +548,7 @@ modsImpl(api)
         await this.copyControllerScript()
     }
 
-    async refreshMods() {
+    async refreshMods(localOnly = false) {
         logWithTime('Refreshing mods')
         
         // Handlers to disconnect any dangling callbacks etc
@@ -548,6 +562,8 @@ modsImpl(api)
         this.onReloadMods = []
 
         await this.refreshLocalMods()
-        await this.refreshBitwigMods()
+        if (!localOnly) {
+            await this.refreshBitwigMods()
+        }
     }
 }
