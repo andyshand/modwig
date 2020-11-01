@@ -71,6 +71,7 @@ export class ShortcutsService extends BESService {
                 })
             }
         }        
+        logWithTime(this.shortcutCache)
     }
 
     actionsWithCategory(cat, actions) {
@@ -570,6 +571,7 @@ export class ShortcutsService extends BESService {
     maybeRunActionForState(state) {
         const code = this.makeShortcutValueCode(state)
         let ran = false
+        logWithTime(`State code is ${code}`)
         if (code in this.shortcutCache) {
             for (const {runner} of this.shortcutCache[code]) {
                 runner()
@@ -614,8 +616,12 @@ export class ShortcutsService extends BESService {
         }
 
         Keyboard.on('keydown', event => {
-            const { lowerKey, nativeKeyCode, Meta, Shift, Control, Alt, Fn } = event
-            // logWithTime(event)
+            let { lowerKey, nativeKeyCode, Meta, Shift, Control, Alt, Fn } = event
+            if (/F[0-9]+/.test(lowerKey)) {
+                // FN defaults to true when using function keys (makes sense I guess?)
+                Fn = false
+            }
+            logWithTime(event)
             const noMods = !(Meta || Control || Alt)
 
             // Prevent shortcuts from triggering when renaming something
