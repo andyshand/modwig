@@ -58,6 +58,7 @@ packetManager.listen('show-automation-1.automation-area.modwig', (packet) => {
     settings['custom-auto-arm'] = false
 
     runAction([
+        `focus_track_header_area`,
         `Select next track`,
         `Extend selection range to last item`,
         `Toggle selection of item at cursor`,

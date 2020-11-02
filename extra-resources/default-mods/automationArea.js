@@ -5,6 +5,8 @@
  * @category arranger
  */
 
+let exclusiveAutomation = true
+
 Mod.registerAction({
     title: "Hide All Automation",
     id: "hide-all-automation.automation-area.modwig",
@@ -25,10 +27,14 @@ Mod.registerAction({
 async function showAutomationImpl(all) {
     const track = Bitwig.currentTrack
     let { automationShown } = await Db.getTrackData(track)
+    if (exclusiveAutomation && !automationShown) {
+        Bitwig.sendPacket({type: 'hide-all-automation.automation-area.modwig'})
+    }
     const { data: { childCount, collapsed } } = await Bitwig.sendPacketPromise({
         type: 'show-automation.automation-area.modwig', 
         data: { all }
-    })
+    })    
+    // console.log(childCount, collapsed)
 
     if (automationShown) {
         // Hide the automation. More straightforward than showing
