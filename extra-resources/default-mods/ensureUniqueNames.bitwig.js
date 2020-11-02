@@ -6,36 +6,23 @@
  * @noReload
  */
 
-
-let lastTrigger = new Date(0)
-tracks.forEach((t, i) => {
-    t.name().addValueObserver(name => {
-        if (!Mod.enabled) { 
-            return
+packetManager.listen('rename-all.ensure-unique-names.modwig', (packet) => {
+    let existingNames = {}
+    let renamedCount = 0
+    tracks.forEach((thisTrack) => {
+        let name = thisTrack.name().get()
+        while (name in existingNames && name !== '') {
+            log(`${name} was in existing names`)
+            const searchRes = /[0-9]+/.exec(name)
+            let nextI = parseInt(searchRes ? searchRes[0] : 0, 10) + 1
+            name = name.split(/[0-9]+/)[0] + nextI
+            log(`Changed to ${name}`)
         }
-        if (new Date() - lastTrigger < 1000) {
-            // If we changed a name less than a second ago
-            // assume we triggered the observer ourselves somehow
-            return
+        existingNames[name] = true
+        if (thisTrack.name().get() !== name) {
+            thisTrack.name().set(name)
+            renamedCount++
         }
-        lastTrigger = new Date()
-        let existingNames = {}
-        tracks.forEach((thisTrack) => {
-            let name = thisTrack.name().get()
-            log(name)
-            while (name in existingNames && name !== '') {
-                log(`${name} was in existing names`)
-                const searchRes = /[0-9]+/.exec(name)
-                let nextI = parseInt(searchRes ? searchRes[0] : 0, 10) + 1
-                name = name.split(/[0-9]+/)[0] + nextI
-                log(`Changed to ${name}`)
-            }
-
-            existingNames[name] = true
-            if (thisTrack.name().get() !== name) {
-                thisTrack.name().set(name)
-            }
-        }) 
-
     })
+    host.showPopupNotification(`Renamed ${renamedCount} tracks`)
 })

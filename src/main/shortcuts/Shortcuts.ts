@@ -71,7 +71,7 @@ export class ShortcutsService extends BESService {
                 })
             }
         }        
-        logWithTime(this.shortcutCache)
+        // logWithTime(this.shortcutCache)
     }
 
     actionsWithCategory(cat, actions) {
@@ -621,7 +621,7 @@ export class ShortcutsService extends BESService {
                 // FN defaults to true when using function keys (makes sense I guess?)
                 Fn = false
             }
-            logWithTime(event)
+            // logWithTime(event)
             const noMods = !(Meta || Control || Alt)
 
             // Prevent shortcuts from triggering when renaming something

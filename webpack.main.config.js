@@ -4,7 +4,7 @@ const isWebpackDevServer = process.argv[1].indexOf('webpack-dev-server') !== -1
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const webpack = require('webpack')
 const src = path.join(__dirname, 'src')
-const port = process.env.PORT || 8080
+const port = process.env.PORT || 8081
 const mode = isWebpackDevServer ? "development" : "production"
 const nodeExternals = require('webpack-node-externals');
 

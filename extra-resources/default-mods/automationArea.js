@@ -1,7 +1,7 @@
 /**
  * @name Automation Area Shortcuts
  * @id automation-area.modwig
- * @description Adds various shortcuts for showing/hiding automation in the arranger.
+ * @description Adds various shortcuts for showing/hiding automation in the arranger. If automation is being expanded for tracks you don't expect, ensure all your tracks have unique names. You can do this using the "Ensure Unique Names" mod (unfolding all group tracks first to ensure visbility).
  * @category arranger
  */
 
@@ -23,20 +23,15 @@ Mod.registerAction({
 })
 
 async function showAutomationImpl(all) {
-    Bitwig.makeMainWindowActive()
-    // Focus track header to arrow keys work as expected
-    Bitwig.runAction(`focus_track_header_area`)
     const track = Bitwig.currentTrack
-    let { automationShown, collapsed } = await Db.getTrackData(track)
-    const { data: { childCount } } = await Bitwig.sendPacketPromise({
+    let { automationShown } = await Db.getTrackData(track)
+    const { data: { childCount, collapsed } } = await Bitwig.sendPacketPromise({
         type: 'show-automation.automation-area.modwig', 
         data: { all }
     })
-    console.log(`Automation already shown for track (${track}): ${automationShown}`)
-    console.log(`Child count is ${childCount}`)
 
     if (automationShown) {
-        // No fancy stuff necessary
+        // Hide the automation. More straightforward than showing
         if (childCount > 0 && !collapsed) {
             // Need to run twice for group tracks
             Bitwig.runAction([
@@ -47,34 +42,14 @@ async function showAutomationImpl(all) {
             automationShown: false
         })
     } else {
-        let collapsedNow = true
-        if (childCount > 0) {        
-            // Ensure if shift was down, we pretend it's up for our keys to work as expected
-            Keyboard.keyUp('Shift')
-            const { data } = await Bitwig.sendPacketPromise({
+        if (childCount > 0 && !collapsed) {        
+            Bitwig.sendPacketPromise({
                 type: 'show-automation-1.automation-area.modwig',
                 data: { all }
             })
-
-            // Only need to worry about child tracks if the group is expanded
-            if (!data.collapsed) {
-                let actions = []
-                for (let i = 0; i < childCount; i++) {
-                    actions.push(`Extend selection range to next item`)
-                }
-                Bitwig.runAction([
-                    ...actions,
-                    `Extend selection range to previous item`,
-                    `toggle_${all ? 'existing_' : ''}automation_shown_for_selected_tracks`,
-                    'Select\ first\ item',
-                    `Select previous track`
-                ])
-            }
-            collapsedNow = data.collapsed
         }
         await Db.setTrackData(track, {
-            automationShown: true,
-            collapsed: collapsedNow
+            automationShown: true
         })
     }
 }

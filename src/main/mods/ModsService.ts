@@ -564,6 +564,11 @@ modsImpl(api)
         await this.refreshLocalMods()
         if (!localOnly) {
             await this.refreshBitwigMods()
+        } else {
+            sendPacketToBitwig({
+                type: 'message',
+                data: 'Reloaded local mods'
+            })
         }
     }
 }

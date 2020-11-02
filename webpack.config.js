@@ -3,7 +3,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin')
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const isWebpackDevServer = process.argv[1].indexOf('webpack-dev-server') !== -1
 const webpack = require('webpack')
-const port = process.env.PORT || 8080
+const port = process.env.PORT || 8081
 const { version } = require('./package.json')
 const mode = isWebpackDevServer ? "development" : "production"
 const src = path.join(__dirname, 'src', 'renderer')

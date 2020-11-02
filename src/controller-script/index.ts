@@ -53,6 +53,18 @@ class EventEmitter<T> {
     }
 }
 
+function debounce(fn, wait = 1) {
+    let id = 0
+    return function(...args) {
+        let waitingId = ++id
+        host.scheduleTask(() => {
+            if (id === waitingId) {
+                fn(...args)
+            }
+        }, wait)
+    }
+}
+
 function runAction(actionNames: string | string[]) {
     if (typeof actionNames === 'string') {
         actionNames = [actionNames]
@@ -409,10 +421,12 @@ class GlobalController extends Controller {
         return this.nameCache[name]
     }
 
-    selectTrackWithName(name) {
+    selectTrackWithName(name, scroll = true) {
         const t = this.findTrackByName(name)
         t.selectInMixer()
-        t.makeVisibleInArranger()
+        if (scroll) {
+            t.makeVisibleInArranger()
+        }
     }
 }
 
@@ -976,7 +990,8 @@ function init() {
             transport,
             ...deps,
             afterUpdates: (fn) => host.scheduleTask(fn, 25),
-            onFlush
+            onFlush,
+            debounce
         }
     }
     loadMods(makeApi())

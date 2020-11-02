@@ -12,17 +12,18 @@ cursorTrackBank.channelCount().markInterested()
 const firstChild = cursorTrackBank.getTrack(0)
 firstChild.exists().markInterested()
 firstChild.name().markInterested()
+let trackName = ''
+let firstChildName = ''
 
 packetManager.listen('hide-all-automation.automation-area.modwig', (packet) => {
     runAction(`toggle_automation_shown_for_all_tracks`)
     runAction(`toggle_automation_shown_for_all_tracks`)
 })
-let firstChildName = ''
 
 packetManager.listen('show-automation.automation-area.modwig', (packet) => {
 
     firstChildName = cursorTrack.isGroup().get() ? firstChild.name().get() : ''
-
+    trackName = cursorTrack.name().get()
 
     log(`First track exists: ${firstChild.exists().get()} and name is ${firstChild.name().get()}`)
     let all = packet.data.all
@@ -35,6 +36,7 @@ packetManager.listen('show-automation.automation-area.modwig', (packet) => {
         return {
             type: packet.type,
             data: {
+                collapsed: !globalController.findTrackByName(firstChildName),
                 childCount: cursorTrackBank.channelCount().get()
             }
         }
@@ -48,28 +50,22 @@ packetManager.listen('show-automation.automation-area.modwig', (packet) => {
     }
 })
 
-
 packetManager.listen('show-automation-1.automation-area.modwig', (packet) => {
+    const all = packet.data.all
+
+    // Disable auto-arm while we speed through tracks
+    const prev = settings['custom-auto-arm']
+    settings['custom-auto-arm'] = false
+
     runAction([
-        `Select next track`
+        `Select next track`,
+        `Extend selection range to last item`,
+        `Toggle selection of item at cursor`,
+        `toggle_${all ? 'existing_' : ''}automation_shown_for_selected_tracks`,
     ])
-    host.scheduleTask(() => {
-        const cursorTrackName = cursorTrack.name().get()
-        log(`Cursor track name is ${cursorTrackName}`)
-        if (cursorTrackName === firstChildName) {
-            packetManager.replyWithData(packet, {
-                collapsed: false
-            })
-        } else {
-            runAction([
-                `Select previous track`
-            ])
-            packetManager.replyWithData(packet, {
-                collapsed: true
-            })
-        }
-    }, 100)
-    return false
+    globalController.selectTrackWithName(trackName, false)
+
+    settings['custom-auto-arm'] = prev
 })
 
 // Alternative implementation below. Doesn't work as well but may be useful in future?
