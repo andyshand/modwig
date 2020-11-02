@@ -13,22 +13,29 @@ Mod.registerAction({
         keys: ["Escape"]
     },
     action: async () => {
+        const {
+            state,
+            positions
+        } = await Db.getCurrentTrackData()
+        let newState = state === 'topright' ? 'bottomright' : 'topright'
+
         const pluginWindows = Bitwig.getPluginWindowsPosition()
         Db.setCurrentTrackData({
-            positions: pluginWindows,
-            state: 'offscreen'
+            // Only save current positions if we went from onscreen to offscreen
+            positions: state === 'onscreen' ? pluginWindows : positions,
+            state: newState
         })
 
         const mainWindowFrame = MainDisplay.getDimensions()
-        const positions = Object.values(pluginWindows).map(info => {
+        const offscreenPositions = Object.values(pluginWindows).map(info => {
             return {
                 id: info.id,
                 x: mainWindowFrame.w - info.w,
-                y: 0
+                y: newState === 'bottomright' ? mainWindowFrame.h - info.h : 0
             }
         })
 
-        Bitwig.setPluginWindowsPosition(_.indexBy(positions, 'id'))
+        Bitwig.setPluginWindowsPosition(_.indexBy(offscreenPositions, 'id'))
     }
 })
 
@@ -59,7 +66,7 @@ Mod.registerAction({
     defaultSetting: {
         keys: ["F2"]
     },
-    action: () => {
+    action: () => {        
         const pluginWindows = Object.values(Bitwig.getPluginWindowsPosition())
         if (pluginWindows.length === 0) {
             return
@@ -106,5 +113,9 @@ Mod.registerAction({
         }
 
         Bitwig.setPluginWindowsPosition(finalPositions)
+        Db.setCurrentTrackData({
+            positions: finalPositions,
+            state: 'onscreen'
+        })
     }
 })
