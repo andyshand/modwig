@@ -12,7 +12,7 @@ const autoArmFor = {
 }
 const debouncedTrackWorker = debounce((t) => {
     t.arm().set(true)
-}, 250)
+}, 150)
 
 tracks.forEach((t, i) => {
     t.addIsSelectedObserver(selected => {

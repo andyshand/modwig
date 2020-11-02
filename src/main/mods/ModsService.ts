@@ -219,7 +219,7 @@ export class ModsService extends BESService {
                     }
                     return createOrUpdateTrack(name, this.simplifiedProjectName, {[mod.id]: data})
                 },
-                setExistingTracksData: async (data) => {
+                setExistingTracksData: async (data, exclude: string[] = []) => {
                     if (!this.simplifiedProjectName) {
                         console.warn('Tried to set track data but no project loaded')
                         return null
@@ -232,7 +232,9 @@ export class ModsService extends BESService {
           
                     const tracksInProject = await projectTracks.find({ where: { project_id: existingProject.id } })
                     for (const track of tracksInProject) {
-                        await api.Db.setTrackData(track.name, data)
+                        if (exclude.indexOf(track.name) === -1) {
+                            await api.Db.setTrackData(track.name, data)
+                        }
                     }
                 },
                 getCurrentTrackData: () => {

@@ -29,6 +29,9 @@ async function showAutomationImpl(all) {
     let { automationShown } = await Db.getTrackData(track)
     if (exclusiveAutomation && !automationShown) {
         Bitwig.sendPacket({type: 'hide-all-automation.automation-area.modwig'})
+        Db.setExistingTracksData({
+            automationShown: false
+        }, [track])
     }
     const { data: { childCount, collapsed } } = await Bitwig.sendPacketPromise({
         type: 'show-automation.automation-area.modwig', 
