@@ -11,7 +11,13 @@ const autoArmFor = {
     Hybrid: true
 }
 const debouncedTrackWorker = debounce((t) => {
-    t.arm().set(true)
+    if (t) {
+        t.arm().set(true)
+    } else {
+        tracks.forEach((t) => {
+            t.arm().set(false);
+        })
+    }
 }, 150)
 
 tracks.forEach((t, i) => {
@@ -19,8 +25,12 @@ tracks.forEach((t, i) => {
         if (!Mod.enabled) {
             return
         }
-        if (selected && t.trackType().get() in autoArmFor) {
-            debouncedTrackWorker(t)
+        if (selected) {
+            if(t.trackType().get() in autoArmFor) {
+                debouncedTrackWorker(t)
+            } else {
+                debouncedTrackWorker(null)
+            }
         }
     })
 })

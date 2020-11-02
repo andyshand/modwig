@@ -28,39 +28,17 @@ async function showAutomationImpl(all) {
     const track = Bitwig.currentTrack
     let { automationShown } = await Db.getTrackData(track)
     if (exclusiveAutomation && !automationShown) {
-        Bitwig.sendPacket({type: 'hide-all-automation.automation-area.modwig'})
         Db.setExistingTracksData({
             automationShown: false
         }, [track])
     }
-    const { data: { childCount, collapsed } } = await Bitwig.sendPacketPromise({
+    await Bitwig.sendPacketPromise({
         type: 'show-automation.automation-area.modwig', 
-        data: { all }
+        data: { all, automationShown, exclusiveAutomation }
     })    
-    // console.log(childCount, collapsed)
-
-    if (automationShown) {
-        // Hide the automation. More straightforward than showing
-        if (childCount > 0 && !collapsed) {
-            // Need to run twice for group tracks
-            Bitwig.runAction([
-                `toggle_${all ? 'existing_' : ''}automation_shown_for_selected_tracks`
-            ])
-        }
-        await Db.setTrackData(track, {
-            automationShown: false
-        })
-    } else {
-        if (childCount > 0 && !collapsed) {        
-            Bitwig.sendPacketPromise({
-                type: 'show-automation-1.automation-area.modwig',
-                data: { all }
-            })
-        }
-        await Db.setTrackData(track, {
-            automationShown: true
-        })
-    }
+    await Db.setTrackData(track, {
+        automationShown: !automationShown
+    })
 }
 
 Mod.registerAction({
