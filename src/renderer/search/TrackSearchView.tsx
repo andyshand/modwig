@@ -275,21 +275,12 @@ export class TrackSearchView extends React.Component<SearchProps> {
         }
     }
 
-    cancel = () => {
-        send({
-            type: 'tracksearch/cancel'
-        })
-        BrowserWindow.getFocusedWindow().hide()
-        app.hide()
-    }
-
     onConfirmed = (res: SearchResult) => {
         const { track } = res
         send({
             type: 'tracksearch/confirm', 
             data: track.name
         })
-        BrowserWindow.getFocusedWindow().hide()
         recentTracks = [track.id].concat(recentTracks.slice(0, recentCount).filter(id => id !== track.id))
         saveRecent10()
 

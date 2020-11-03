@@ -4,6 +4,7 @@ import { TrackSearchView } from './TrackSearchView'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faFont, faMapPin, faInfo, faLock } from '@fortawesome/free-solid-svg-icons'
 import { send, getTrackById, getTransportPosition, getCueMarkerAtPosition, getCueMarkersAtPosition } from '../bitwig-api/Bitwig'
+const { Bitwig } = require('bindings')('bes')
 const { app, BrowserWindow } = require('electron').remote
 const w = window as any
 w.runAction = function(action) {
@@ -123,6 +124,7 @@ export class SearchPanel extends React.Component {
         this.reset()
         BrowserWindow.getFocusedWindow().hide()
         app.hide()
+        Bitwig.makeMainWindowActive()
     }
     onInputChange = event => {
         this.setState({query: event.target.value})
