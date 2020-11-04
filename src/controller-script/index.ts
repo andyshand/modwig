@@ -125,7 +125,9 @@ class PacketManager {
                         try {
                             const response = listener(packet) as any
                             if (response) {
+                                log("sending response as: " + JSON.stringify(response))
                                 this.send({
+                                    type: packet.type,
                                     id: packet.id,
                                     ...response
                                 })

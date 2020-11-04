@@ -15,6 +15,7 @@ import { ShortcutsService } from "../shortcuts/Shortcuts"
 import { debounce } from '../../connector/shared/engine/Debounce'
 import _ from 'underscore'
 const chokidar = require('chokidar')
+const colors = require('colors');
 
 const { Keyboard, Mouse, MainWindow, Bitwig } = require('bindings')('bes')
 
@@ -146,7 +147,6 @@ export class ModsService extends BESService {
         }
         const that = this
         const api = {
-            _,
             Keyboard: {
                 ...Keyboard,
                 on: (eventName: string, cb: Function) => {
@@ -273,6 +273,14 @@ export class ModsService extends BESService {
                 registerAction: (action) => {
                     action.category = action.category || mod.category
                     this.shortcutsService.registerAction({...action, mod: mod.id})
+                },
+                setInterval: (fn, ms) => {
+                    const id = setInterval(fn, ms)
+                    logWithTime('Added interval id: ' + id)
+                    this.onReloadMods.push(() => {
+                        clearInterval(id)
+                        logWithTime('Clearing interval id: ' + id)
+                    })
                 }
             },
             wait: ms => new Promise(res => {
@@ -280,7 +288,36 @@ export class ModsService extends BESService {
             }),
             debounce
         }
-        return api
+        function wrapFunctionsWithTryCatch(value) {
+            if (typeof value === 'object') {
+                for (const k in value) {
+                    const desc = Object.getOwnPropertyDescriptor(value, k);
+                    if ((!desc || !desc.get) && typeof value[k] === 'function') {
+                        value[k] = wrapFunctionsWithTryCatch(value[k]);
+                    }
+                    else if ((!desc || !desc.get) && typeof value[k] === 'object') {
+                        value[k] = wrapFunctionsWithTryCatch(value[k]);
+                    }
+                }
+            } else if (typeof value === 'function') {
+                return (...args) => {
+                    try {
+                        return value(...args)
+                    } catch (e) {
+                        console.error(colors.red(`${mod.id} threw an error while calling "${colors.yellow(value.name)}":`))
+                        console.error(colors.red(`arguments were: `), ...args)
+                        console.error(e)
+                        console.error(e.stack)
+                        throw e
+                    }
+                }
+            }
+            return value
+        }
+        return {
+            ...wrapFunctionsWithTryCatch(api),
+            _,
+        }
     }
     async getMods({category, inMenu} = {} as any) {
         const db = await getDb()
@@ -560,8 +597,10 @@ function modsImpl(api) {
 // 
 // 
 //
-${mod.contents.replace(/Mod\.enabled/g, `settings['${modId}']`)}
-                    `
+;(() => { 
+${mod.contents.replace(/Mod\.enabled/g, `settings['${modId}']`)} 
+})()
+`
             }
         }
         controllerScript += `}

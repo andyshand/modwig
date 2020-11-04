@@ -1,6 +1,7 @@
 import { SOCKET_PORT, WEBSOCKET_PORT } from '../../connector/shared/Constants';
 import { logWithTime } from "./Log";
 import { BESService, getService, makeEvent } from "./Service";
+const colors = require('colors');
 const { Bitwig } = require('bindings')('bes')
 const async = require('async')
 const WebSocket = require('ws');
@@ -222,5 +223,5 @@ interceptPacket('api/status', ({id}) => {
 })
 
 interceptPacket('log', undefined, (packet) => {
-    logWithTime(`Bitwig: ` + packet.data)
+    logWithTime(colors.yellow(`Bitwig: ` + packet.data))
 })
