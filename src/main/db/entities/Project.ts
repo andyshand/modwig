@@ -21,4 +21,7 @@ export class Project {
 
     @UpdateDateColumn()
     updated_at: Date;
+
+    @Column({type: 'simple-json'})
+    data: string;
 }

@@ -229,6 +229,9 @@ class GlobalController extends Controller {
                 data: this.createTrackInfo(track)
             }
         })
+        packetManager.listen('track/select', ({ data: { name }}) => {
+            this.selectTrackWithName(name)
+        })
         this.deps.app.projectName().markInterested()
 
         packetManager.listen('application/undo', () => this.deps.app.undo())

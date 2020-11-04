@@ -68,15 +68,16 @@ export class ModsService extends BESService {
             let data = saved ? saved.data : defaultData
             return data
         }
-        async function createOrUpdateTrack(track: string, project: string, data: any) {
+        async function getProjectIdForName(project: string, create: boolean = false) : Promise<string | null> {
             const existingProject = await projects.findOne({ where: { name: project } })
-            let projectId: number
-            if (!existingProject) {
-                projectId = (await projects.save(projects.create({ name: project }))).id
+            if (!existingProject && create) {
+                return (await projects.save(projects.create({ name: project }))).id
             } else {
-                projectId = existingProject.id
+                return existingProject?.id ?? null
             }
-
+        }
+        async function createOrUpdateTrack(track: string, project: string, data: any) {
+            const projectId = await getProjectIdForName(project)
             const existingTrack = await projectTracks.findOne({ where: { name: track, project_id: projectId } })
             if (existingTrack) {
                 logWithTime(`updating track (${existingTrack.name} (id: ${existingTrack.id})) with data: `, data)
@@ -211,6 +212,30 @@ export class ModsService extends BESService {
                         return null
                     }
                     return (await loadDataForTrack(name, this.simplifiedProjectName))[mod.id] || {}
+                },
+                setCurrentProjectData: async (data) => {
+                    if (!this.simplifiedProjectName) {
+                        console.warn('Tried to set track data but no project loaded')
+                        return null
+                    }
+                    const projectName = this.simplifiedProjectName
+                    const projectId = await getProjectIdForName(projectName, true)
+                    const project = await projects.findOne(projectId)
+                    await projects.update(projectId, {
+                        data: {
+                            ...project.data,
+                            [mod.id]: data
+                        }
+                    })
+                },
+                getCurrentProjectData: async () => {
+                    if (!this.simplifiedProjectName) {
+                        console.warn('Tried to set track data but no project loaded')
+                        return null
+                    }
+                    const project = this.simplifiedProjectName
+                    const existingProject = await projects.findOne({ where: { name: project } })
+                    return existingProject?.data[mod.id] ?? {}
                 },
                 setTrackData: (name, data) => {
                     if (!this.simplifiedProjectName) {
