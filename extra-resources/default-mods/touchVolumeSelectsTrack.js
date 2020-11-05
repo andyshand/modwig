@@ -16,6 +16,12 @@ Mouse.on('mouseup', whenActiveListener(async event => {
         const arrangerX = x => {
             return frame.x + 175 + (topLevel ? 0 : 22) + x
         }
+        const yWithinArranger = x => {
+            return event.y >= frame.y + 130 && event.y < (frame.y + frame.h) - 313
+        }
+        if (!yWithinArranger()) {
+            return
+        }
         if (doubleTrackHeight && withinXRange(arrangerX(0), arrangerX(220))) {
             // Click the track faders to select
             Mouse.returnAfter(() => {

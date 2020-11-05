@@ -44,11 +44,33 @@ export class ModsService extends BESService {
         browserOpen: makeEvent<boolean>(),
     }
 
+
+
     get simplifiedProjectName() {
         if (!this.currProject) {
             return null
         }
         return this.currProject.split(/v[0-9]+/)[0].trim().toLowerCase()
+    }
+
+    lastLogMsg = ''
+    sameMessageCount = 0
+    waitingMessages = []
+
+    logTimeout 
+    eventLogger = (msg) => {
+        if (this.waitingMessages[this.waitingMessages.length - 1]?.msg === msg ?? false) {
+            this.waitingMessages[this.waitingMessages.length - 1].count++
+        } else {
+            this.waitingMessages.push({msg, count: 1})
+        }
+        clearTimeout(this.logTimeout)
+        this.logTimeout = setTimeout(() => {
+            for (const { msg, count } of this.waitingMessages) {
+                logWithTime(msg + (count > 1 ? ` (${count})` : ''))
+            }
+            this.waitingMessages = []
+        }, 250)
     }
 
     async makeApi(mod) {
@@ -151,6 +173,7 @@ export class ModsService extends BESService {
                 ...Keyboard,
                 on: (eventName: string, cb: Function) => {
                     const wrappedCb = (event, ...rest) => {
+                        this.eventLogger(`${colors.cyan(eventName)} triggered for mod ${colors.green(mod.id)}`)
                         Object.setPrototypeOf(event, KeyboardEvent)
                         cb(event, ...rest)
                     }
@@ -160,8 +183,16 @@ export class ModsService extends BESService {
             whenActiveListener: whenActiveListener,
             Mouse: {
                 ...Mouse,
-                on: wrappedOnForReloadDisconnect(Keyboard),
-                returnAfter: returnMouseAfter            },
+                on: (eventName: string, cb: Function) => {
+                    const wrappedCb = (event, ...rest) => {
+                        // Object.setPrototypeOf(event, KeyboardEvent)
+                        this.eventLogger(`${colors.cyan(eventName)} triggered for mod ${colors.green(mod.id)}`)
+                        cb(event, ...rest)
+                    }
+                    wrappedOnForReloadDisconnect(Keyboard)(eventName, wrappedCb)
+                },
+                returnAfter: returnMouseAfter            
+            },
             Bitwig: addNotAlreadyIn({
                 closeFloatingWindows: Bitwig.closeFloatingWindows,
                 get isAccessibilityOpen() {
@@ -288,7 +319,7 @@ export class ModsService extends BESService {
             }),
             debounce
         }
-        function wrapFunctionsWithTryCatch(value) {
+        const wrapFunctionsWithTryCatch = (value) => {
             if (typeof value === 'object') {
                 for (const k in value) {
                     const desc = Object.getOwnPropertyDescriptor(value, k);
@@ -302,6 +333,7 @@ export class ModsService extends BESService {
             } else if (typeof value === 'function') {
                 return (...args) => {
                     try {
+                        this.eventLogger(`${colors.blue(value.name || 'Unknown function')} called by ${colors.green(mod.id)}`)
                         return value(...args)
                     } catch (e) {
                         console.error(colors.red(`${mod.id} threw an error while calling "${colors.yellow(value.name)}":`))
