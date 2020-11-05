@@ -180,7 +180,8 @@ type Deps = {
     globalController: GlobalController,
     app: any,
     arranger: any,
-    transport: any
+    transport: any,
+    deviceController: DeviceController
 }
 
 class Controller {
@@ -941,7 +942,7 @@ function init() {
     new BackForwardController(deps)    
     new BrowserController(deps)    
     new BugFixController(deps)    
-    new DeviceController(deps)    
+    deps.deviceController = new DeviceController(deps)    
     new SettingsController(deps)    
 
     deps.packetManager.listen('transport/play', () => transport.togglePlay())
