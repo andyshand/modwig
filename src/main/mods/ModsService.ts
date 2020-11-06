@@ -158,6 +158,15 @@ export class ModsService extends BESService {
                 return !(this.Meta || this.Control || this.Alt || this.Shift)
             }
         }
+        const MouseEvent = {
+            intersectsPluginWindows() {
+                const pluginLocations = Object.values(Bitwig.getPluginWindowsPosition())
+                const event = this
+                return pluginLocations.some(({x,y,w,h}) => {
+                    return event.x >= x && event.x < x + w && event.y >= y && event.y < y + h
+                })
+            }
+        }
 
         const addNotAlreadyIn = (obj, parent) => {
             for (const key in parent) {
@@ -186,9 +195,8 @@ export class ModsService extends BESService {
                 ...Mouse,
                 on: (eventName: string, cb: Function) => {
                     const wrappedCb = (event, ...rest) => {
-                        // Object.setPrototypeOf(event, KeyboardEvent)
-                        this.eventLogger(`${colors.cyan(eventName)} triggered for mod ${colors.green(mod.id)}`)
                         this.eventLogger(`${colors.cyan(eventName)} -> ${colors.green(mod.id)}`)
+                        Object.setPrototypeOf(event, MouseEvent)
                         cb(event, ...rest)
                     }
                     wrappedOnForReloadDisconnect(Keyboard)(eventName, wrappedCb)

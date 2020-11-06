@@ -6,21 +6,21 @@
  */
 
 Mouse.on('mouseup', whenActiveListener(async event => {
-    if (event.button === 0) {
-        const { data } = await Bitwig.sendPacketPromise({type: 'touch-volume-selects-track/view-data'})
-        const { doubleTrackHeight, topLevel } = data
+    if (event.button === 0 && !event.Meta && !event.intersectsPluginWindows()) {
         const frame = MainWindow.getFrame()
-        const withinXRange = (minX, maxX) => {
-            return event.x >= minX && event.x < maxX
-        }
-        const arrangerX = x => {
-            return frame.x + 175 + (topLevel ? 0 : 22) + x
-        }
         const yWithinArranger = x => {
             return event.y >= frame.y + 130 && event.y < (frame.y + frame.h) - 313
         }
         if (!yWithinArranger()) {
             return
+        }
+        const { data } = await Bitwig.sendPacketPromise({type: 'touch-volume-selects-track/view-data'})
+        const { doubleTrackHeight, topLevel } = data
+        const withinXRange = (minX, maxX) => {
+            return event.x >= minX && event.x < maxX
+        }
+        const arrangerX = x => {
+            return frame.x + 175 + (topLevel ? 0 : 22) + x
         }
         if (doubleTrackHeight && withinXRange(arrangerX(0), arrangerX(220))) {
             // Click the track faders to select
