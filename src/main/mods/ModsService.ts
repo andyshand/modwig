@@ -169,11 +169,12 @@ export class ModsService extends BESService {
         }
         const that = this
         const api = {
+            log: (...args) => logWithTime(`${colors.green(mod.id)}:`, ...args),
             Keyboard: {
                 ...Keyboard,
                 on: (eventName: string, cb: Function) => {
                     const wrappedCb = (event, ...rest) => {
-                        this.eventLogger(`${colors.cyan(eventName)} triggered for mod ${colors.green(mod.id)}`)
+                        this.eventLogger(`${colors.cyan(eventName)} -> ${colors.green(mod.id)}`)
                         Object.setPrototypeOf(event, KeyboardEvent)
                         cb(event, ...rest)
                     }
@@ -187,6 +188,7 @@ export class ModsService extends BESService {
                     const wrappedCb = (event, ...rest) => {
                         // Object.setPrototypeOf(event, KeyboardEvent)
                         this.eventLogger(`${colors.cyan(eventName)} triggered for mod ${colors.green(mod.id)}`)
+                        this.eventLogger(`${colors.cyan(eventName)} -> ${colors.green(mod.id)}`)
                         cb(event, ...rest)
                     }
                     wrappedOnForReloadDisconnect(Keyboard)(eventName, wrappedCb)
@@ -319,21 +321,21 @@ export class ModsService extends BESService {
             }),
             debounce
         }
-        const wrapFunctionsWithTryCatch = (value) => {
+        const wrapFunctionsWithTryCatch = (value, key?: string) => {
             if (typeof value === 'object') {
                 for (const k in value) {
                     const desc = Object.getOwnPropertyDescriptor(value, k);
                     if ((!desc || !desc.get) && typeof value[k] === 'function') {
-                        value[k] = wrapFunctionsWithTryCatch(value[k]);
+                        value[k] = wrapFunctionsWithTryCatch(value[k], k);
                     }
                     else if ((!desc || !desc.get) && typeof value[k] === 'object') {
-                        value[k] = wrapFunctionsWithTryCatch(value[k]);
+                        value[k] = wrapFunctionsWithTryCatch(value[k], k);
                     }
                 }
             } else if (typeof value === 'function') {
                 return (...args) => {
                     try {
-                        this.eventLogger(`${colors.blue(value.name || 'Unknown function')} called by ${colors.green(mod.id)}`)
+                        this.eventLogger(`${colors.blue(value.name || key || 'Unknown function')} <- ${colors.green(mod.id)}`)
                         return value(...args)
                     } catch (e) {
                         console.error(colors.red(`${mod.id} threw an error while calling "${colors.yellow(value.name)}":`))
@@ -410,7 +412,7 @@ export class ModsService extends BESService {
                 this.folderWatcher = null
             }
             const folderPaths = await this.getModsFolderPaths()
-            console.log('Watching ' + folderPaths)
+            logWithTime('Watching ' + folderPaths)
             this.folderWatcher = chokidar.watch(folderPaths, {
                 ignoreInitial : true
             }).on('all', (event, path) => {
@@ -419,7 +421,7 @@ export class ModsService extends BESService {
             });
             if (process.env.NODE_ENV === 'dev' && !this.controllerScriptFolderWatcher) {
                 const mainScript = getResourcePath('/controller-script/bes.control.js')
-                console.log('Watching ' + mainScript)
+                logWithTime('Watching ' + mainScript)
                 this.controllerScriptFolderWatcher = chokidar.watch([mainScript], {
                     ignoreInitial : true
                 }).on('all', (event, path) => {
@@ -587,7 +589,7 @@ export class ModsService extends BESService {
                                 setVars += `const ${key} = api["${key}"]\n`
                             }
                             eval(setVars + mod.contents)
-                            logWithTime('Enabled local mod: ' + modId)
+                            logWithTime('Enabled local mod: ' + colors.green(modId))
                         } catch (e) {
                             console.error(e)   
                         }
@@ -621,7 +623,7 @@ function modsImpl(api) {
             this.initMod(mod)
             const isEnabled = await this.isModEnabled(mod)
             if (isEnabled || mod.noReload) {
-                logWithTime('Enabled Bitwig Mod: ' + modId)
+                logWithTime('Enabled Bitwig Mod: ' + colors.green(modId))
                 defaultControllerScriptSettings[modId] = isEnabled
                 controllerScript += `
 // ${mod.path}

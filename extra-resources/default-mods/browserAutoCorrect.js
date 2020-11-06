@@ -120,7 +120,7 @@ Keyboard.on('keydown', whenActiveListener(event => {
                 } 
                 textSoFar = textSoFar.slice(0, cursor) + lowerKey + textSoFar.slice(cursor)
                 cursor += 1
-                console.log(textSoFar)
+                log(textSoFar)
             } else if (lowerKey === 'Tab') {
                 checkSpelling()
             } 

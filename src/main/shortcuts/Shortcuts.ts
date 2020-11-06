@@ -1,6 +1,5 @@
-import { sendPacketToBitwig, interceptPacket, sendPacketToBrowser, addAPIMethod, sendPacketToBitwigPromise } from "../core/WebsocketToSocket"
+import { sendPacketToBitwig, interceptPacket, addAPIMethod, sendPacketToBitwigPromise } from "../core/WebsocketToSocket"
 import { BESService, getService } from "../core/Service"
-import { returnMouseAfter } from "../../connector/shared/EventUtils"
 import { getDb } from "../db"
 import { Setting } from "../db/entities/Setting"
 import { BrowserWindow } from "electron"
@@ -8,8 +7,7 @@ import { url } from "../core/Url"
 import { SettingsService } from "../core/SettingsService"
 import { logWithTime } from "../core/Log"
 import { ModsService } from "../mods/ModsService"
-import { In } from 'typeorm'
-import { exists } from "fs"
+const colors = require('colors')
 
 const { Keyboard, Mouse, MainWindow, Bitwig } = require('bindings')('bes')
 
@@ -501,7 +499,7 @@ export class ShortcutsService extends BESService {
             type: 'shortcut',
             value
         })
-        console.log(`Registering action: ${action.id}`)
+        logWithTime(`Registering action: ${colors.yellow(action.id)}`)
         this.actions[action.id] = action
         if (!skipUpdate) {
             await this.updateShortcutCache()
