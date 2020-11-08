@@ -123,7 +123,7 @@ export class TrayService extends BESService {
         if (!setupComplete) {
             openWindow({type: 'setup'})
         } else {
-            if (process.argv.indexOf('--preferences') >= 0 || isDev) {
+            if (process.argv.indexOf('--preferences') >= 0 || (isDev && !process.env.QUIET_START)) {
                 openWindow({type: 'settings'})
                 if (isDev) {
                     this.settingsWindow.toggleDevTools()
