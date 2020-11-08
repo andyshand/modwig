@@ -67,6 +67,7 @@ function waitForChange(getter, cb){
  */
 function iterateSelectedDeviceSlots(deviceCb, onComplete) {
     const slotNames = ourCursorDevice.slotNames().get()
+    let wentDown = false
 
     // modLog('Slot names are: ' + JSON.stringify(slotNames))
     function iterateSlotName(i = 0) {
@@ -85,7 +86,9 @@ function iterateSelectedDeviceSlots(deviceCb, onComplete) {
             if (i < slotNames.length - 1) {
                 iterateSlotName(i + 1)
             } else {
-                if (!(i === 0 && !firstSlotDevice.exists().get())) {
+                modLog(`End of slots`)
+                if (wentDown) {
+                    modLog(`Navigating up`)
                     // Only go up if we actually went down
                     ourCursorDevice.selectParent()
                     waitForContextUpdateThen(() => {
@@ -105,6 +108,7 @@ function iterateSelectedDeviceSlots(deviceCb, onComplete) {
             }
 
             ourCursorDevice.selectDevice(firstSlotDevice)
+            wentDown = true
 
             // Wait for cursor device to update
             waitForContextUpdateThen(() => {
@@ -145,6 +149,7 @@ function iterateSelectedDeviceLayers(deviceCb, onComplete) {
         if (!firstLayerDevice.exists().get()){
             return nextLayerOrComplete()
         }
+        
         ourCursorDevice.selectDevice(firstLayerDevice)
         wentDown = true
 
@@ -171,20 +176,20 @@ function iterateDevices(deviceCb, onComplete = () => {}) {
     function iterateSlots(onComplete) {
         // modLog('Iterating slots')
         if (ourCursorDevice.hasSlots().get()) {
-            // modLog('Has slots')
+            modLog('Has slots')
             iterateSelectedDeviceSlots(deviceCb, onComplete)
         } else {
-            // modLog('No slots')
+            modLog('No slots')
             onComplete()
         }
     }
     function iterateLayers(onComplete) {
         // modLog('Iterating layers')
         if (ourCursorDevice.hasLayers().get()) {
-            // modLog('Has layers')
+            modLog('Has layers')
             iterateSelectedDeviceLayers(deviceCb, onComplete)
         } else {
-            // modLog('No layers')
+            modLog('No layers')
             onComplete()
         }
     }
@@ -221,10 +226,13 @@ packetManager.listen('open-plugin-windows/open-all', (packet) => {
 
 packetManager.listen('open-plugin-windows/open-with-preset-name', (packet) => {
     const presetNames = packet.data.presetNames
-    ourCursorDevice.selectDevice(deviceBank.getDevice(0))
+    ourCursorDevice.selectFirstInChannel(deviceController.cursorTrack)
+
+
     showMessage(`Reopening plugins: ${Object.keys(presetNames).join(', ')}`)
     waitForContextUpdateThen(() => {
         iterateDevices(d => {
+            modLog('Device: ' + d.name().get())
             modLog(`Found preset: ${d.presetName().get()}`)
             if (d.presetName().get() in presetNames || d.name().get() in presetNames) {
                 modLog(`Opening`)
