@@ -16,3 +16,7 @@ export async function exists(path: string) {
         return false
     }
 }
+
+export async function filesAreEqual(pathA: string, pathB: string) {
+    return (await fs.readFile(pathA)).equals(await fs.readFile(pathB))
+}

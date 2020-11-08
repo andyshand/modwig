@@ -487,6 +487,13 @@ export class ShortcutsService extends BESService {
         await this.updateShortcutCache()
     }
 
+    async runAction(id, ...args) {
+        const action = this.actions[id]
+        if (action) {
+            return action.action(...args)
+        }
+    }
+
     async registerAction(action, skipUpdate = false) {
         const value = action.defaultSetting || {keys: []}
         if (process.env.NODE_ENV !== 'dev') {

@@ -236,6 +236,7 @@ class GlobalController extends Controller {
             this.selectTrackWithName(name)
         })
         this.deps.app.projectName().markInterested()
+        this.deps.app.hasActiveEngine().markInterested()
 
         packetManager.listen('application/undo', () => this.deps.app.undo())
         packetManager.listen('application/redo', () => this.deps.app.redo())
@@ -300,6 +301,10 @@ class GlobalController extends Controller {
             marker.getName().addValueObserver(name => {
                 this.sendAllCueMarkers()
             })
+        })
+
+        this.deps.app.projectName().addValueObserver(name => {
+            this.sendProject()
         })
 
         // deps.transport.getPosition().addValueObserver(position => {
@@ -370,7 +375,8 @@ class GlobalController extends Controller {
         this.deps.packetManager.send({
             type: 'project',
             data: {
-                name: this.deps.app.projectName().get()
+                name: this.deps.app.projectName().get(),
+                hasActiveEngine: this.deps.app.hasActiveEngine().get()
             }
         })
     }
@@ -995,6 +1001,7 @@ function init() {
             findTrackByName: deps.globalController.findTrackByName.bind(deps.globalController),
             transport,
             ...deps,
+            showMessage: msg => host.showPopupNotification(msg),
             afterUpdates: (fn) => host.scheduleTask(fn, 25),
             onFlush,
             debounce

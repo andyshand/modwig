@@ -9,7 +9,7 @@ import { SettingsService } from "../core/SettingsService"
 import { exists, promises as fs } from 'fs'
 import * as path from 'path'
 import { Setting } from "../db/entities/Setting"
-import { createDirIfNotExist, exists as fileExists } from "../core/Files"
+import { createDirIfNotExist, exists as fileExists, filesAreEqual } from "../core/Files"
 import { logWithTime } from "../core/Log"
 import { ShortcutsService } from "../shortcuts/Shortcuts"
 import { debounce } from '../../connector/shared/engine/Debounce'
@@ -39,12 +39,13 @@ export class ModsService extends BESService {
     latestModsMap: { [name: string]: Partial<ModInfo> } = {}
     onReloadMods: Function[] = []
     shortcutsService = getService<ShortcutsService>("ShortcutsService")
+    activeEngineProject: string | null = null
     events = {
         selectedTrackChanged: makeEvent<any>(),
         browserOpen: makeEvent<boolean>(),
+        projectChanged: makeEvent<number>(),
+        activeEngineProjectChanged: makeEvent<string>()
     }
-
-
 
     get simplifiedProjectName() {
         if (!this.currProject) {
@@ -238,7 +239,9 @@ export class ModsService extends BESService {
                 },
                 ...makeEmitterEvents({
                     selectedTrackChanged: this.events.selectedTrackChanged,
-                    browserOpen: this.events.browserOpen
+                    browserOpen: this.events.browserOpen,
+                    projectChanged: this.events.projectChanged,
+                    activeEngineProjectChanged: this.events.activeEngineProjectChanged
                 })
             }, Bitwig),
             MainDisplay: {
@@ -247,12 +250,12 @@ export class ModsService extends BESService {
                 }
             },
             Db: {
-                getTrackData: async (name) => {
+                getTrackData: async (name, options: {modId?: string} = {}) => {
                     if (!this.simplifiedProjectName) {
                         console.warn('Tried to get track data but no project loaded')
                         return null
                     }
-                    return (await loadDataForTrack(name, this.simplifiedProjectName))[mod.id] || {}
+                    return (await loadDataForTrack(name, this.simplifiedProjectName))[options?.modId ?? mod.id] || {}
                 },
                 setCurrentProjectData: async (data) => {
                     if (!this.simplifiedProjectName) {
@@ -311,6 +314,9 @@ export class ModsService extends BESService {
                 },
             },
             Mod: {
+                runAction: (actionId, ...args) => {
+                    return this.shortcutsService.runAction(actionId, ...args)
+                },
                 registerAction: (action) => {
                     action.category = action.category || mod.category
                     this.shortcutsService.registerAction({...action, mod: mod.id})
@@ -390,8 +396,16 @@ export class ModsService extends BESService {
                 this.events.selectedTrackChanged.emit(this.currTrack, prev)
             }
         })
-        interceptPacket('project', undefined, async ({ data: { name: projectName } }) => {
-            this.currProject = projectName
+        interceptPacket('project', undefined, async ({ data: { name: projectName, hasActiveEngine } }) => {
+            const projectChanged = this.currProject !== projectName
+            if (projectChanged) {
+                this.currProject = projectName
+                this.events.projectChanged.emit(projectName)
+                if (hasActiveEngine) {
+                    this.activeEngineProject = projectName
+                    this.events.activeEngineProjectChanged.emit(projectName)
+                }
+            }
         })
         interceptPacket('browser/state', undefined, ({ data: {isOpen} }) => {
             const previous = this.browserIsOpen
@@ -505,7 +519,11 @@ export class ModsService extends BESService {
 
             await createDirIfNotExist(controllerDestFolder)
             for (const file of await fs.readdir(controllerSrcFolder)) {
-                await fs.copyFile(path.join(controllerSrcFolder, file), path.join(controllerDestFolder, file))
+                const src = path.join(controllerSrcFolder, file)
+                const dest = path.join(controllerDestFolder, file)
+                if (!(await filesAreEqual(src, dest))){
+                    await fs.copyFile(src, dest)
+                }
             }
         } catch (e) {
             console.error(e)   
