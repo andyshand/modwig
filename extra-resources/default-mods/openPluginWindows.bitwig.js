@@ -236,7 +236,9 @@ packetManager.listen('open-plugin-windows/open-with-preset-name', (packet) => {
             modLog(`Found preset: ${d.presetName().get()}`)
             if (d.presetName().get() in presetNames || d.name().get() in presetNames) {
                 modLog(`Opening`)
-                d.isWindowOpen().set(true)
+                if (!d.isWindowOpen().get()) {
+                    d.isWindowOpen().set(true)
+                }
             }
         })
     })

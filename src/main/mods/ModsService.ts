@@ -56,7 +56,7 @@ export class ModsService extends BESService {
 
     lastLogMsg = ''
     sameMessageCount = 0
-    waitingMessages = []
+    waitingMessages: {msg: string, count: number}[] = []
 
     logTimeout 
     eventLogger = (msg) => {

@@ -77,3 +77,10 @@ packetManager.listen('play-from-selection', (packet) => {
         }
     }
 })
+
+packetManager.listen('jump-to-playback-start-time', () => {
+    runAction('jump_to_playback_start_time')
+    if (!transport.isPlaying().get()) {
+        transport.play()
+    }
+})

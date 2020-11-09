@@ -23,5 +23,5 @@ Mod.registerAction({
     defaultSetting: {
         keys: ["Alt", "Space"]
     },
-    action: () => Bitwig.runAction('jump_to_playback_start_time')
+    action: () => Bitwig.sendPacket({type: 'jump-to-playback-start-time'})
 })
