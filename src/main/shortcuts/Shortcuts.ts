@@ -186,6 +186,44 @@ export class ShortcutsService extends BESService {
                         Keyboard.keyPress('ArrowRight')
                     }                
                 },
+
+                // TODO better way of proxying keys allowing modifiers
+                arrowUpShift: {
+                    description: PROXY_MESSAGE('ArrowUp'),
+                    defaultSetting: {
+                        keys: []
+                    },
+                    action: () => {
+                        Keyboard.keyPress('ArrowUp', { Shift: true })
+                    }                
+                },
+                arrowDownShift: {
+                    description: PROXY_MESSAGE('ArrowDown'),
+                    defaultSetting: {
+                        keys: []
+                    },
+                    action: () => {
+                        Keyboard.keyPress('ArrowDown', { Shift: true })
+                    }                
+                },
+                arrowLeftShift: {
+                    description: PROXY_MESSAGE('ArrowLeft'),
+                    defaultSetting: {
+                        keys: []
+                    },
+                    action: () => {
+                        Keyboard.keyPress('ArrowLeft', { Shift: true })
+                    }                
+                },
+                arrowRightShift: {
+                    description: PROXY_MESSAGE('ArrowRight'),
+                    defaultSetting: {
+                        keys: []
+                    },
+                    action: () => {
+                        Keyboard.keyPress('ArrowRight', { Shift: true })
+                    }                
+                },
             })),
 
             // DEVICES
