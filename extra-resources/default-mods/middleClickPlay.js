@@ -59,7 +59,8 @@ Mouse.on('mouseup', event => {
                     timelineClickPosition = {x: event.x, y: editorBorderLineY + 7}
                 } else {
                     // We're in the arranger
-                    timelineClickPosition = {x: event.x, y: 125}
+                    const mainWindowFrame = MainWindow.getFrame()
+                    timelineClickPosition = {x: event.x, y: 91 + mainWindowFrame.y}
                 }
                 Mouse.doubleClick(0, timelineClickPosition)
                 Keyboard.keyUp('1')
