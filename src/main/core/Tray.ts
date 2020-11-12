@@ -50,8 +50,6 @@ export class TrayService extends BESService {
             })
         }
         
-
-        
         const updateMenu = async () => {
             const modItems = (await this.modsService.getMods({inMenu: true})).map(modSetting => {
                 return {
@@ -128,6 +126,8 @@ export class TrayService extends BESService {
                 if (isDev) {
                     this.settingsWindow.toggleDevTools()
                 } 
+            } else {
+                app.dock.hide()
             }
         }        
 
