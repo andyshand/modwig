@@ -2,13 +2,13 @@ import './core/styles.css'
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 const { app } = require('electron').remote
-import { Switch, Route, HashRouter } from 'react-router-dom'
+import { Switch, Route, HashRouter, useHistory } from 'react-router-dom'
 import { css } from 'linaria'
-import { Settings } from './settings/Settings';
 import { ValueEntryView } from './value-entry/ValueEntryView';
 import { SearchPanel } from './search/SearchPanel';
 import { Setup } from './setup/Setup';
 import { SettingsView } from './settings/SettingsView';
+import { NumpadWindow } from './core/numpad-window/NumpadWindow';
 
 function removeAllListeners() {
     app.removeAllListeners('browser-window-focus')
@@ -36,8 +36,10 @@ const GlobalStyle = css`
             margin: 0;
             box-sizing: border-box;
         }
+        html, body {
+            background: transparent;
+        }
         body {
-            background: #424242;
             font-size: 16px;
             font-weight: 400;
             font-family: Lato, sans-serif;
@@ -142,6 +144,12 @@ ReactDOM.render(
             <Route path="/setup" component={Setup} />
             <Route path="/search" component={SearchPanel} />
             <Route path="/value-entry" component={ValueEntryView} />
+            <Route path="/numpad" component={NumpadWindow} />
+            <Route path="/loading" component={() => {
+                const history = useHistory();
+                ;(window as any).loadURL = url => history.push(url)
+                return <div />
+            }} />
         </Switch>
     </HashRouter>,
 document.getElementById('root'));

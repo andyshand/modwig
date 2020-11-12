@@ -55,11 +55,11 @@ export class ShortcutsService extends BESService {
                 const key = shortcut.key
                 const code = this.makeShortcutValueCode(value)
                 // code is our ID, key is the action to run
-                const runner = () => {
+                const runner = (context) => {
                     logWithTime('Running shortcut code: ' + code + ' with action key: ' + key)
                     try {
                         // console.log(`Action data is: `, this.actions[key])
-                        this.actions[key].action()
+                        this.actions[key].action(context)
                     } catch (e) {
                         console.error(e)
                     }
@@ -617,7 +617,9 @@ export class ShortcutsService extends BESService {
         logWithTime(`State code is ${code}`)
         if (code in this.shortcutCache) {
             for (const {runner} of this.shortcutCache[code]) {
-                runner()
+                runner({
+                    keyState: state
+                })
                 ran = true
             }
         }
@@ -664,7 +666,7 @@ export class ShortcutsService extends BESService {
                 // FN defaults to true when using function keys (makes sense I guess?)
                 Fn = false
             }
-            // logWithTime(event)
+            // logWithTime(event, Bitwig.isActiveApplication())
             const noMods = !(Meta || Control || Alt)
 
             // Prevent shortcuts from triggering when renaming something

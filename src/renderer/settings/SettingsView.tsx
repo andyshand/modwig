@@ -409,7 +409,10 @@ export class SettingsView extends React.Component<Props> {
                                     document.getElementById(setting.key).scrollIntoView({behavior: 'auto', block: 'center'})
                                 }
                                 return <SidebarSetting focused={setting.key === this.state.focusedSettingKey} title={settingTitle(setting)} onClick={onClick} key={setting.key}>
-                                    <span>{shortcutToTextDescription(setting)}</span>
+                                    <span style={{
+                                        whiteSpace: `normal`,
+                                        wordBreak: `break-word`
+                                    }}>{shortcutToTextDescription(setting)}</span>
                                     <span>{settingTitle(setting)}</span>
                                 </SidebarSetting>
                             })}

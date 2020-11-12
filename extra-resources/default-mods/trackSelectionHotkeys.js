@@ -7,6 +7,31 @@
 
 const NUM_HOTKEYS = 10
 
+async function highlightNumber(key, context, projectData) {
+    if (Bitwig.tracks.length === 0) {
+        await Bitwig.sendPacketPromise({type: 'track-selection-hotkeys/send-tracks'})
+    } else {
+        Bitwig.sendPacketPromise({type: 'track-selection-hotkeys/send-tracks'})
+    }
+    const tracksByName = _.indexBy(Bitwig.tracks, 'name')
+    let keys = []
+    for (let i = 1; i <= 9; i++) {
+        keys.push({
+            key: `Numpad${i}`,
+            track: tracksByName[projectData[i - 1]]
+        })
+    }
+    Mod._openFloatingWindow(`/numpad`, {
+        data: {
+            keys,
+            key: context.keyState.keys.find(key => key.indexOf('Numpad') == 0)
+        },
+        width: 528,
+        height: 720,
+        timeout: 1000
+    })
+}
+
 for (let i = 0; i < NUM_HOTKEYS; i++) {
     Mod.registerAction({
         title: `Save track for hotkey ${i + 1}`,
@@ -17,7 +42,7 @@ for (let i = 0; i < NUM_HOTKEYS; i++) {
             // 1, 2, 3...0
             keys: ["Alt", "Shift", String(i + 1).slice(-1)]
         },
-        action: async () => {
+        action: async (context) => {
             if (!Bitwig.currentTrack) {
                 Bitwig.showMessage(`No track selected.`)
                 return
@@ -29,6 +54,7 @@ for (let i = 0; i < NUM_HOTKEYS; i++) {
             }
             await Db.setCurrentProjectData(newProjectData)
             Bitwig.showMessage(`Saved track ${i + 1}: ${Bitwig.currentTrack}`)
+            highlightNumber(i + 1, context, newProjectData)
         }
     })
 
@@ -40,16 +66,17 @@ for (let i = 0; i < NUM_HOTKEYS; i++) {
         defaultSetting: {
             keys: ["Shift", String(i + 1).slice(-1)]
         },
-        action: async () => {
+        action: async (context) => {
             if (!Bitwig.currentTrack) {
                 Bitwig.showMessage(`No track selected.`)
                 return
             }
-            const track = (await Db.getCurrentProjectData())[i]
+            const projectData = await Db.getCurrentProjectData()
+            const track = projectData[i]
             if (track) {
-                Bitwig.showMessage(`Loaded track ${i + 1}: ${track}`)
                 Bitwig.sendPacket({type: 'track/select', data: { name: track }})
             }
+            highlightNumber(i + 1, context, projectData)
         }
     })
 }

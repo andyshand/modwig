@@ -6,7 +6,7 @@ import { ProjectTrack } from "../db/entities/ProjectTrack"
 import { Project } from "../db/entities/Project"
 import { getResourcePath } from '../../connector/shared/ResourcePath'
 import { SettingsService } from "../core/SettingsService"
-import { exists, promises as fs } from 'fs'
+import { promises as fs } from 'fs'
 import * as path from 'path'
 import { Setting } from "../db/entities/Setting"
 import { createDirIfNotExist, exists as fileExists, filesAreEqual } from "../core/Files"
@@ -14,8 +14,78 @@ import { logWithTime } from "../core/Log"
 import { ShortcutsService } from "../shortcuts/Shortcuts"
 import { debounce } from '../../connector/shared/engine/Debounce'
 import _ from 'underscore'
+import { BrowserWindow } from "electron"
+import { url } from "../core/Url"
 const chokidar = require('chokidar')
 const colors = require('colors');
+
+let floatingWindowInfo: {
+    window: BrowserWindow,
+    path: string
+} | undefined
+
+let fadeOutTimeout: any
+/**
+ * Opens a floating window for a short amount of time, fading out afterwards. Meant for brief display of contextual information
+ */
+function openFloatingWindow(path, options: {data?: any, timeout: number, width: number, height: number}) {
+    if (fadeOutTimeout) {
+        clearTimeout(fadeOutTimeout)
+    }
+
+    if (!floatingWindowInfo || path !== floatingWindowInfo.path) {
+        floatingWindowInfo?.window.close()
+        floatingWindowInfo = {
+            path,
+            window: new BrowserWindow({ 
+                width: options.width, 
+                height: options.height, 
+                opacity: 1,
+                frame: false,
+                show: false,
+                alwaysOnTop: true,
+                // focusable: false,
+                // closable: false,
+                x: MainWindow.getMainScreen().w / 2 - options.width / 2,
+                y: MainWindow.getMainScreen().h / 2 - options.height / 2,
+                transparent: true,
+                fullscreenable: false,
+                webPreferences: {
+                    webSecurity: false,
+                    nodeIntegration: true,
+                }
+            })
+        }
+        // ;(floatingWindowInfo!.window as any).toggleDevTools()    
+    }
+
+    floatingWindowInfo.window.loadURL(url(`/#/loading`))
+    if (options.data) {
+        floatingWindowInfo!.window.webContents.executeJavaScript(`
+            window.data = ${JSON.stringify(options.data)};
+            window.loadURL(\`${path}\`)
+        `).then(() => {
+            floatingWindowInfo!.window.setOpacity(1)
+            floatingWindowInfo!.window.showInactive()
+
+            function doFadeOut(opacity: number = 1) {
+                const newOpacity = opacity - .1
+                if (newOpacity <= 0) {
+                    floatingWindowInfo!.window.hide()
+                } else {   
+                    floatingWindowInfo!.window.setOpacity(newOpacity)
+                    fadeOutTimeout = setTimeout(() => {
+                        doFadeOut(newOpacity)
+                    }, 50)
+                }
+            }
+        
+            fadeOutTimeout = setTimeout(() => {
+                doFadeOut(1)
+            }, options.timeout)
+        })
+    }
+}
 
 const { Keyboard, Mouse, MainWindow, Bitwig } = require('bindings')('bes')
 
@@ -40,6 +110,7 @@ export class ModsService extends BESService {
     onReloadMods: Function[] = []
     shortcutsService = getService<ShortcutsService>("ShortcutsService")
     activeEngineProject: string | null = null
+    tracks: any[] = []
     events = {
         selectedTrackChanged: makeEvent<any>(),
         browserOpen: makeEvent<boolean>(),
@@ -212,6 +283,9 @@ export class ModsService extends BESService {
                 get isPluginWindowActive() {
                     return Bitwig.isPluginWindowActive()
                 },
+                get tracks() {
+                    return that.tracks
+                },
                 get isBrowserOpen() {
                     return that.browserIsOpen
                 },
@@ -314,6 +388,7 @@ export class ModsService extends BESService {
                 },
             },
             Mod: {
+                _openFloatingWindow: openFloatingWindow,
                 runAction: (actionId, ...args) => {
                     return this.shortcutsService.runAction(actionId, ...args)
                 },
@@ -406,6 +481,9 @@ export class ModsService extends BESService {
                     this.events.activeEngineProjectChanged.emit(projectName)
                 }
             }
+        })
+        interceptPacket('tracks', undefined, async ({ data: tracks }) => {
+            this.tracks = tracks
         })
         interceptPacket('browser/state', undefined, ({ data: {isOpen} }) => {
             const previous = this.browserIsOpen
