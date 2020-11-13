@@ -43,7 +43,7 @@ Bitwig.on('activeEngineProjectChanged', async () => {
     openedPluginsForTracks = {}    
     log('Project Changed')
 })
-Bitwig.on('selectedTrackChanged', async (track, prev) => {
+Bitwig.on('selectedTrackChanged', debounce(async (track, prev) => {
     if (track in openedPluginsForTracks) {
         log('Track already has plugins opened')
         return
@@ -51,4 +51,4 @@ Bitwig.on('selectedTrackChanged', async (track, prev) => {
     log('Reopening plugins for track ' + track)
     openedPluginsForTracks[track] = true
     restoreOpenedPluginsForTrack(track)
-})
+}, 1500))
