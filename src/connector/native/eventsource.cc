@@ -1,5 +1,6 @@
 #include "eventsource.h"
 
+#if defined(IS_MACOSX)
 CGEventSourceRef eventSource = CGEventSourceCreate(kCGEventSourceStatePrivate);
 bool setup = false;
 CGEventSourceRef getCGEventSource() {
@@ -9,3 +10,4 @@ CGEventSourceRef getCGEventSource() {
     }
     return eventSource;
 }
+#endif

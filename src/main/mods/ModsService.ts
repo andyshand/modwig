@@ -534,6 +534,7 @@ export class ModsService extends BESService {
             const key = data.key!
             if (key === 'userLibraryPath') {
                 refreshFolderWatcher()
+                this.refreshMods() // also copies controller script
             } else if (key.indexOf('mod') === 0) {
                 const modData = this.latestModsMap[key]
                 const value = JSON.parse(data.value)
@@ -599,7 +600,12 @@ export class ModsService extends BESService {
             for (const file of await fs.readdir(controllerSrcFolder)) {
                 const src = path.join(controllerSrcFolder, file)
                 const dest = path.join(controllerDestFolder, file)
-                if (!(await filesAreEqual(src, dest))){
+                try {
+                    if (!(await filesAreEqual(src, dest))){
+                        await fs.copyFile(src, dest)
+                    }
+                } catch(e) {
+                    // File doesn't exist yet
                     await fs.copyFile(src, dest)
                 }
             }

@@ -1,8 +1,15 @@
-#include "point.h"
 #include "keyboard.h"
-#include "eventsource.h"
 
+#include "eventsource.h"
+#include "os.h"
+#include "keycodes.h"
+
+#if defined(IS_MACOSX)
 #include <CoreGraphics/CoreGraphics.h>
+#elif defined(IS_WINDOWS)
+#include "windows.h"
+#endif
+
 #include <iostream>
 #include <forward_list>
 #include <thread>
@@ -12,142 +19,23 @@
 
 using std::forward_list;
 
+#if defined(IS_MACOSX)
 bool threadSetup = false;
 std::thread nativeThread;
 CFRunLoopRef runLoop;
 int nextId = 0;
-
-std::map<int,std::string> macKeycodeMap = {
-  // Layout independent - will break on non-qwerty :(
-  {0x00, "a"},
-  {0x01, "s"},
-  {0x02, "d"},
-  {0x03, "f"},
-  {0x04, "h"},
-  {0x05, "g"},
-  {0x06, "z"},
-  {0x07, "x"},
-  {0x08, "c"},
-  {0x09, "v"},
-  {0x0A, "§"},
-  {0x0B, "b"},
-  {0x0C, "q"},
-  {0x0D, "w"},
-  {0x0E, "e"},
-  {0x0F, "r"},
-  {0x10, "y"},
-  {0x11, "t"},
-  {0x12, "1"},
-  {0x13, "2"},
-  {0x14, "3"},
-  {0x15, "4"},
-  {0x16, "6"},
-  {0x17, "5"},
-  {0x18, "="},
-  {0x19, "9"},
-  {0x1A, "7"},
-  {0x1B, "-"},
-  {0x1C, "8"},
-  {0x1D, "0"},
-  {0x1E, "]"},
-  {0x1F, "o"},
-  {0x20, "u"},
-  {0x21, "["},
-  {0x22, "i"},
-  {0x23, "p"},
-  {0x25, "l"},
-  {0x26, "j"},
-  {0x27, "\'"},
-  {0x28, "k"},
-  {0x29, ";"},
-  {0x2A, "\\"},
-  {0x2B, ","},
-  {0x2C, "/"},
-  {0x2D, "n"},
-  {0x2E, "m"},
-  {0x2F, "."},
-  {0x32, "`"},
-  {0x41, "."},
-  {0x43, "*"},
-  {0x45, "+"},
-  {0x47, "Clear"},
-  {0x4B, "/"},
-  {0x4C, "Enter"},
-  {0x4E, "-"},
-  {0x51, "="},
-  {0x52, "Numpad0"},
-  {0x53, "Numpad1"},
-  {0x54, "Numpad2"},
-  {0x55, "Numpad3"},
-  {0x56, "Numpad4"},
-  {0x57, "Numpad5"},
-  {0x58, "Numpad6"},
-  {0x59, "Numpad7"},
-  {0x5B, "Numpad8"},
-  {0x5C, "Numpad9"},
-
-  // Keyboard layout independent (won't break)  
-  {0x24, "Enter"},
-  {0x30, "Tab"},
-  {0x31, "Space"},
-  {0x33, "Backspace"},
-  {0x35, "Escape"},
-  {0x37, "Meta"},
-  {0x38, "Shift"},
-  {0x39, "CapsLock"},
-  {0x3A, "Alt"},
-  {0x3B, "Control"},
-
-  // These would get overwritten in the two way map (cause they have the same name)
-  // Is this the right way to do it?
-  {0x3C, "RightShift"},
-  {0x3D, "RightAlt"},
-  {0x3E, "RightControl"},
-
-  {0x3F, "Fn"},
-  {0x40, "F17"},
-  {0x48, "VolumeUp"},
-  {0x49, "VolumeDown"},
-  {0x4A, "Mute"},
-  {0x4F, "F18"},
-  {0x50, "F19"},
-  {0x5A, "F20"},
-  {0x60, "F5"},
-  {0x61, "F6"},
-  {0x62, "F7"},
-  {0x63, "F3"},
-  {0x64, "F8"},
-  {0x65, "F9"},
-  {0x67, "F11"},
-  {0x69, "F13"},
-  {0x6A, "F16"},
-  {0x6B, "F14"},
-  {0x6D, "F10"},
-  {0x6F, "F12"},
-  {0x71, "F15"},
-  {0x72, "Help"},
-  {0x73, "Home"},
-  {0x74, "PageUp"},
-  {0x75, "Delete"},
-  {0x76, "F4"},
-  {0x77, "End"},
-  {0x78, "F2"},
-  {0x79, "PageDown"},
-  {0x7A, "F1"},
-  {0x7B, "ArrowLeft"},
-  {0x7C, "ArrowRight"},
-  {0x7D, "ArrowDown"},
-  {0x7E, "ArrowUp"}
-};
-std::map<std::string, int> macKeycodeMapReverse;
+#endif
 
 struct CallbackInfo {
     Napi::ThreadSafeFunction cb;
     Napi::Function bareCb;
-    CGEventMask mask;
     int id;
+
+    #if defined(IS_MACOSX)
+    CGEventMask mask;
     CFMachPortRef tap;
     CFRunLoopSourceRef runloopsrc;
+    #endif
 
     bool operator ==(const CallbackInfo& other) const {
         return other.cb == cb;
@@ -156,16 +44,20 @@ struct CallbackInfo {
     ~CallbackInfo() {
         cb.Release();
 
+#if defined(IS_MACOSX)
         if (CGEventTapIsEnabled(tap)) CGEventTapEnable(tap, false);
         CFMachPortInvalidate(tap);
         CFRunLoopRemoveSource(CFRunLoopGetMain(), runloopsrc, kCFRunLoopCommonModes);
         CFRelease(runloopsrc);
         CFRelease(tap);
+#endif
     }
 };
 
 struct JSEvent {
-    UInt16 nativeKeyCode;
+    #if defined(IS_MAC)
+        UInt16 nativeKeyCode;
+    #endif
     std::string lowerKey;
     bool Meta, Shift, Control, Alt, Fn;
     int button, x, y;
@@ -173,6 +65,8 @@ struct JSEvent {
 
 forward_list<CallbackInfo*> callbacks; 
 
+
+#if defined(IS_MACOSX)
 CGEventRef eventtap_callback(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *refcon) {
     if (CGEventGetIntegerValueField(event, kCGEventSourceUserData) == 42) {
         // Skip our own events
@@ -233,7 +127,7 @@ CGEventRef eventtap_callback(CGEventTapProxy proxy, CGEventType type, CGEventRef
         };        
 
         jsEvent->nativeKeyCode = CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
-        jsEvent->lowerKey = macKeycodeMap[jsEvent->nativeKeyCode];
+        jsEvent->lowerKey = stringForKeyCode(jsEvent->nativeKeyCode);
         e->cb.BlockingCall( jsEvent, callback );  
     } else {
         // Mouse event
@@ -273,64 +167,70 @@ CGEventRef eventtap_callback(CGEventTapProxy proxy, CGEventType type, CGEventRef
     // can return NULL to ignore event
     return event;
 }
+#endif
 
 /// Note that mousemove events seem to get fired when mouse is clicked too - TODO investigate
 Napi::Value on(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
     auto eventType = info[0].As<Napi::String>().Utf8Value();
     auto cb = info[1].As<Napi::Function>();
+    
+    #if defined(IS_MACOSX)
+        CGEventMask mask = kCGEventMaskForAllEvents;
 
-    CGEventMask mask = kCGEventMaskForAllEvents;
-
-    if ("keyup" == eventType) {
-        mask = CGEventMaskBit(kCGEventKeyUp);
-    } else if ("keydown" == eventType) {
-        mask = CGEventMaskBit(kCGEventKeyDown);
-    } else if ("mousemoved" == eventType) {
-        mask = CGEventMaskBit(kCGEventMouseMoved) | CGEventMaskBit(kCGEventOtherMouseDragged);
-    } else if ("mousedown" == eventType) {
-        mask = CGEventMaskBit(kCGEventLeftMouseDown) | CGEventMaskBit(kCGEventRightMouseDown) | CGEventMaskBit(kCGEventOtherMouseDown);
-    } else if ("mouseup" == eventType) {
-        mask = CGEventMaskBit(kCGEventLeftMouseUp) | CGEventMaskBit(kCGEventRightMouseUp) | CGEventMaskBit(kCGEventOtherMouseUp);
-    }
-
-    // TODO FREE
-    CallbackInfo *ourInfo = new CallbackInfo;
-    ourInfo->bareCb = cb;
-    ourInfo->id = nextId++;
-    ourInfo->cb = Napi::ThreadSafeFunction::New(
-      env,
-      cb,                      // JavaScript function called asynchronously
-      "Resource Name",         // Name
-      0,                       // Unlimited queue
-      1);                      // Initial thread count 
-
-    ourInfo->tap = CGEventTapCreate(
-        kCGSessionEventTap,
-        kCGHeadInsertEventTap,
-        kCGEventTapOptionDefault,
-        mask,
-        eventtap_callback,
-        ourInfo);
-
-    if (!ourInfo->tap) {
-        std::cout << "Could not create event tap.";
-    } else {
-        CGEventTapEnable(ourInfo->tap, true);
-        ourInfo->runloopsrc = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, ourInfo->tap, 0);
-        if (!threadSetup) {
-            threadSetup = true;
-            nativeThread = std::thread( [=] {
-                runLoop = CFRunLoopGetCurrent();
-                CFRunLoopAddSource(runLoop, ourInfo->runloopsrc, kCFRunLoopCommonModes);
-                CFRunLoopRun();
-            } );
-        } else {    
-            CFRunLoopAddSource(runLoop, ourInfo->runloopsrc, kCFRunLoopCommonModes);
+        if ("keyup" == eventType) {
+            mask = CGEventMaskBit(kCGEventKeyUp);
+        } else if ("keydown" == eventType) {
+            mask = CGEventMaskBit(kCGEventKeyDown);
+        } else if ("mousemoved" == eventType) {
+            mask = CGEventMaskBit(kCGEventMouseMoved) | CGEventMaskBit(kCGEventOtherMouseDragged);
+        } else if ("mousedown" == eventType) {
+            mask = CGEventMaskBit(kCGEventLeftMouseDown) | CGEventMaskBit(kCGEventRightMouseDown) | CGEventMaskBit(kCGEventOtherMouseDown);
+        } else if ("mouseup" == eventType) {
+            mask = CGEventMaskBit(kCGEventLeftMouseUp) | CGEventMaskBit(kCGEventRightMouseUp) | CGEventMaskBit(kCGEventOtherMouseUp);
         }
-    }
-    callbacks.push_front(ourInfo);
-    return Napi::Number::New(env, ourInfo->id);
+
+        // TODO FREE
+        CallbackInfo *ourInfo = new CallbackInfo;
+        ourInfo->bareCb = cb;
+        ourInfo->id = nextId++;
+        ourInfo->cb = Napi::ThreadSafeFunction::New(
+        env,
+        cb,                      // JavaScript function called asynchronously
+        "Resource Name",         // Name
+        0,                       // Unlimited queue
+        1);                      // Initial thread count 
+
+        ourInfo->tap = CGEventTapCreate(
+            kCGSessionEventTap,
+            kCGHeadInsertEventTap,
+            kCGEventTapOptionDefault,
+            mask,
+            eventtap_callback,
+            ourInfo);
+
+        if (!ourInfo->tap) {
+            std::cout << "Could not create event tap.";
+        } else {
+            CGEventTapEnable(ourInfo->tap, true);
+            ourInfo->runloopsrc = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, ourInfo->tap, 0);
+            if (!threadSetup) {
+                threadSetup = true;
+                nativeThread = std::thread( [=] {
+                    runLoop = CFRunLoopGetCurrent();
+                    CFRunLoopAddSource(runLoop, ourInfo->runloopsrc, kCFRunLoopCommonModes);
+                    CFRunLoopRun();
+                } );
+            } else {    
+                CFRunLoopAddSource(runLoop, ourInfo->runloopsrc, kCFRunLoopCommonModes);
+            }
+        }
+        callbacks.push_front(ourInfo);
+        return Napi::Number::New(env, ourInfo->id);
+    #elif defined(IS_WINDOWS)
+    // TODO
+        return Napi::Number::New(env, 0);
+    #endif
 }
 
 Napi::Value off(const Napi::CallbackInfo &info) {
@@ -356,48 +256,116 @@ Napi::Value isEnabled(const Napi::CallbackInfo &info) {
     });
     if (it != callbacks.end()) {
         CallbackInfo* info = *it;
-        return Napi::Boolean::New(env, CGEventTapIsEnabled(info->tap));
+        #if defined(IS_MACOSX)
+            return Napi::Boolean::New(env, CGEventTapIsEnabled(info->tap));
+        #elif defined(IS_WINDOWS)
+            return Napi::Boolean::New(env, false); // TODO
+        #endif
     }
     return Napi::Boolean::New(env, false);
 }
 
+#if defined(IS_WINDOWS)
+void win32KeyEvent(MWKeyCode key, DWORD flags)
+{
+	int scan = MapVirtualKey(key & 0xff, MAPVK_VK_TO_VSC);
+
+	/* Set the scan code for extended keys */
+	switch (key)
+	{
+		case VK_RCONTROL:
+		case VK_SNAPSHOT: /* Print Screen */
+		case VK_RMENU: /* Right Alt / Alt Gr */
+		case VK_PAUSE: /* Pause / Break */
+		case VK_HOME:
+		case VK_UP:
+		case VK_PRIOR: /* Page up */
+		case VK_LEFT:
+		case VK_RIGHT:
+		case VK_END:
+		case VK_DOWN:
+		case VK_NEXT: /* 'Page Down' */
+		case VK_INSERT:
+		case VK_DELETE:
+		case VK_LWIN:
+		case VK_RWIN:
+		case VK_APPS: /* Application */
+		case VK_VOLUME_MUTE:
+		case VK_VOLUME_DOWN:
+		case VK_VOLUME_UP:
+		case VK_MEDIA_NEXT_TRACK:
+		case VK_MEDIA_PREV_TRACK:
+		case VK_MEDIA_STOP:
+		case VK_MEDIA_PLAY_PAUSE:
+		case VK_BROWSER_BACK:
+		case VK_BROWSER_FORWARD:
+		case VK_BROWSER_REFRESH:
+		case VK_BROWSER_STOP:
+		case VK_BROWSER_SEARCH:
+		case VK_BROWSER_FAVORITES:
+		case VK_BROWSER_HOME:
+		case VK_LAUNCH_MAIL:
+		{
+			flags |= KEYEVENTF_EXTENDEDKEY;
+			break;
+		}
+	}
+
+	/* Set the scan code for keyup */
+	if ( flags & KEYEVENTF_KEYUP ) {
+		scan |= 0x80;
+	}
+
+	flags |= KEYEVENTF_SCANCODE;
+
+	INPUT keyboardInput;
+	keyboardInput.type = INPUT_KEYBOARD;
+	keyboardInput.ki.wVk = 0;
+	keyboardInput.ki.wScan = scan;
+	keyboardInput.ki.dwFlags = flags;
+	keyboardInput.ki.time = 0;
+	keyboardInput.ki.dwExtraInfo = 0;
+	SendInput(1, &keyboardInput, sizeof(keyboardInput));
+}
+#endif
+
 Napi::Value keyPresser(const Napi::CallbackInfo &info, bool down) {
     Napi::Env env = info.Env();
-
-    if (macKeycodeMapReverse.size() == 0) {
-        // Initalise our reverse map
-        auto it = macKeycodeMap.begin();
-        while(it != macKeycodeMap.end()) {
-            macKeycodeMapReverse[it->second] = it->first;
-            it++;
-        }
-    }
-
     std::string s = info[0].As<Napi::String>();
-    CGKeyCode keyCode = (CGKeyCode)macKeycodeMapReverse[s];    
-    CGEventFlags flags = (CGEventFlags)0;
+    MWKeyCode keyCode = keyCodeForString(s);
+    bool meta = false, shift = false, alt = false, control = false, fn = false;
     if (info[1].IsObject()) {
         Napi::Object obj = info[1].As<Napi::Object>();
-        if (obj.Has("Meta")) {
-            flags |= kCGEventFlagMaskCommand;
-        }
-        if (obj.Has("Shift")) {
-            flags |= kCGEventFlagMaskShift;
-        }
-        if (obj.Has("Alt")) {
-            flags |= kCGEventFlagMaskAlternate;
-        }
-        if (obj.Has("Control")) {
-            flags |= kCGEventFlagMaskControl;
-        }
-        if (obj.Has("Fn")) {
-            flags |= kCGEventFlagMaskSecondaryFn;
-        }
+        meta = obj.Has("Meta");
+        shift = obj.Has("Shift");
+        alt = obj.Has("Alt");
+        control = obj.Has("Control");
+        fn = obj.Has("Fn");
     }
+#if defined(IS_MACOSX)
+    CGEventFlags flags = (CGEventFlags)0;
+    flags |= meta ? kCGEventFlagMaskCommand : flags
+          || shift ? kCGEventFlagMaskShift : flags
+          || alt ? kCGEventFlagMaskAlternate : flags
+          || control ? kCGEventFlagMaskControl : flags
+          || fn ? kCGEventFlagMaskSecondaryFn : flags;
     CGEventRef keyevent = CGEventCreateKeyboardEvent(getCGEventSource(), keyCode, down);
     CGEventSetFlags(keyevent, flags);
     CGEventPost(kCGSessionEventTap, keyevent);
     CFRelease(keyevent);
+#elif defined(IS_WINDOWS)
+    const DWORD dwFlags = down ? 0 : KEYEVENTF_KEYUP;
+
+    // Modifiers come first on key down, but last on keyup for consistency
+	if (!down) win32KeyEvent(keyCode, dwFlags);
+	
+    if (meta) win32KeyEvent(VK_LWIN, dwFlags);
+    if (alt) win32KeyEvent(VK_MENU, dwFlags);
+    if (control) win32KeyEvent(VK_CONTROL, dwFlags);
+    if (fn) win32KeyEvent(VK_SHIFT, dwFlags);
+
+    if (down) win32KeyEvent(keyCode, dwFlags);
+#endif
     return Napi::Boolean::New(env, true);
 }
 
@@ -411,7 +379,7 @@ Napi::Value keyUp(const Napi::CallbackInfo &info) {
 
 Napi::Value keyPress(const Napi::CallbackInfo &info) {
     keyDown(info);
-    usleep(10000);
+    os_sleep(10000);
     return keyUp(info);
 }
 

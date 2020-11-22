@@ -1,7 +1,11 @@
 #include "bitwig.h"
 #include "string.h"
+
+#if defined(IS_MACOSX)
 #include <CoreGraphics/CoreGraphics.h>
 #include <ApplicationServices/ApplicationServices.h>
+#endif
+
 #include <iostream>
 #include <string>
 #include <cstddef>
@@ -9,23 +13,28 @@
 #include <vector>
 using namespace std::string_literals;
 
-AXUIElementRef cachedBitwigRef;
-AXUIElementRef cachedPluginHostRef;
-pid_t pluginHostPID = -1;
-pid_t bitwigPID = -1;
+#if defined(IS_MACOSX)
+    AXUIElementRef cachedBitwigRef;
+    AXUIElementRef cachedPluginHostRef;
+    pid_t pluginHostPID = -1;
+    pid_t bitwigPID = -1;
+#endif
 
 Napi::Value AccessibilityEnabled(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
-    bool notify = info[0].As<Napi::Boolean>();
-    auto dict = CFDictionaryCreate(NULL, 
-        (const void **)&kAXTrustedCheckOptionPrompt, 
-        (const void **)(notify ? &kCFBooleanTrue : &kCFBooleanFalse), 
-        1, 
-        &kCFTypeDictionaryKeyCallBacks, 
-        &kCFTypeDictionaryValueCallBacks
-    );
-    bool trusted = AXIsProcessTrustedWithOptions(dict);
-    CFRelease(dict);
+    bool trusted = false;
+    #if defined(IS_MACOSX)
+        bool notify = info[0].As<Napi::Boolean>();
+        auto dict = CFDictionaryCreate(NULL, 
+            (const void **)&kAXTrustedCheckOptionPrompt, 
+            (const void **)(notify ? &kCFBooleanTrue : &kCFBooleanFalse), 
+            1, 
+            &kCFTypeDictionaryKeyCallBacks, 
+            &kCFTypeDictionaryValueCallBacks
+        );
+        trusted = AXIsProcessTrustedWithOptions(dict);
+        CFRelease(dict);
+    #endif
 
     return Napi::Boolean::New(
         env, 
@@ -33,6 +42,7 @@ Napi::Value AccessibilityEnabled(const Napi::CallbackInfo &info) {
     );
 }
 
+#if defined(IS_MACOSX)
 pid_t GetPID(std::string name) {
     // Go through all on screen windows, find BW
     CFArrayRef array = CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements, kCGNullWindowID);
@@ -72,7 +82,6 @@ bool refIsValidOrRelease(AXUIElementRef cachedRef) {
     }
     return false;
 }
-
 bool pidIsAlive(pid_t pid)  {
     return 0 == kill(pid, 0);
 }
@@ -90,86 +99,98 @@ AXUIElementRef GetBitwigAXUIElement() {
     }
     return cachedBitwigRef;
 }
-
-AXUIElementRef GetPluginAXUIElement() {
-    if (pluginHostPID == -1 || !pidIsAlive(pluginHostPID)) {
-        if (cachedPluginHostRef != NULL) {
-            CFRelease(cachedPluginHostRef);
-            cachedPluginHostRef = NULL;
+    AXUIElementRef GetPluginAXUIElement() {
+        if (pluginHostPID == -1 || !pidIsAlive(pluginHostPID)) {
+            if (cachedPluginHostRef != NULL) {
+                CFRelease(cachedPluginHostRef);
+                cachedPluginHostRef = NULL;
+            }
+            pluginHostPID = GetPID("Bitwig Plug-in Host 64");
+            if (pluginHostPID != -1) {
+                cachedPluginHostRef = AXUIElementCreateApplication(pluginHostPID);
+            }
         }
-        pluginHostPID = GetPID("Bitwig Plug-in Host 64");
-        if (pluginHostPID != -1) {
-            cachedPluginHostRef = AXUIElementCreateApplication(pluginHostPID);
-        }
+        return cachedPluginHostRef;
     }
-    return cachedPluginHostRef;
-}
+#endif
 
 Napi::Value GetPluginWindowsPosition(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
-    auto elementRef = GetPluginAXUIElement();
     Napi::Object outObj = Napi::Object::New(env);
-    if (elementRef != NULL) {
-        CFArrayRef windowArray = nil;
-        AXUIElementCopyAttributeValue(elementRef, kAXWindowsAttribute, (CFTypeRef*)&windowArray);
-        if (windowArray != nil) { 
-            CFIndex nItems = CFArrayGetCount(windowArray);
-            for (int i = 0; i < nItems; i++) {
-                AXUIElementRef itemRef = (AXUIElementRef) CFArrayGetValueAtIndex(windowArray, i);
-                CFTypeRef position;
-                CFTypeRef size;
-                CGPoint positionPoint;
-                CGSize sizePoint;
-                CFStringRef titleRef;
-                AXUIElementCopyAttributeValue(itemRef, kAXPositionAttribute, (CFTypeRef *)&position);
-                AXValueGetValue((AXValueRef)position, (AXValueType)kAXValueCGPointType, &positionPoint);
-                AXUIElementCopyAttributeValue(itemRef, kAXSizeAttribute, (CFTypeRef *)&size);
-                AXValueGetValue((AXValueRef)size, (AXValueType)kAXValueCGSizeType, &sizePoint);
-                AXUIElementCopyAttributeValue(itemRef, kAXTitleAttribute, (CFTypeRef *) &titleRef);
-                auto windowTitle = CFStringToString((CFStringRef)titleRef);
-                
-                auto obj = Napi::Object::New(env);
-                obj.Set(Napi::String::New(env, "x"), Napi::Number::New(env, positionPoint.x));
-                obj.Set(Napi::String::New(env, "y"), Napi::Number::New(env, positionPoint.y));
-                obj.Set(Napi::String::New(env, "w"), Napi::Number::New(env, sizePoint.width));
-                obj.Set(Napi::String::New(env, "h"), Napi::Number::New(env, sizePoint.height));
-                obj.Set(Napi::String::New(env, "id"), Napi::String::New(env, windowTitle));
-                outObj.Set(Napi::String::New(env, windowTitle), obj);
+
+    #if defined(IS_MACOSX)
+        auto elementRef = GetPluginAXUIElement();
+        if (elementRef != NULL) {
+            CFArrayRef windowArray = nil;
+            AXUIElementCopyAttributeValue(elementRef, kAXWindowsAttribute, (CFTypeRef*)&windowArray);
+            if (windowArray != nil) { 
+                CFIndex nItems = CFArrayGetCount(windowArray);
+                for (int i = 0; i < nItems; i++) {
+                    AXUIElementRef itemRef = (AXUIElementRef) CFArrayGetValueAtIndex(windowArray, i);
+                    CFTypeRef position;
+                    CFTypeRef size;
+                    CGPoint positionPoint;
+                    CGSize sizePoint;
+                    CFStringRef titleRef;
+                    AXUIElementCopyAttributeValue(itemRef, kAXPositionAttribute, (CFTypeRef *)&position);
+                    AXValueGetValue((AXValueRef)position, (AXValueType)kAXValueCGPointType, &positionPoint);
+                    AXUIElementCopyAttributeValue(itemRef, kAXSizeAttribute, (CFTypeRef *)&size);
+                    AXValueGetValue((AXValueRef)size, (AXValueType)kAXValueCGSizeType, &sizePoint);
+                    AXUIElementCopyAttributeValue(itemRef, kAXTitleAttribute, (CFTypeRef *) &titleRef);
+                    auto windowTitle = CFStringToString((CFStringRef)titleRef);
+                    
+                    auto obj = Napi::Object::New(env);
+                    obj.Set(Napi::String::New(env, "x"), Napi::Number::New(env, positionPoint.x));
+                    obj.Set(Napi::String::New(env, "y"), Napi::Number::New(env, positionPoint.y));
+                    obj.Set(Napi::String::New(env, "w"), Napi::Number::New(env, sizePoint.width));
+                    obj.Set(Napi::String::New(env, "h"), Napi::Number::New(env, sizePoint.height));
+                    obj.Set(Napi::String::New(env, "id"), Napi::String::New(env, windowTitle));
+                    outObj.Set(Napi::String::New(env, windowTitle), obj);
+                }
+                CFRelease(windowArray);
+                return outObj;
             }
-            CFRelease(windowArray);
-            return outObj;
         }
-    }
+    #endif
     return outObj;
 }
 
 Napi::Value SetPluginWindowsPosition(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
     auto inObject = info[0].As<Napi::Object>();
-    auto elementRef = GetPluginAXUIElement();
 
-    if (elementRef != NULL) {
-        CFArrayRef windowArray = nil;
-        AXUIElementCopyAttributeValue(elementRef, kAXWindowsAttribute, (CFTypeRef*)&windowArray);
-        if (windowArray != nil) { 
-            CFIndex nItems = CFArrayGetCount(windowArray);
-            for (int i = 0; i < nItems; i++) {
-                AXUIElementRef itemRef = (AXUIElementRef) CFArrayGetValueAtIndex(windowArray, i);
-                CFStringRef titleRef;
-                AXUIElementCopyAttributeValue(itemRef, kAXTitleAttribute, (CFTypeRef *) &titleRef);
-                auto windowTitle = CFStringToString((CFStringRef)titleRef);
+    #if defined(IS_MACOSX)
+        auto elementRef = GetPluginAXUIElement();
 
-                auto posForWindow = inObject.Get(windowTitle).As<Napi::Object>();
-                CGPoint newPoint;
-                newPoint.x = posForWindow.Get("x").As<Napi::Number>();
-                newPoint.y = posForWindow.Get("y").As<Napi::Number>();
-                auto position = (CFTypeRef)(AXValueCreate((AXValueType)kAXValueCGPointType, (const void *)&newPoint));
-                AXUIElementSetAttributeValue(itemRef, kAXPositionAttribute, position);
+        if (elementRef != NULL) {
+            CFArrayRef windowArray = nil;
+            AXUIElementCopyAttributeValue(elementRef, kAXWindowsAttribute, (CFTypeRef*)&windowArray);
+            if (windowArray != nil) { 
+                CFIndex nItems = CFArrayGetCount(windowArray);
+                for (int i = 0; i < nItems; i++) {
+                    AXUIElementRef itemRef = (AXUIElementRef) CFArrayGetValueAtIndex(windowArray, i);
+                    CFStringRef titleRef;
+                    AXUIElementCopyAttributeValue(itemRef, kAXTitleAttribute, (CFTypeRef *) &titleRef);
+                    auto windowTitle = CFStringToString((CFStringRef)titleRef);
+
+                    auto posForWindow = inObject.Get(windowTitle).As<Napi::Object>();
+                    CGPoint newPoint;
+                    newPoint.x = posForWindow.Get("x").As<Napi::Number>();
+                    newPoint.y = posForWindow.Get("y").As<Napi::Number>();
+                    auto position = (CFTypeRef)(AXValueCreate((AXValueType)kAXValueCGPointType, (const void *)&newPoint));
+                    AXUIElementSetAttributeValue(itemRef, kAXPositionAttribute, position);
+                }
+                CFRelease(windowArray);
             }
-            CFRelease(windowArray);
         }
-    }
+    #endif
+    return Napi::Boolean::New(
+        env, 
+        true
+    );
 }
+
+#if defined(IS_MACOSX)
 
 void closeWindowsForAXUIElement(AXUIElementRef elementRef) {
     if (elementRef != NULL) {
@@ -190,7 +211,6 @@ void closeWindowsForAXUIElement(AXUIElementRef elementRef) {
         }
     }
 }
-
 bool isAXUIElementActiveApp(AXUIElementRef element) {
     if (!element) {
         return false;
@@ -199,40 +219,68 @@ bool isAXUIElementActiveApp(AXUIElementRef element) {
     AXUIElementCopyAttributeValue(element, kAXFrontmostAttribute, (CFTypeRef*) &isFrontmost);
     return isFrontmost == kCFBooleanTrue;
 }
+#endif
 
 Napi::Value IsActiveApplication(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
-    return Napi::Boolean::New(
-        env, 
-        isAXUIElementActiveApp(GetBitwigAXUIElement()) || isAXUIElementActiveApp(GetPluginAXUIElement())
-    );
+
+    #if defined(IS_MACOSX)
+        return Napi::Boolean::New(
+            env, 
+            isAXUIElementActiveApp(GetBitwigAXUIElement()) || isAXUIElementActiveApp(GetPluginAXUIElement())
+        );
+    #elif defined(IS_WINDOWS)
+        return Napi::Boolean::New(
+            env, 
+            false
+        );
+    #endif
 }
 
 Napi::Value MakeMainWindowActive(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
-    auto uiEl = GetBitwigAXUIElement();
     auto success = false;
-    if (uiEl != NULL) {
-        AXUIElementSetAttributeValue(uiEl, kAXFrontmostAttribute, kCFBooleanTrue);
-        success = true;
-    }
-    return Napi::Boolean::New(
-        env, 
-        success
-    );
+
+    #if defined(IS_MACOSX)
+        auto uiEl = GetBitwigAXUIElement();
+        if (uiEl != NULL) {
+            AXUIElementSetAttributeValue(uiEl, kAXFrontmostAttribute, kCFBooleanTrue);
+            success = true;
+        }
+        return Napi::Boolean::New(
+            env, 
+            success
+        );
+    #elif defined(IS_WINDOWS)
+        return Napi::Boolean::New(
+            env, 
+            success
+        );
+    #endif
 }
 
 Napi::Value IsPluginWindowActive(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
-    return Napi::Boolean::New(
-        env, 
-        isAXUIElementActiveApp(GetPluginAXUIElement())
-    );
+    #if defined(IS_MACOSX)
+        return Napi::Boolean::New(
+            env, 
+            isAXUIElementActiveApp(GetPluginAXUIElement())
+        );
+    #elif defined(IS_WINDOWS)
+        return Napi::Boolean::New(
+            env, 
+            false
+        );
+    #endif
 }
 
 Napi::Value CloseFloatingWindows(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
-    closeWindowsForAXUIElement(GetPluginAXUIElement());
+    #if defined(IS_MACOSX)
+        closeWindowsForAXUIElement(GetPluginAXUIElement());
+    #elif defined(IS_WINDOWS)
+
+    #endif
     return Napi::Boolean::New(env, true);
 }
 

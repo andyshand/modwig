@@ -5,7 +5,7 @@
   "scripts": {
     "electron": "electron dist/main/main.js",
     "watch": "tsc -w --p tsconfig.server.json",
-    "start": "npm run buildc:dev && NODE_ENV=dev nodemon -V --watch ./dist . --exec 'npm run electron'",
+    "start": "node ./scripts/start.js",
     "start:quiet": "npm run dev & npm run buildc:dev && QUIET_START=true NODE_ENV=dev nodemon -V --watch ./dist . --exec 'npm run electron || touch ./dist/app.js'",
     "dev": "webpack-dev-server",
     "build:mac": "PLATFORM=darwin ARCH=x64 node ./scripts/package.js && open ../modwig",

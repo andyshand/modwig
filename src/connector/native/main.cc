@@ -1,6 +1,8 @@
 #include <napi.h>
+#if defined(IS_MACOSX)
 #include <CoreFoundation/CoreFoundation.h>
 #include <ApplicationServices/ApplicationServices.h>
+#endif
 
 #include "bitwig.h"
 #include "color.h"

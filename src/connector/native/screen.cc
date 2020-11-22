@@ -22,11 +22,13 @@ Screenshot::Screenshot(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Screen
 }
 
 Screenshot::~Screenshot() {
+   #if defined(IS_MACOSX)
    CFRelease(image);
    if (dataRef != NULL) {
     CFRelease(dataRef);
     CFRelease(colorSpace);
    }
+   #endif
 }
 
 /*

@@ -11,6 +11,7 @@ BESRect::BESRect(const Napi::CallbackInfo &info) : Napi::ObjectWrap<BESRect>(inf
     _h = info[3].As<Napi::Number>().DoubleValue();
 }
 
+#if defined(IS_MACOSX)
 static Napi::Object FromCGRect(const Napi::Env env, CGRect cgRect) {
     return BESRect::constructor.New({ 
         Napi::Number::New(env, cgRect.origin.x), 
@@ -19,6 +20,8 @@ static Napi::Object FromCGRect(const Napi::Env env, CGRect cgRect) {
         Napi::Number::New(env, cgRect.size.height)
     });
 }
+#endif
+
 
 Napi::Object BESRect::Init(Napi::Env env, Napi::Object exports) {
     Napi::Function func = DefineClass(env, "BESRect", {

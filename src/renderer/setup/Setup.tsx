@@ -50,6 +50,7 @@ const CenterText = styled.div`
 `
 const StepWrap = styled.div`
     display: flex;
+    background: #444;
     align-items: center;
     justify-content: center;
     height: 100%;
@@ -214,6 +215,13 @@ export class Setup extends React.Component {
                 this.onNextStep()
             } else {
                 send({type: 'api/setup/accessibility'})
+            }
+        }
+        if (require('os').platform() === 'win32') {
+            this.onNextStep()
+            return {
+                description: null,
+                content: null
             }
         }
         return {

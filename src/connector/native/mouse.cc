@@ -1,7 +1,7 @@
 #include "point.h"
 #include "mouse.h"
 #include "eventsource.h"
-
+#include "os.h"
 #include <iostream>
  
 int SLEEP_TIME = 2000;
@@ -9,6 +9,7 @@ bool middleDownDragWaiting = false;
 bool leftDownDragWaiting = false;
 bool rightDownDragWaiting = false;
 
+#if defined(IS_MACOSX)    
 CGEventType cgEventType(int button, bool down) {
     if (button == 0) {
         return down ? kCGEventLeftMouseDown : kCGEventLeftMouseUp;
@@ -18,19 +19,28 @@ CGEventType cgEventType(int button, bool down) {
         return down ? kCGEventOtherMouseDown : kCGEventOtherMouseUp;
     }
 } 
+#endif
 
 Napi::Value GetMousePosition(const Napi::CallbackInfo &info)
 {
     Napi::Env env = info.Env();
 
-    CGEventRef event = CGEventCreate(getCGEventSource());
-    CGPoint point = CGEventGetLocation(event);
-    CFRelease(event);
+    #if defined(IS_MACOSX)
+        CGEventRef event = CGEventCreate(getCGEventSource());
+        CGPoint point = CGEventGetLocation(event);
+        CFRelease(event);
 
-    return BESPoint::constructor.New({ 
-        Napi::Number::New(env, point.x),
-        Napi::Number::New(env, point.y)
-    });
+        return BESPoint::constructor.New({ 
+            Napi::Number::New(env, point.x),
+            Napi::Number::New(env, point.y)
+        });
+    #elif defined(IS_WINDOWS)
+    // TODO
+        return BESPoint::constructor.New({  
+            Napi::Number::New(env, 0),
+            Napi::Number::New(env, 0)
+        });
+    #endif
 }
 
 Napi::Value SetMousePosition(const Napi::CallbackInfo &info)
@@ -39,6 +49,7 @@ Napi::Value SetMousePosition(const Napi::CallbackInfo &info)
     Napi::Number x = info[0].As<Napi::Number>();
     Napi::Number y = info[1].As<Napi::Number>();
 
+#if defined(IS_MAC)
     if (middleDownDragWaiting || leftDownDragWaiting || rightDownDragWaiting) {
         CGEventRef ourEvent = CGEventCreate(getCGEventSource());
         CGPoint mouseLoc = CGEventGetLocation(ourEvent); //get current mouse position
@@ -58,7 +69,7 @@ Napi::Value SetMousePosition(const Napi::CallbackInfo &info)
         middleDownDragWaiting = false;
         leftDownDragWaiting = false;
         rightDownDragWaiting = false;
-        usleep(SLEEP_TIME);
+        os_sleep(SLEEP_TIME);
     }
 
     CGEventRef move = CGEventCreateMouseEvent(
@@ -69,12 +80,14 @@ Napi::Value SetMousePosition(const Napi::CallbackInfo &info)
     );
 	CGEventPost(kCGSessionEventTap, move);
 	CFRelease(move);
-    usleep(SLEEP_TIME);
+    os_sleep(SLEEP_TIME);
+    #endif  
 
     return Napi::Value();
 }
 
 void mouseUpDown(const Napi::CallbackInfo &info, bool down, bool doubleClick = false) {
+    #if defined(IS_MAC)
     CGMouseButton button = (CGMouseButton)info[0].As<Napi::Number>().Uint32Value();
 
     CGPoint pos = BESPoint::Unwrap(GetMousePosition(info).As<Napi::Object>())->asCGPoint();
@@ -128,7 +141,8 @@ void mouseUpDown(const Napi::CallbackInfo &info, bool down, bool doubleClick = f
     }
 	CGEventPost(kCGSessionEventTap, event);
 	CFRelease(event);
-    usleep(SLEEP_TIME);
+    os_sleep(SLEEP_TIME);
+    #endif
 }
 
 Napi::Value MouseDown(const Napi::CallbackInfo &info)
@@ -146,7 +160,7 @@ Napi::Value MouseUp(const Napi::CallbackInfo &info)
 Napi::Value Click(const Napi::CallbackInfo &info)
 {
     mouseUpDown(info, true);
-    usleep(SLEEP_TIME);
+    os_sleep(SLEEP_TIME);
     mouseUpDown(info, false);
     return Napi::Value();
 }
@@ -154,7 +168,7 @@ Napi::Value Click(const Napi::CallbackInfo &info)
 Napi::Value DoubleClick(const Napi::CallbackInfo &info)
 {
     mouseUpDown(info, true, true);
-    usleep(SLEEP_TIME);
+    os_sleep(SLEEP_TIME);
     mouseUpDown(info, false, true);
     return Napi::Value();
 }
@@ -162,11 +176,13 @@ Napi::Value DoubleClick(const Napi::CallbackInfo &info)
 Napi::Value SetCursorVisibility(const Napi::CallbackInfo &info) 
 {
     auto visible = info[0].As<Napi::Boolean>();
+    #if defined(IS_MAC)
     if (visible) {
         CGDisplayShowCursor(CGMainDisplayID());
     } else {
         CGDisplayHideCursor(CGMainDisplayID());
     }    
+    #endif
     return visible;
 }
 

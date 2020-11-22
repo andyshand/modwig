@@ -44,10 +44,13 @@ export class TrayService extends BESService {
             })
             this.settingsWindow.loadURL(loadUrl)
             this.settingsWindow.show()
-            app.dock.show()
-            this.settingsWindow.once('close', () => {
-                app.dock.hide()
-            })
+
+            if (app.dock) {
+                app.dock.show()
+                this.settingsWindow.once('close', () => {
+                    app.dock.hide()
+                })
+            }
         }
         
         const updateMenu = async () => {

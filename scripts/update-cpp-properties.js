@@ -31,8 +31,18 @@ const cprops = {
     ],
     version: 4
 }
+
+function getInclude() {
+  const homedir = require('os').homedir()
+  if (require('os').platform() === 'win32') {
+    return require('path').join(homedir, 'AppData\\Local\\node-gyp\\Cache\\12.16.3\\include\\node')
+  } else {
+    return execSync('which node').toString().trim().replace(/bin/, 'include') 
+  }
+}
+
 cprops.configurations[0].includePath = [
-    execSync('which node').toString().trim().replace(/bin/, 'include'),
+    getInclude(),
     "${workspaceFolder}/node_modules/node-addon-api",
     "${default}"
 ]

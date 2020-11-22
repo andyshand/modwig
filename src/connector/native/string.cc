@@ -1,5 +1,7 @@
 #include "string.h"
 
+#if defined(IS_MACOSX)
+
 std::string CFStringToString(CFStringRef cfString) {
     CFIndex bufferSize = CFStringGetLength(cfString) + 1; // The +1 is for having space for the string to be NUL terminated
     char buffer[bufferSize];
@@ -12,3 +14,5 @@ std::string CFStringToString(CFStringRef cfString) {
     }
     return "";
 }
+
+#endif

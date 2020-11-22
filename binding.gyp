@@ -4,8 +4,10 @@
       "target_name": "bes",
       "sources": [
         "src/connector/native/main.cc",
+        "src/connector/native/os.cc",
         "src/connector/native/string.cc",
         "src/connector/native/mouse.cc",
+        "src/connector/native/keycodes.cc",
         "src/connector/native/keyboard.cc",
         "src/connector/native/rect.cc",
         "src/connector/native/screen.cc",
@@ -29,7 +31,8 @@
         'VCCLCompilerTool': { 'ExceptionHandling': 1 },
       },
       'conditions': [
-      ['OS == "mac"', {
+      ['OS=="mac"', {
+        'defines': ['IS_MAC'],
         'cflags+': ['-fvisibility=hidden'],
         'xcode_settings': {
           'GCC_SYMBOLS_PRIVATE_EXTERN': 'YES', # -fvisibility=hidden
@@ -46,6 +49,13 @@
             '-framework ApplicationServices'
           ]
         }
+      }],
+      ['OS=="win"', {
+        'defines': [
+          'IS_WINDOWS',
+          'WINVER=0x0500',
+          '_WIN32_WINNT=0x0600'
+        ]
       }]
     ]
     }

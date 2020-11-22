@@ -24,7 +24,7 @@
       "cppStandard": "${default}",
       "compilerPath": "${default}",
       "includePath": [
-        "/Users/andrewshand/.nvm/versions/node/v12.9.1/include/node",
+        "C:\\Users\\andy shand\\AppData\\Local\\node-gyp\\Cache\\12.16.3\\include\\node",
         "${workspaceFolder}/node_modules/node-addon-api",
         "${default}"
       ]

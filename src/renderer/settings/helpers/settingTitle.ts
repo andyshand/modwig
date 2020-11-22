@@ -34,6 +34,8 @@ export const shortcutToTextDescription = (setting) => {
   }).map(key => {
       if (key === 'Meta' && mac) {
           return '⌘'
+      } else if (key === 'Meta' && !mac) {
+        return '⊞'
       } else if (key === 'Control') {
           return '⌃'
       } else if (key === 'Alt') {
