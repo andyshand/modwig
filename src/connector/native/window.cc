@@ -43,7 +43,6 @@ std::string processNameForWindow(HWND hWnd) {
 }
 
 #endif
-
 Napi::Value GetFrame(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
 
@@ -72,6 +71,28 @@ Napi::Value GetFrame(const Napi::CallbackInfo &info) {
                 });
             }
         }
+    #elif defined(IS_WINDOWS)
+        auto obj = Napi::Object::New(env);
+        EnumWindows([](HWND hWnd, LPARAM lParam) -> BOOL {
+            char buff[255];
+            GetClassName(
+                hWnd,
+                (LPTSTR) buff,
+                254
+            );
+            if (strcmp(&buff, "bitwig")) {
+                RECT rect;
+                GetWindowRect(hWnd, &rect);     
+                obj.Set(Napi::String::New(env, "x"), Napi::Number::New(env, rect.left));
+                obj.Set(Napi::String::New(env, "y"), Napi::Number::New(env, rect.top));
+                obj.Set(Napi::String::New(env, "w"), Napi::Number::New(env, rect.right - rect.left));
+                obj.Set(Napi::String::New(env, "h"), Napi::Number::New(env, rect.bottom - rect.top));
+                return FALSE;
+            }
+            // continue the enumeration
+            return TRUE; 
+        }, 0);
+        return obj;
     #endif
     return env.Null();
 }
@@ -82,11 +103,18 @@ Napi::Value GetMainScreen(const Napi::CallbackInfo &info) {
 
 #if defined(IS_MACOSX)  
     auto mainDisplayId = CGMainDisplayID();
-    CGFloat screenWidth = CGDisplayPixelsWide(mainDisplayId);
-    CGFloat screenHeight = CGDisplayPixelsHigh(mainDisplayId);
-    
-    obj.Set(Napi::String::New(env, "w"), Napi::Number::New(env, screenWidth));
-    obj.Set(Napi::String::New(env, "h"), Napi::Number::New(env, screenHeight));
+    obj.Set(Napi::String::New(env, "w"), Napi::Number::New(env, CGDisplayPixelsWide(mainDisplayId)));
+    obj.Set(Napi::String::New(env, "h"), Napi::Number::New(env, CGDisplayPixelsHigh(mainDisplayId)));
+#elif defined(IS_WINDOWS)
+    // Following is to get monitor of specific window
+    // HMONITOR monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+    // MONITORINFO info;
+    // info.cbSize = sizeof(MONITORINFO);
+    // GetMonitorInfo(monitor, &info);
+    // int monitor_width = info.rcMonitor.right - info.rcMonitor.left;
+    // int monitor_height = info.rcMonitor.bottom - info.rcMonitor.top;
+    obj.Set(Napi::String::New(env, "w"), Napi::Number::New(env, GetSystemMetrics(SM_CXFULLSCREEN)));
+    obj.Set(Napi::String::New(env, "h"), Napi::Number::New(env, GetSystemMetrics(SM_CYFULLSCREEN)));
 #endif
     return obj;
 }
@@ -107,6 +135,8 @@ Napi::Value ClosePluginWindows(const Napi::CallbackInfo &info) {
             std::cout << "window name: " << windowName << std::endl;
         }
     }
+#elif defined(IS_WINDOWS)
+    
 #endif
     return env.Null();
 }
