@@ -35,10 +35,11 @@ Napi::Value GetMousePosition(const Napi::CallbackInfo &info)
             Napi::Number::New(env, point.y)
         });
     #elif defined(IS_WINDOWS)
-    // TODO
+        POINT point;
+        GetCursorPos(&point);
         return BESPoint::constructor.New({  
-            Napi::Number::New(env, 0),
-            Napi::Number::New(env, 0)
+            Napi::Number::New(env, point.x),
+            Napi::Number::New(env, point.y)
         });
     #endif
 }
@@ -49,100 +50,131 @@ Napi::Value SetMousePosition(const Napi::CallbackInfo &info)
     Napi::Number x = info[0].As<Napi::Number>();
     Napi::Number y = info[1].As<Napi::Number>();
 
-#if defined(IS_MAC)
-    if (middleDownDragWaiting || leftDownDragWaiting || rightDownDragWaiting) {
-        CGEventRef ourEvent = CGEventCreate(getCGEventSource());
-        CGPoint mouseLoc = CGEventGetLocation(ourEvent); //get current mouse position
-        CFRelease(ourEvent);
+    #if defined(IS_MAC)
+        if (middleDownDragWaiting || leftDownDragWaiting || rightDownDragWaiting) {
+            CGEventRef ourEvent = CGEventCreate(getCGEventSource());
+            CGPoint mouseLoc = CGEventGetLocation(ourEvent); //get current mouse position
+            CFRelease(ourEvent);
 
-        // First send a dragged event at current location
-        std::cout << "Middle is down, sending dragged event";
-        CGEventRef drag = CGEventCreateMouseEvent(
+            // First send a dragged event at current location
+            CGEventRef drag = CGEventCreateMouseEvent(
+                getCGEventSource(), 
+                middleDownDragWaiting ? kCGEventOtherMouseDragged : (leftDownDragWaiting ? kCGEventLeftMouseDragged : kCGEventRightMouseDragged),
+                mouseLoc,
+                middleDownDragWaiting ? kCGMouseButtonCenter : (leftDownDragWaiting ? kCGMouseButtonLeft : kCGMouseButtonRight) // Ignored for mouse moved events apparently
+            );
+            CGEventPost(kCGSessionEventTap, drag);
+            CFRelease(drag);
+
+            middleDownDragWaiting = false;
+            leftDownDragWaiting = false;
+            rightDownDragWaiting = false;
+            os_sleep(SLEEP_TIME);
+        }
+
+        CGEventRef move = CGEventCreateMouseEvent(
             getCGEventSource(), 
-            middleDownDragWaiting ? kCGEventOtherMouseDragged : (leftDownDragWaiting ? kCGEventLeftMouseDragged : kCGEventRightMouseDragged),
-            mouseLoc,
-            middleDownDragWaiting ? kCGMouseButtonCenter : (leftDownDragWaiting ? kCGMouseButtonLeft : kCGMouseButtonRight) // Ignored for mouse moved events apparently
+            middleDownDragWaiting ? kCGEventOtherMouseDragged : kCGEventMouseMoved,
+            CGPointMake((CGFloat)x.DoubleValue(), (CGFloat)y.DoubleValue()),
+            middleDownDragWaiting ? kCGMouseButtonCenter : kCGMouseButtonLeft // Ignored for mouse moved events apparently
         );
-        CGEventPost(kCGSessionEventTap, drag);
-        CFRelease(drag);
-
-        middleDownDragWaiting = false;
-        leftDownDragWaiting = false;
-        rightDownDragWaiting = false;
-        os_sleep(SLEEP_TIME);
-    }
-
-    CGEventRef move = CGEventCreateMouseEvent(
-        getCGEventSource(), 
-        middleDownDragWaiting ? kCGEventOtherMouseDragged : kCGEventMouseMoved,
-        CGPointMake((CGFloat)x.DoubleValue(), (CGFloat)y.DoubleValue()),
-        middleDownDragWaiting ? kCGMouseButtonCenter : kCGMouseButtonLeft // Ignored for mouse moved events apparently
-    );
-	CGEventPost(kCGSessionEventTap, move);
-	CFRelease(move);
+        CGEventPost(kCGSessionEventTap, move);
+        CFRelease(move);
+    #elif defined(IS_WINDOWS)  
+        INPUT mouseInput = {0};
+        mouseInput.type = INPUT_MOUSE;
+        mouseInput.mi.dx = x.LongValue();
+        mouseInput.mi.dy = y.LongValue();
+        mouseInput.mi.dwFlags = MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_MOVE | MOUSEEVENTF_VIRTUALDESK;
+        mouseInput.mi.time = 0;
+        SendInput(1, &mouseInput, sizeof(mouseInput));
+    #endif
     os_sleep(SLEEP_TIME);
-    #endif  
-
     return Napi::Value();
 }
 
 void mouseUpDown(const Napi::CallbackInfo &info, bool down, bool doubleClick = false) {
     #if defined(IS_MAC)
-    CGMouseButton button = (CGMouseButton)info[0].As<Napi::Number>().Uint32Value();
+        CGMouseButton button = (CGMouseButton)info[0].As<Napi::Number>().Uint32Value();
 
-    CGPoint pos = BESPoint::Unwrap(GetMousePosition(info).As<Napi::Object>())->asCGPoint();
-    CGEventFlags flags = (CGEventFlags)0;
-    std::cout << "Button is " << button;
+        CGPoint pos = BESPoint::Unwrap(GetMousePosition(info).As<Napi::Object>())->asCGPoint();
+        CGEventFlags flags = (CGEventFlags)0;
 
-    if (info[1].IsObject()) {
-        // We got options
-        Napi::Object options = info[1].As<Napi::Object>();
-        if (options.Has("Meta")) {
-            flags |= kCGEventFlagMaskCommand;
+        if (info[1].IsObject()) {
+            // We got options
+            Napi::Object options = info[1].As<Napi::Object>();
+            if (options.Has("Meta")) {
+                flags |= kCGEventFlagMaskCommand;
+            }
+            if (options.Has("Control")) {
+                flags |= kCGEventFlagMaskControl;
+            }
+            if (options.Has("Shift")) {
+                flags |= kCGEventFlagMaskShift;
+            }
+            if (options.Has("Alt")) {
+                flags |= kCGEventFlagMaskAlternate;
+            }
+            
+            if (options.Has("x")) {
+                pos.x = (CGFloat)options.Get("x").As<Napi::Number>().DoubleValue();
+            }
+            if (options.Has("y")) {
+                pos.y = (CGFloat)options.Get("y").As<Napi::Number>().DoubleValue();
+            }
         }
-        if (options.Has("Control")) {
-            flags |= kCGEventFlagMaskControl;
+
+        // Swapped from Javascript paradigm
+        if (button == 2) {
+            button = (CGMouseButton)1;
+            rightDownDragWaiting = down;
+        } else if (button == 1) {
+            middleDownDragWaiting = down;
+            button = (CGMouseButton)2;
+        } else {
+            leftDownDragWaiting = down;
         }
-        if (options.Has("Shift")) {
-            flags |= kCGEventFlagMaskShift;
+
+        CGEventRef event = CGEventCreateMouseEvent(
+            getCGEventSource(),
+            cgEventType(button, down),
+            pos,
+            button
+        );
+        CGEventSetFlags(event, flags);
+        if (doubleClick) {
+            CGEventSetIntegerValueField(event, kCGMouseEventClickState, 2);
         }
-        if (options.Has("Alt")) {
-            flags |= kCGEventFlagMaskAlternate;
-        }
-        
+        CGEventPost(kCGSessionEventTap, event);
+        CFRelease(event);
+    #elif defined(IS_WINDOWS)
+        INPUT mouseInput;
+        DWORD dwFlags;
+        mouseInput.type = INPUT_MOUSE;
+        // Assumed relative unless MOUSEEVENTF_ABSOLUTE in flags
+        mouseInput.mi.dx = 0;
+        mouseInput.mi.dy = 0;
         if (options.Has("x")) {
-            pos.x = (CGFloat)options.Get("x").As<Napi::Number>().DoubleValue();
+            mouseInput.mi.dx = (LONG)options.Get("x").As<Napi::Number>().LongValue();
+            dwFlags |= MOUSEEVENTF_ABSOLUTE;
         }
         if (options.Has("y")) {
-            pos.y = (CGFloat)options.Get("y").As<Napi::Number>().DoubleValue();
+            mouseInput.mi.dy = (LONG)options.Get("y").As<Napi::Number>().LongValue();
+            dwFlags |= MOUSEEVENTF_ABSOLUTE;
         }
-    }
-
-    // Swapped from Javascript paradigm
-    if (button == 2) {
-        button = (CGMouseButton)1;
-        rightDownDragWaiting = down;
-    } else if (button == 1) {
-        middleDownDragWaiting = down;
-        button = (CGMouseButton)2;
-    } else {
-        leftDownDragWaiting = down;
-    }
-
-	CGEventRef event = CGEventCreateMouseEvent(
-        getCGEventSource(),
-        cgEventType(button, down),
-        pos,
-        button
-    );
-    CGEventSetFlags(event, flags);
-    if (doubleClick) {
-        CGEventSetIntegerValueField(event, kCGMouseEventClickState, 2);
-    }
-	CGEventPost(kCGSessionEventTap, event);
-	CFRelease(event);
-    os_sleep(SLEEP_TIME);
+        if (button == 0) {
+            dwFlags |= down ? MOUSEEVENTF_LEFTDOWN : MOUSEEVENTF_LEFTUP;
+        } else if (button == 1) {
+            dwFlags |= down ? MOUSEEVENTF_MIDDLEDOWN : MOUSEEVENTF_MIDDLEUP;
+        } else if (button == 2) {
+            dwFlags |= down ? MOUSEEVENTF_RIGHTDOWN : MOUSEEVENTF_RIGHTUP;
+        }
+        mouseInput.mi.time = 0;
+        mouseInput.mi.dwExtraInfo = 0;
+        mouseInput.mi.mouseData = 0;
+        SendInput(1, &mouseInput, sizeof(mouseInput));
     #endif
+    os_sleep(SLEEP_TIME);
 }
 
 Napi::Value MouseDown(const Napi::CallbackInfo &info)
