@@ -10,7 +10,7 @@ const autoArmFor = {
     Instrument: true,
     Hybrid: true
 }
-const debouncedTrackWorker = debounce((t) => {
+const trackWorker = (t) => {
     if (t) {
         t.arm().set(true)
     } else {
@@ -18,7 +18,7 @@ const debouncedTrackWorker = debounce((t) => {
             t.arm().set(false);
         })
     }
-}, 150)
+}
 
 tracks.forEach((t, i) => {
     t.addIsSelectedObserver(selected => {
@@ -27,9 +27,9 @@ tracks.forEach((t, i) => {
         }
         if (selected) {
             if(t.trackType().get() in autoArmFor) {
-                debouncedTrackWorker(t)
+                trackWorker(t)
             } else {
-                debouncedTrackWorker(null)
+                trackWorker(null)
             }
         }
     })

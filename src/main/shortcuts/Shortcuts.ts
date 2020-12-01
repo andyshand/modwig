@@ -480,6 +480,23 @@ export class ShortcutsService extends BESService {
                         })
                     }
                 },
+                ...this.repeatActionWithRange('launchArrangerCueMarker', 1, 9, i => {
+                    return {
+                        defaultSetting: {
+                            keys: ["Meta", String(i)]
+                        },
+                        action: () => {
+                            if (!this.browserIsOpen) {
+                                sendPacketToBitwig({
+                                    type: 'action',
+                                    data: [
+                                        `launch_arranger_cue_marker${i}`
+                                    ]
+                                })
+                            }
+                        }
+                    }
+                }),
                 focusTrackHeaderArea: {
                     defaultSetting: {
                         keys: ['T']
