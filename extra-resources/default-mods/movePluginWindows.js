@@ -73,7 +73,7 @@ Mod.registerAction({
         }
 
         const display = MainDisplay.getDimensions()
-        const startX = 0;
+        const startX = 420;
     
         let x = startX, y = 0;
         let nextRowY = y;
@@ -107,7 +107,9 @@ Mod.registerAction({
         const offsetY = (display.h - maxY) / 2
         for (const pos of out) {
             finalPositions[pos.id] = {
-                x: pos.x + offsetX,
+                // x: pos.x + offsetX,
+                // y: pos.y + offsetY
+                x: pos.x,
                 y: pos.y + offsetY
             }
         }
