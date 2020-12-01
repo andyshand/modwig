@@ -5,7 +5,7 @@
  * @category arranger
  */
 
-Mouse.on('mouseup', whenActiveListener(async event => {
+Mouse.on('click', whenActiveListener(async event => {
     if (event.button === 0 && !event.Meta && !event.intersectsPluginWindows()) {
         const frame = MainWindow.getFrame()
         const yWithinArranger = x => {

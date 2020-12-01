@@ -271,7 +271,20 @@ export class ModsService extends BESService {
                         Object.setPrototypeOf(event, MouseEvent)
                         cb(event, ...rest)
                     }
-                    wrappedOnForReloadDisconnect(Keyboard)(eventName, wrappedCb)
+                    if (eventName === 'click') {
+                        let downEvent, downTime
+                        wrappedOnForReloadDisconnect(Keyboard)('mousedown', (event) => {
+                            downTime = new Date()
+                            downEvent = JSON.stringify(event)
+                        })
+                        wrappedOnForReloadDisconnect(Keyboard)('mouseup', (event, ...rest) => {
+                            if (JSON.stringify(event) === downEvent && downTime && new Date().getTime() - downTime.getTime() < 250) {
+                                wrappedCb(event, ...rest)
+                            }
+                        })
+                    } else {
+                        wrappedOnForReloadDisconnect(Keyboard)(eventName, wrappedCb)
+                    }
                 },
                 returnAfter: returnMouseAfter            
             },

@@ -73,7 +73,7 @@ Mod.registerAction({
         }
 
         const display = MainDisplay.getDimensions()
-        const startX = 420;
+        const startX = 500;
     
         let x = startX, y = 0;
         let nextRowY = y;

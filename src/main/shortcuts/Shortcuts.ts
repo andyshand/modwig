@@ -414,9 +414,11 @@ export class ShortcutsService extends BESService {
                     },
                     description: `Resets all the filters in the currently open popup browser.`,
                     action: () => {
-                        sendPacketToBitwig({
-                            type: 'browser/filters/clear'
-                        })
+                        if (this.browserIsOpen) {
+                            sendPacketToBitwig({
+                                type: 'browser/filters/clear'
+                            })
+                        }
                     }
                 },
                 confirmBrowser: {
@@ -425,9 +427,11 @@ export class ShortcutsService extends BESService {
                     },
                     description: `Confirms the current choice in the popup browser. If there is a search query and no selected item, the first result will be confirmed.`,
                     action: () => {
-                        sendPacketToBitwig({
-                            type: this.browserText.length > 0 ? 'browser/select-and-confirm' : 'browser/confirm'
-                        })
+                        if (this.browserIsOpen) {
+                            sendPacketToBitwig({
+                                type: this.browserText.length > 0 ? 'browser/select-and-confirm' : 'browser/confirm'
+                            })
+                        }
                     }
                 },
                 previousBrowserTab: {
@@ -435,9 +439,11 @@ export class ShortcutsService extends BESService {
                         keys: ['Control', 'ArrowLeft']
                     },
                     action: () => {
-                        sendPacketToBitwig({
-                            type: 'browser/tabs/previous'
-                        })
+                        if (this.browserIsOpen) {
+                            sendPacketToBitwig({
+                                type: 'browser/tabs/previous'
+                            })
+                        }
                     }
                 },
                 nextBrowserTab: {
@@ -445,9 +451,11 @@ export class ShortcutsService extends BESService {
                         keys: ['Control', 'ArrowRight']
                     },
                     action: () => {
-                        sendPacketToBitwig({
-                            type: 'browser/tabs/next'
-                        })
+                        if (this.browserIsOpen) {
+                            sendPacketToBitwig({
+                                type: 'browser/tabs/next'
+                            })
+                        }
                     }
                 },
                 ...this.repeatActionWithRange('selectBrowserTab', 1, 6, i => {
@@ -455,10 +463,14 @@ export class ShortcutsService extends BESService {
                         defaultSetting: {
                             keys: ["Meta", String(i)]
                         },
-                        action: () => sendPacketToBitwig({
-                            type: 'browser/tabs/set',
-                            data: i - 1
-                        }),
+                        action: () => {
+                            if (this.browserIsOpen) {
+                                sendPacketToBitwig({
+                                    type: 'browser/tabs/set',
+                                    data: i - 1
+                                })
+                            }
+                        },
                     }
                 }),
             })),
