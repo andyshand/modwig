@@ -131,6 +131,10 @@ export class ModsService extends BESService {
 
     logTimeout 
     eventLogger = (msg) => {
+        if (process.env.NO_LOG) {
+            return
+        }
+        
         if (this.waitingMessages[this.waitingMessages.length - 1]?.msg === msg ?? false) {
             this.waitingMessages[this.waitingMessages.length - 1].count++
         } else {
