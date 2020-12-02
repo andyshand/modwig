@@ -7,6 +7,7 @@ import { url } from "../core/Url"
 import { SettingsService } from "../core/SettingsService"
 import { logWithTime } from "../core/Log"
 import { ModsService } from "../mods/ModsService"
+import { returnMouseAfter } from "../../connector/shared/EventUtils"
 const colors = require('colors')
 
 const { Keyboard, Mouse, MainWindow, Bitwig } = require('bindings')('bes')
@@ -517,6 +518,23 @@ export class ShortcutsService extends BESService {
                         sendPacketToBitwig({type: 'action', data: 'focus_track_header_area'})
                         Bitwig.makeMainWindowActive()
                     } 
+                },
+                setAutomationValue: {
+                    defaultSetting: {
+                        keys: ['Meta', 'Enter']
+                    },
+                    action: () => {
+                        if (!this.browserIsOpen) {
+                            const frame = MainWindow.getFrame()
+                            returnMouseAfter(() => {
+                                Mouse.click(0, {
+                                    x: frame.x + 140,
+                                    y: frame.y + 140,
+                                    Meta: true
+                                })
+                            })
+                        }
+                    }
                 }
             })),
 

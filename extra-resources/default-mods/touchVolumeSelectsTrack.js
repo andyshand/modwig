@@ -22,12 +22,12 @@ Mouse.on('click', whenActiveListener(async event => {
         const arrangerX = x => {
             return frame.x + 175 + (topLevel ? 0 : 22) + x
         }
-        if (doubleTrackHeight && withinXRange(arrangerX(0), arrangerX(220))) {
+        if (doubleTrackHeight && withinXRange(arrangerX(70), arrangerX(220))) {
             // Click the track faders to select
             Mouse.returnAfter(() => {
                 Mouse.click(0, {x: arrangerX(202), y: event.y})  
             })
-        } else if (!doubleTrackHeight && withinXRange(arrangerX(0), arrangerX(250))) {
+        } else if (!doubleTrackHeight && withinXRange(arrangerX(70), arrangerX(250))) {
             // Click the track faders to select
             Mouse.returnAfter(() => {
                 const clickAt = {x: arrangerX(252), y: event.y}
