@@ -5,6 +5,7 @@ import { SettingShortcut } from './setting/SettingShortcut'
 import { sendPromise } from '../bitwig-api/Bitwig'
 import { humanise, settingShortDescription, settingTitle, shortcutToTextDescription } from './helpers/settingTitle'
 import _ from 'underscore'
+import { ModLogs } from './ModLogs'
 const xPad = `4rem`
 const SettingsViewWrap = styled.div`
     background: #131313;
@@ -75,6 +76,14 @@ const NoMods = styled.div`
         margin-top: .5em;
     }
 
+`
+const ModAndLogs = styled.div`
+    display: flex;
+    flex-direction: column;
+    >:nth-child(2) {
+        flex-grow: 1;
+        overflow-y: auto;
+    }
 `
 const Tabs = styled.div`
     display: flex;
@@ -267,6 +276,8 @@ const Toggle = ({value, onChange}) => {
     return <ToggleStyle onClick={onClick} value={ourValue} />
 }
 
+
+
 export class SettingsView extends React.Component<Props> {
 
     state = {
@@ -326,6 +337,21 @@ export class SettingsView extends React.Component<Props> {
     renderMods() {
         const filteredMods = this.state.mods.filter(mod => this.state.searchQuery === '' || (mod.key + mod.description).toLowerCase().indexOf(this.state.searchQuery) >= 0)
         const modsByCategory = _.groupBy(filteredMods, 'category')
+        const chosenMod = this.state.mods.find(mod => this.state.focusedSettingKey === mod.key)
+        const onToggleChange = async (mod, enabled) => {
+            await sendPromise({
+                type: 'api/settings/set',
+                data: {
+                    ...mod,
+                    value: {
+                        ...mod.value,
+                        enabled: enabled
+                    }
+                }
+            })
+            this.fetchData()
+        }
+        console.log(chosenMod)
         return <NavSplit>
             <div>
                 {Object.keys(modsByCategory).map(category => {
@@ -338,7 +364,6 @@ export class SettingsView extends React.Component<Props> {
                                     this.setState({
                                         focusedSettingKey: mod.key
                                     })
-                                    document.getElementById(mod.key).scrollIntoView({behavior: 'auto', block: 'start'})
                                 }
                                 return <SidebarSetting focused={mod.key === this.state.focusedSettingKey} title={mod.name || mod.key} onClick={onClick} key={mod.key}>
                                     <span>{mod.value.enabled ? 'On' : 'Off'}</span>
@@ -349,44 +374,28 @@ export class SettingsView extends React.Component<Props> {
                     </SidebarSection>
                 })}
             </div>
-            <div>
-            {filteredMods.map(mod => {
-                const onToggleChange = async enabled => {
-                    await sendPromise({
-                        type: 'api/settings/set',
-                        data: {
-                            ...mod,
-                            value: {
-                                ...mod.value,
-                                enabled: enabled
-                            }
-                        }
-                    })
-                    this.fetchData()
-                }
-                return <ModRow key={mod.id} id={mod.key}>
+            {chosenMod ? <ModAndLogs>
+                <ModRow key={chosenMod.id} id={chosenMod.key}>
                     <ModContent>
                         <div>
-                            <SettingTitle style={{fontSize: '1.1em'}}>{mod.name}</SettingTitle>
-                            <SettingDesc style={{maxWidth: '40rem', fontSize: '1em', marginTop: `1.2rem`}}>{mod.description}</SettingDesc>
+                            <SettingTitle style={{fontSize: '1.1em'}}>{chosenMod.name}</SettingTitle>
+                            <SettingDesc style={{maxWidth: '40rem', fontSize: '1em', marginTop: `1.2rem`}}>{chosenMod.description}</SettingDesc>
                         </div>
                         <ToggleAndText>
-                            <Toggle onChange={onToggleChange} value={mod.value.enabled} />
+                            <Toggle onChange={onToggleChange.bind(chosenMod)} value={chosenMod.value.enabled} />
                         </ToggleAndText>
                     </ModContent>
                     <div></div>
                     <div style={{padding: `2rem 4rem`, paddingTop: `0`}}>
-                        <SettingItem focused={false} key={mod.id} setting={{...mod, description: `Toggle all actions and related functionality for ${mod.name}.`, name: `Enabled/Disable ${mod.name}`}} />
-                        {mod.actions.map(action => {
+                        <SettingItem focused={false} key={chosenMod.id} setting={{...chosenMod, description: `Toggle all actions and related functionality for ${chosenMod.name}.`, name: `Enabled/Disable ${chosenMod.name}`}} />
+                        {chosenMod.actions.map(action => {
                             return <SettingItem focused={false} key={action.id} setting={action} />
                         })}
                     </div>
-                </ModRow>
-            })}
-            </div>
+                </ModRow> 
+                <ModLogs mod={chosenMod} />
+            </ModAndLogs> : null}
         </NavSplit>
-   
-            
     }
 
     renderSettings() {
@@ -433,8 +442,8 @@ export class SettingsView extends React.Component<Props> {
             {children: 'Arranger', category: 'arranger'},
             {children: 'Browser', category: 'browser'},
             {children: 'Devices', category: 'devices'},
-            {children: 'Mods', category: 'mod'}
-            // {children: 'Built-in', category: 'bitwig'},
+            {children: 'Mods', category: 'mod'},
+            {children: 'Built-in', category: 'bitwig'},
         ]
         return <SettingsViewWrap>
             <div>

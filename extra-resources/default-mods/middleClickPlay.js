@@ -62,6 +62,7 @@ Mouse.on('mouseup', event => {
                     const mainWindowFrame = MainWindow.getFrame()
                     timelineClickPosition = {x: event.x, y: 91 + mainWindowFrame.y}
                 }
+                log(`Double-clicking time ruler at ${timelineClickPosition.x}, ${timelineClickPosition.y}`)
                 Mouse.doubleClick(0, timelineClickPosition)
                 Keyboard.keyUp('1')
             })

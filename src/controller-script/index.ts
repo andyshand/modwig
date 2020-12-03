@@ -991,10 +991,13 @@ function init() {
             // cursorSiblingsTrackBank: deps.globalController.cursorSiblingsTrackBank,
             settings,
             runAction,
-            log: (msg: string) => {
+            log: (msg: string, modId?: string) => {
                 deps.packetManager.send({
-                    type: 'log',
-                    data: msg
+                    type: 'bitwig/log',
+                    data: {
+                        msg,
+                        modId
+                    }
                 })
                 println(msg)
             },

@@ -57,10 +57,10 @@ Mod.registerAction({
 })
 
 Mod.registerAction({
-    title: "Show Automation for Current Track",
+    title: "Toggle Automation for Current Track",
     id: "show-current-automation.automation-area.modwig",
     category: "arranger",
-    description: `Hides automation for all tracks in the arranger.`,
+    description: `Toggle automation for current track.`,
     defaultSetting: {
         keys: ["A"]
     },
@@ -68,10 +68,10 @@ Mod.registerAction({
 })
 
 Mod.registerAction({
-    title: "Show All Automation for Current Track",
+    title: "Toggle All Automation for Current Track",
     id: "show-all-current-automation.automation-area.modwig",
     category: "arranger",
-    description: `Hides automation for all tracks in the arranger.`,
+    description: `Toggle all automation for current track.`,
     defaultSetting: {
         keys: ["Shift", "A"]
     },

@@ -1,4 +1,4 @@
-import { sendPacketToBitwig, interceptPacket, sendPacketToBrowser, addAPIMethod, sendPacketToBitwigPromise } from "../core/WebsocketToSocket"
+import { sendPacketToBitwig, interceptPacket, sendPacketToBrowser, addAPIMethod, sendPacketToBitwigPromise, SocketMiddlemanService } from "../core/WebsocketToSocket"
 import { BESService, getService, makeEvent } from "../core/Service"
 import { returnMouseAfter, whenActiveListener } from "../../connector/shared/EventUtils"
 import { getDb } from "../db"
@@ -109,6 +109,7 @@ export class ModsService extends BESService {
     latestModsMap: { [name: string]: Partial<ModInfo> } = {}
     onReloadMods: Function[] = []
     shortcutsService = getService<ShortcutsService>("ShortcutsService")
+    suckitService = getService<SocketMiddlemanService>("SocketMiddlemanService")
     activeEngineProject: string | null = null
     tracks: any[] = []
     events = {
@@ -147,6 +148,16 @@ export class ModsService extends BESService {
             }
             this.waitingMessages = []
         }, 250)
+    }
+
+    logForMod(modId: string, ...args: any[]) {
+        const socketsForWithModId = this.suckitService.getActiveWebsockets().filter(({id, ws, activeModLogKey}) => activeModLogKey === modId)
+        for (const socc of socketsForWithModId) {
+            socc.send({
+                type: 'log',
+                data: args
+            })
+        }
     }
 
     async makeApi(mod) {
@@ -254,12 +265,16 @@ export class ModsService extends BESService {
         }
         const that = this
         const api = {
-            log: (...args) => logWithTime(`${colors.green(mod.id)}:`, ...args),
+            log: (...args) => {
+                logWithTime(`${colors.green(mod.id)}:`, ...args)
+                this.logForMod(mod.id, ...args)
+            },
             Keyboard: {
                 ...Keyboard,
                 on: (eventName: string, cb: Function) => {
                     const wrappedCb = (event, ...rest) => {
                         this.eventLogger(`${colors.cyan(eventName)} -> ${colors.green(mod.id)}`)
+                        this.logForMod(mod.id, `${eventName}`)
                         Object.setPrototypeOf(event, KeyboardEvent)
                         cb(event, ...rest)
                     }
@@ -272,6 +287,7 @@ export class ModsService extends BESService {
                 on: (eventName: string, cb: Function) => {
                     const wrappedCb = (event, ...rest) => {
                         this.eventLogger(`${colors.cyan(eventName)} -> ${colors.green(mod.id)}`)
+                        this.logForMod(mod.id, `${eventName}`)
                         Object.setPrototypeOf(event, MouseEvent)
                         cb(event, ...rest)
                     }
@@ -507,6 +523,18 @@ export class ModsService extends BESService {
             this.browserIsOpen = isOpen
             this.events.browserOpen.emit(isOpen, previous)
         })
+
+        // API endpoint to set the current log for specific websocket
+        interceptPacket('api/mods/log', ({ data: modId }, websocket) => {
+            websocket.activeModLogKey = modId
+        })
+        interceptPacket('bitwig/log', undefined, (packet) => {
+            logWithTime(colors.yellow(`Bitwig: ` + packet.data.msg))
+            if (packet.data.modId) {
+                this.logForMod(packet.data.modId, packet.data.msg)
+            }
+        })
+
         addAPIMethod('api/mods', async () => {
             const mods = await this.getMods()
             const db = await getDb()

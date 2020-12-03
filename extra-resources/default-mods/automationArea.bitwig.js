@@ -34,7 +34,8 @@ packetManager.listen('show-automation.automation-area.modwig', (packet) => {
     const childCount = cursorTrack.isGroup().get() ? cursorTrackBank.channelCount().get() : 0
     const collapsed = cursorTrack.isGroup().get() ? !globalController.findTrackByName(firstChildName) : true
 
-    if (exclusiveAutomation) {
+    // host.showPopupNotification(`shown: ${automationShown} collapsed: ${collapsed} childCount: ${childCount}`)
+    if (exclusiveAutomation && !automationShown) {
         // Hide other automation first
         runAction([
             `toggle_automation_shown_for_all_tracks`, 
