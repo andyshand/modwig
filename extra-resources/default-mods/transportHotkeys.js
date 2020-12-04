@@ -29,3 +29,29 @@ for (const [amount, keys] of amounts) {
         }
     })
 }
+
+Mod.registerAction({
+    title: `Jump to Previous Cue Marker`,
+    id: `jump-to-previous-cue-marker`,
+    category: "global",
+    description: `Proxy for built-in Bitwig action`,
+    defaultSetting: {
+        keys: ['Control', 'NumpadDivide']
+    },
+    action: () => {
+        Bitwig.sendPacket({type: 'transport/cue-markers/jump-previous'})
+    }
+})
+
+Mod.registerAction({
+    title: `Jump to Next Cue Marker`,
+    id: `jump-to-next-cue-marker`,
+    category: "global",
+    description: `Proxy for built-in Bitwig action`,
+    defaultSetting: {
+        keys: ['Control', 'NumpadMultiply']
+    },
+    action: () => {
+        Bitwig.sendPacket({type: 'transport/cue-markers/jump-next'})
+    }
+})
