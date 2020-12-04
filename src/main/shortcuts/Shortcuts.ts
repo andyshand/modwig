@@ -224,7 +224,7 @@ export class ShortcutsService extends BESService {
                     action: () => {
                         Keyboard.keyPress('ArrowRight', { Shift: true })
                     }                
-                },
+                }
             })),
 
             // DEVICES
@@ -709,8 +709,8 @@ export class ShortcutsService extends BESService {
 
         Keyboard.on('keydown', event => {
             let { lowerKey, nativeKeyCode, Meta, Shift, Control, Alt, Fn } = event
-            if (/F[0-9]+/.test(lowerKey)) {
-                // FN defaults to true when using function keys (makes sense I guess?)
+            if (/F[0-9]+/.test(lowerKey) || lowerKey === 'Clear') {
+                // FN defaults to true when using function keys (makes sense I guess?), but also Clear???
                 Fn = false
             }
             // logWithTime(event, Bitwig.isActiveApplication())
