@@ -5,7 +5,7 @@
  * @category arranger
  */
 
-let exclusiveAutomation = true
+let exclusiveAutomation = false
 
 Mod.registerAction({
     title: "Hide All Automation",

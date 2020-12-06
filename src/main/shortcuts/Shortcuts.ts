@@ -14,7 +14,7 @@ const { Keyboard, Mouse, MainWindow, Bitwig } = require('bindings')('bes')
 
 let lastKeyPressed = new Date()
 let lastKey = ''
-let renaming = false
+let enteringValue = false
 
 const MODS_MESSAGE = `Modulators are currently inaccessible from the controller API. This shortcut is also limited to a single device at any time.`
 const MODS_MESSAGE_2 = `Modulators are currently inaccessible from the controller API.`
@@ -235,7 +235,7 @@ export class ShortcutsService extends BESService {
                         keys: ['D']
                     },
                     action: () => {
-                        if (!this.browserIsOpen && !renaming) {
+                        if (!this.browserIsOpen && !enteringValue) {
                             sendPacketToBitwig({
                                 type: 'action',
                                 data: [
@@ -521,10 +521,11 @@ export class ShortcutsService extends BESService {
                 },
                 setAutomationValue: {
                     defaultSetting: {
-                        keys: ['Meta', 'Enter']
+                        keys: ['NumpadEnter']
                     },
+                    description: 'Focuses the automation value field in the inspector for quickly setting value of selected automation.',
                     action: () => {
-                        if (!this.browserIsOpen) {
+                        if (!this.browserIsOpen && !enteringValue) {
                             const frame = MainWindow.getFrame()
                             returnMouseAfter(() => {
                                 Mouse.click(0, {
@@ -533,6 +534,7 @@ export class ShortcutsService extends BESService {
                                     Meta: true
                                 })
                             })
+                            enteringValue = true
                         }
                     }
                 }
@@ -716,14 +718,10 @@ export class ShortcutsService extends BESService {
             // logWithTime(event, Bitwig.isActiveApplication())
             const noMods = !(Meta || Control || Alt)
 
-            // Prevent shortcuts from triggering when renaming something
-            if (Bitwig.isActiveApplication() && lowerKey === 'r' && Meta && !Shift && !Alt) {
-                renaming = true
-            } else if (lowerKey === 'Enter' || lowerKey === 'Escape') {
-                renaming = false
-            }
+            // Keep track of whether an action itself declares that we are entering a value (e.g entering automation)
+            let enteringBefore = enteringValue
 
-            if (Bitwig.isActiveApplication() && !renaming) {
+            if (Bitwig.isActiveApplication() && !enteringValue) {
                 if (this.browserIsOpen && /[a-z]{1}/.test(lowerKey) && noMods) {
                     // Typing in browser
                     this.browserText += lowerKey
@@ -757,6 +755,13 @@ export class ShortcutsService extends BESService {
                         })
                     // }, 100)
                 }
+            }
+
+            // Prevent shortcuts from triggering when renaming something
+            if (Bitwig.isActiveApplication() && lowerKey === 'r' && Meta && !Shift && !Alt) {
+                enteringValue = true
+            } else if ((enteringBefore === enteringValue) && (lowerKey === 'Enter' || lowerKey === 'Escape' || lowerKey === "NumpadEnter")) {
+                enteringValue = false
             }
         })
     }

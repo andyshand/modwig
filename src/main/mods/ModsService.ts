@@ -273,7 +273,6 @@ export class ModsService extends BESService {
                 ...Keyboard,
                 on: (eventName: string, cb: Function) => {
                     const wrappedCb = (event, ...rest) => {
-                        this.eventLogger(`${colors.cyan(eventName)} -> ${colors.green(mod.id)}`)
                         this.logForMod(mod.id, `${eventName}`)
                         Object.setPrototypeOf(event, KeyboardEvent)
                         cb(event, ...rest)
@@ -286,7 +285,6 @@ export class ModsService extends BESService {
                 ...Mouse,
                 on: (eventName: string, cb: Function) => {
                     const wrappedCb = (event, ...rest) => {
-                        this.eventLogger(`${colors.cyan(eventName)} -> ${colors.green(mod.id)}`)
                         this.logForMod(mod.id, `${eventName}`)
                         Object.setPrototypeOf(event, MouseEvent)
                         cb(event, ...rest)
@@ -457,7 +455,7 @@ export class ModsService extends BESService {
             } else if (typeof value === 'function') {
                 return (...args) => {
                     try {
-                        this.eventLogger(`${colors.blue(value.name || key || 'Unknown function')} <- ${colors.green(mod.id)}`)
+                        this.logForMod(mod.id, `Called ${value.name || key || 'Unknown function'}`)
                         return value(...args)
                     } catch (e) {
                         console.error(colors.red(`${mod.id} threw an error while calling "${colors.yellow(value.name)}":`))

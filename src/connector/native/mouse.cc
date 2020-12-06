@@ -45,7 +45,7 @@ Napi::Value SetMousePosition(const Napi::CallbackInfo &info)
         CFRelease(ourEvent);
 
         // First send a dragged event at current location
-        std::cout << "Middle is down, sending dragged event";
+        // std::cout << "Middle is down, sending dragged event";
         CGEventRef drag = CGEventCreateMouseEvent(
             getCGEventSource(), 
             middleDownDragWaiting ? kCGEventOtherMouseDragged : (leftDownDragWaiting ? kCGEventLeftMouseDragged : kCGEventRightMouseDragged),
@@ -79,7 +79,7 @@ void mouseUpDown(const Napi::CallbackInfo &info, bool down, bool doubleClick = f
 
     CGPoint pos = BESPoint::Unwrap(GetMousePosition(info).As<Napi::Object>())->asCGPoint();
     CGEventFlags flags = (CGEventFlags)0;
-    std::cout << "Button is " << button;
+    // std::cout << "Button is " << button;
 
     if (info[1].IsObject()) {
         // We got options

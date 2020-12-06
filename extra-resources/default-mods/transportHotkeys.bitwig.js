@@ -44,7 +44,7 @@ function jump(next) {
         const marker = globalController.cueMarkerBank.getItemAt(index)
         transport.playStartPosition().set(marker.position().get())
         globalController.cueMarkerBank.scrollToMarker(index)
-        host.showPopupNotification(`Jumping to ${marker.getName().get()}`)
+        host.showPopupNotification(`Jumping to ${marker.getName().get()} (${index + 1})`)
     } else {
         host.showPopupNotification(`No ${next ? 'next' : 'previous'} marker found`)
     }
