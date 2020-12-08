@@ -95,18 +95,18 @@ export class TrayService extends BESService {
             return str
         }
         const onNotConnected = () => {
-            if (this.timer) {
-                clearInterval(this.timer)
-            }
-            this.timer = setInterval(() => {
-                tray.setImage(imageOrWarning(getResourcePath(`/images/tray-${this.animationI % 6}Template.png`)))    
-                this.animationI++
-            }, 250)
+            // if (this.timer) {
+            //     clearInterval(this.timer)
+            // }
+            // this.timer = setInterval(() => {
+            //     tray.setImage(imageOrWarning(getResourcePath(`/images/tray-${this.animationI % 6}Template.png`)))    
+            //     this.animationI++
+            // }, 250)
         }
         this.socket.events.connected.listen(isConnected => {
             this.connected = isConnected
             if (isConnected && this.timer) {
-                clearInterval(this.timer)
+                // clearInterval(this.timer)
                 tray.setImage(imageOrWarning(getResourcePath(`/images/tray-0Template.png`)))
             } else {
                 onNotConnected()

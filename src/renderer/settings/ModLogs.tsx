@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { addPacketListener, send } from '../bitwig-api/Bitwig'
 import moment from 'moment'
 import { styled } from 'linaria/react'
+import _ from 'underscore'
 import { parse } from 'ansicolor'
 
 
@@ -11,7 +12,7 @@ const Logs = styled.div`
     font-size: .7em;
     padding: 1em;
     > * {
-        @keyframes flashIn {
+        /* @keyframes flashIn {
             from {
                 background: #666;
             }
@@ -21,7 +22,7 @@ const Logs = styled.div`
             }
         }
         animation: flashIn 5s linear 1;
-        animation-fill-mode: forwards;
+        animation-fill-mode: forwards; */
         >:nth-child(1) {
             margin-right: 1em;
             color: #666;
@@ -31,9 +32,19 @@ const Logs = styled.div`
 
 let nextLogId = 0
 let latestLogs = []
+let setLogsG
+let newLogs = []
+
+let debouncedLogSetter = _.debounce(() => {
+    setLogsG(newLogs.concat(latestLogs.slice(0, 100)))
+    newLogs = []
+}, 250)
+
 export const ModLogs = ({mod}) => {
     const [ logs, setLogs ] = useState([])
     latestLogs = logs
+    setLogsG = setLogs
+
     useEffect(() => {
         setLogs([])
         send({
@@ -41,18 +52,15 @@ export const ModLogs = ({mod}) => {
             data: mod.id
         })
         return addPacketListener(`log`, packet => {
-            setLogs([{msg: packet.data, id: nextLogId++, date: new Date()}].concat(latestLogs))
+            newLogs.push({msg: packet.data, id: nextLogId++, date: new Date()})
+            debouncedLogSetter()
         })
     }, [mod.id])
 
     return <Logs>
         {logs.map(log => {
             return <div key={log.id}>
-                <span>{moment(log.date).format(`h:mm:ss`)}</span> <>{parse(log.msg).spans.map((span, i) => {
-                    return <span style={{color: span.color?.name ?? ''}} key={i}>
-                        {span.text}
-                    </span>
-                })}</>
+                <span>{moment(log.date).format(`h:mm:ss`)}</span> <>{log.msg}</>
             </div>
         })}
     </Logs>

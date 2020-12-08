@@ -128,25 +128,29 @@ export class ModsService extends BESService {
 
     lastLogMsg = ''
     sameMessageCount = 0
-    waitingMessages: {msg: string, count: number}[] = []
+    waitingMessagesByModId: {[modId: string]: {msg: string, count: number}[]} = {}
 
     logTimeout 
-    eventLogger = (msg) => {
+    eventLogger = ({msg, modId}) => {
         if (process.env.NO_LOG) {
             return
         }
-        
-        if (this.waitingMessages[this.waitingMessages.length - 1]?.msg === msg ?? false) {
-            this.waitingMessages[this.waitingMessages.length - 1].count++
+
+        const messagesForMod = this.waitingMessagesByModId[modId] || []
+        const lastMessage = messagesForMod[messagesForMod.length - 1]
+        if (lastMessage && lastMessage.msg === msg) {
+            messagesForMod[messagesForMod.length - 1].count++
         } else {
-            this.waitingMessages.push({msg, count: 1})
+            messagesForMod.push({msg, count: 1})
         }
+        this.waitingMessagesByModId[modId] = messagesForMod
+
         clearTimeout(this.logTimeout)
         this.logTimeout = setTimeout(() => {
-            for (const { msg, count } of this.waitingMessages) {
-                logWithTime(msg + (count > 1 ? ` (${count})` : ''))
+            for (const { msg, count } of messagesForMod) {
+                this.logForMod(modId, msg + (count > 1 ? ` (${count})` : ''))
             }
-            this.waitingMessages = []
+            this.waitingMessagesByModId[modId] = []
         }, 250)
     }
 
@@ -285,7 +289,7 @@ export class ModsService extends BESService {
                 ...Mouse,
                 on: (eventName: string, cb: Function) => {
                     const wrappedCb = (event, ...rest) => {
-                        this.logForMod(mod.id, `${eventName}`)
+                        this.eventLogger({msg: eventName, modId: mod.id})
                         Object.setPrototypeOf(event, MouseEvent)
                         cb(event, ...rest)
                     }
@@ -304,6 +308,8 @@ export class ModsService extends BESService {
                         wrappedOnForReloadDisconnect(Keyboard)(eventName, wrappedCb)
                     }
                 },
+                lockX: Keyboard.lockX,
+                lockY: Keyboard.lockY,
                 returnAfter: returnMouseAfter            
             },
             Bitwig: addNotAlreadyIn({
@@ -455,7 +461,10 @@ export class ModsService extends BESService {
             } else if (typeof value === 'function') {
                 return (...args) => {
                     try {
-                        this.logForMod(mod.id, `Called ${value.name || key || 'Unknown function'}`)
+                        const called = value.name || key || 'Unknown function'
+                        if (value !== api.log) {
+                            this.logForMod(mod.id, `Called ${called}`)
+                        }
                         return value(...args)
                     } catch (e) {
                         console.error(colors.red(`${mod.id} threw an error while calling "${colors.yellow(value.name)}":`))

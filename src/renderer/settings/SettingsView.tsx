@@ -80,6 +80,11 @@ const NoMods = styled.div`
 const ModAndLogs = styled.div`
     display: flex;
     flex-direction: column;
+    >:nth-child(1) {
+        height: 66%;
+        flex-shrink: 1;
+        overflow-y: auto;
+    }
     >:nth-child(2) {
         flex-grow: 1;
         overflow-y: auto;
@@ -268,7 +273,7 @@ const SettingItem = ({setting: sett, focused}) => {
 }
 
 const Toggle = ({value, onChange}) => {
-    const [ ourValue, setOurValue ] = useState(value)
+    const [ ourValue, setOurValue ] = useState(Boolean(value))
     const onClick = () => {
         onChange(!ourValue)
         setOurValue(!ourValue) 
@@ -281,7 +286,7 @@ const Toggle = ({value, onChange}) => {
 export class SettingsView extends React.Component<Props> {
 
     state = {
-        category: undefined,
+        category: 'mod',
         settings: [],
         loading: true,
         searchQuery: '',
@@ -297,7 +302,8 @@ export class SettingsView extends React.Component<Props> {
             const { data: mods } = await sendPromise({type: 'api/mods'})
             this.setState({
                 mods,
-                loading: false
+                loading: false,
+                focusedSettingKey: mods[0]?.key
             })
         } else {
             const { data: settings } = await getSettings(this.state.category ? {category: this.state.category} : undefined)
@@ -382,7 +388,7 @@ export class SettingsView extends React.Component<Props> {
                             <SettingDesc style={{maxWidth: '40rem', fontSize: '1em', marginTop: `1.2rem`}}>{chosenMod.description}</SettingDesc>
                         </div>
                         <ToggleAndText>
-                            <Toggle onChange={onToggleChange.bind(chosenMod)} value={chosenMod.value.enabled} />
+                            <Toggle onChange={onToggleChange.bind(null, chosenMod)} value={chosenMod.value.enabled} />
                         </ToggleAndText>
                     </ModContent>
                     <div></div>
