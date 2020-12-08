@@ -50,7 +50,6 @@ function playWithEvent(event) {
 }
 
 Mouse.on('mousedown', event => {
-    console.log('mouse button is: ' + event.button)
     playButtonDown = Bitwig.isActiveApplication && !Bitwig.isBrowserOpen && event.button === clickButton
     if (playButtonDown && clickButton !== 1) {
         // If click button isn't middle click, we can trigger play straight away as these buttons have no extra function in Bitwig
