@@ -77,3 +77,19 @@ Mod.registerAction({
     },
     action: showAutomationImpl.bind(null, true)
 })
+
+// Quickly create adjacent automation points with mouse button 3
+Mouse.on('mousedown', whenActiveListener(event => {
+    if (event.button === 3) {
+        Mouse.returnAfter(() => {
+            const { x, y } = Mouse.getPosition()
+            if (event.Meta) {
+                Mouse.doubleClick(0, {x, y, Shift: true})
+                Mouse.doubleClick(0, {x: x + 8, y, Shift: true})
+            } else {
+                Mouse.click(0, {x, y, Shift: true})
+                Mouse.click(0, {x: x + 8, y, Shift: true})
+            }
+        })
+    }
+}))

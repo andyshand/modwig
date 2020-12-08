@@ -276,6 +276,10 @@ export class ModsService extends BESService {
                 logWithTime(`${colors.green(mod.id)}:`, ...args)
                 this.logForMod(mod.id, ...args)
             },
+            error: (...args) => {
+                logWithTime(`${colors.red(mod.id)}:`, ...args)
+                this.logForMod(mod.id, ...args)
+            },
             Keyboard: {
                 ...Keyboard,
                 on: (eventName: string, cb: Function) => {
@@ -309,6 +313,14 @@ export class ModsService extends BESService {
                         })
                     } else {
                         wrappedOnForReloadDisconnect(Keyboard)(eventName, wrappedCb)
+                    }
+                },
+                click: (...args) => {
+                    const button = args[0]
+                    if (typeof button !== 'number') {
+                        return Mouse.click(0, ...args)
+                    } else {
+                        return Mouse.click(...args)
                     }
                 },
                 lockX: Keyboard.lockX,
