@@ -147,6 +147,7 @@ struct CallbackInfo {
     CGEventMask mask;
     int id;
     CFMachPortRef tap;
+    std::string eventType;
     CFRunLoopSourceRef runloopsrc;
 
     bool operator ==(const CallbackInfo& other) const {
@@ -172,6 +173,22 @@ struct JSEvent {
 };
 
 forward_list<CallbackInfo*> callbacks; 
+
+void processCallback(Napi::Env env, Napi::Function jsCallback, JSEvent* value) {
+    Napi::Object obj = Napi::Object::New(env);
+
+    obj.Set(Napi::String::New(env, "Meta"), Napi::Boolean::New(env, value->Meta));
+    obj.Set(Napi::String::New(env, "Shift"), Napi::Boolean::New(env, value->Shift));
+    obj.Set(Napi::String::New(env, "Control"), Napi::Boolean::New(env, value->Control));
+    obj.Set(Napi::String::New(env, "Alt"), Napi::Boolean::New(env, value->Alt));
+    obj.Set(Napi::String::New(env, "Fn"), Napi::Boolean::New(env, value->Fn));
+
+    obj.Set(Napi::String::New(env, "x"), Napi::Number::New(env, value->x));
+    obj.Set(Napi::String::New(env, "y"), Napi::Number::New(env, value->y));
+    obj.Set(Napi::String::New(env, "button"), Napi::Number::New(env, value->button));
+
+    jsCallback.Call( {obj} );
+}
 
 CGEventRef eventtap_callback(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *refcon) {
     if (CGEventGetIntegerValueField(event, kCGEventSourceUserData) == 42) {
@@ -248,27 +265,39 @@ CGEventRef eventtap_callback(CGEventTapProxy proxy, CGEventType type, CGEventRef
         } else if (type == kCGEventRightMouseUp || type == kCGEventRightMouseDown || type == kCGEventRightMouseDragged) {
             jsEvent->button = 2;
         } else {
-            jsEvent->button = 1;
+            jsEvent->button = CGEventGetIntegerValueField(event, kCGMouseEventButtonNumber);
+            if (jsEvent->button == 2) {
+                // Make middle click 1, others are fine as is
+                jsEvent->button = 1;
+            }
         }
+        int button = jsEvent->button;
 
         auto callback = []( Napi::Env env, Napi::Function jsCallback, JSEvent* value ) {
-            Napi::Object obj = Napi::Object::New(env);
-
-            obj.Set(Napi::String::New(env, "Meta"), Napi::Boolean::New(env, value->Meta));
-            obj.Set(Napi::String::New(env, "Shift"), Napi::Boolean::New(env, value->Shift));
-            obj.Set(Napi::String::New(env, "Control"), Napi::Boolean::New(env, value->Control));
-            obj.Set(Napi::String::New(env, "Alt"), Napi::Boolean::New(env, value->Alt));
-            obj.Set(Napi::String::New(env, "Fn"), Napi::Boolean::New(env, value->Fn));
-
-            obj.Set(Napi::String::New(env, "x"), Napi::Number::New(env, value->x));
-            obj.Set(Napi::String::New(env, "y"), Napi::Number::New(env, value->y));
-            obj.Set(Napi::String::New(env, "button"), Napi::Number::New(env, value->button));
-
-            jsCallback.Call( {obj} );
-
-            delete value;
+            processCallback(env, jsCallback, value);
+            delete value;   
         };
-        e->cb.BlockingCall( jsEvent, callback );  
+        auto callbackNoDelete = []( Napi::Env env, Napi::Function jsCallback, JSEvent* value ) {
+            processCallback(env, jsCallback, value);
+        };
+
+        if (button > 2) {
+            // Don't pass button 3, 4, etc to Bitwig because it just interprets them as middle click,
+            // interefering with our ability to map these buttons ourselves
+
+            // Note that because we return NULL, our other callbacks won't be processed, so we have to
+            // find them ourselves
+            for (auto cbInfo : callbacks) {
+                if (cbInfo->eventType == e->eventType && cbInfo != e) {
+                    // Call all other listeners except for this one
+                    cbInfo->cb.BlockingCall( jsEvent, callbackNoDelete );  
+                }
+            }
+            e->cb.BlockingCall( jsEvent, callback );  
+            return NULL;
+        } else {
+            e->cb.BlockingCall( jsEvent, callback );  
+        }
     }
     // can return NULL to ignore event
     return event;
@@ -298,6 +327,7 @@ Napi::Value on(const Napi::CallbackInfo &info) {
     CallbackInfo *ourInfo = new CallbackInfo;
     ourInfo->bareCb = cb;
     ourInfo->id = nextId++;
+    ourInfo->eventType = eventType;
     ourInfo->cb = Napi::ThreadSafeFunction::New(
       env,
       cb,                      // JavaScript function called asynchronously

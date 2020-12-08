@@ -12,7 +12,7 @@ const Logs = styled.div`
     font-size: .7em;
     padding: 1em;
     > * {
-        /* @keyframes flashIn {
+        @keyframes flashIn {
             from {
                 background: #666;
             }
@@ -22,7 +22,7 @@ const Logs = styled.div`
             }
         }
         animation: flashIn 5s linear 1;
-        animation-fill-mode: forwards; */
+        animation-fill-mode: forwards;
         >:nth-child(1) {
             margin-right: 1em;
             color: #666;

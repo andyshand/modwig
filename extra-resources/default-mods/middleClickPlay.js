@@ -5,7 +5,8 @@
  * @category arranger
  */
 
-let middleDown = false
+let playButtonDown = false
+let clickButton = 4
 let startPos = ''
 let startPosObj
 const makePos = event => JSON.stringify({x: event.x, y: event.y})
@@ -30,8 +31,31 @@ Keyboard.on('keyup', event => {
     }
 })
 
+function playWithEvent(event) {
+    Mouse.returnAfter(() => {
+        Keyboard.keyDown('1')
+        let timelineClickPosition
+        if (event.y > editorBorderLineY && editorIsProbablyOpen) {
+            // We're in the note editor
+            timelineClickPosition = {x: event.x, y: editorBorderLineY + 7}
+        } else {
+            // We're in the arranger
+            const mainWindowFrame = MainWindow.getFrame()
+            timelineClickPosition = {x: event.x, y: 91 + mainWindowFrame.y}
+        }
+        log(`Double-clicking time ruler at ${timelineClickPosition.x}, ${timelineClickPosition.y}`)
+        Mouse.doubleClick(0, timelineClickPosition)
+        Keyboard.keyUp('1')
+    })
+}
+
 Mouse.on('mousedown', event => {
-    middleDown = Bitwig.isActiveApplication && !Bitwig.isBrowserOpen && event.button === 1
+    console.log('mouse button is: ' + event.button)
+    playButtonDown = Bitwig.isActiveApplication && !Bitwig.isBrowserOpen && event.button === clickButton
+    if (playButtonDown && clickButton !== 1) {
+        // If click button isn't middle click, we can trigger play straight away as these buttons have no extra function in Bitwig
+        return playWithEvent(event)
+    }
     startPosObj = {
         x: event.x,
         y: event.y
@@ -39,7 +63,7 @@ Mouse.on('mousedown', event => {
     startPos = makePos(event)
     downTime = new Date()
 
-    draggingBorderLine = !middleDown && Bitwig.isActiveApplication && Math.abs(event.y - editorBorderLineY) < 10
+    draggingBorderLine = !playButtonDown && Bitwig.isActiveApplication && Math.abs(event.y - editorBorderLineY) < 10
 })
 
 Mouse.on('mouseup', event => {
@@ -50,23 +74,9 @@ Mouse.on('mouseup', event => {
         editorIsProbablyOpen = true
     } else {
         let timeDifference = new Date().getTime() - downTime.getTime()
-        if (middleDown && makePos(event) === startPos && timeDifference < 200) {
-            Mouse.returnAfter(() => {
-                Keyboard.keyDown('1')
-                let timelineClickPosition
-                if (event.y > editorBorderLineY && editorIsProbablyOpen) {
-                    // We're in the note editor
-                    timelineClickPosition = {x: event.x, y: editorBorderLineY + 7}
-                } else {
-                    // We're in the arranger
-                    const mainWindowFrame = MainWindow.getFrame()
-                    timelineClickPosition = {x: event.x, y: 91 + mainWindowFrame.y}
-                }
-                log(`Double-clicking time ruler at ${timelineClickPosition.x}, ${timelineClickPosition.y}`)
-                Mouse.doubleClick(0, timelineClickPosition)
-                Keyboard.keyUp('1')
-            })
+        if (playButtonDown && makePos(event) === startPos && timeDifference < 200 && clickButton === 1) {
+            playWithEvent(event)
         }
     }
-    middleDown = false
+    playButtonDown = false
 })
