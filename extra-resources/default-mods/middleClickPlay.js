@@ -43,9 +43,11 @@ function playWithEvent(event) {
             const mainWindowFrame = MainWindow.getFrame()
             timelineClickPosition = {x: event.x, y: 91 + mainWindowFrame.y}
         }
-        log(`Double-clicking time ruler at ${timelineClickPosition.x}, ${timelineClickPosition.y}`)
-        // Pass modifiers 
-        Mouse.doubleClick(0, {...event, ...timelineClickPosition})
+        if (!Bitwig.intersectsPluginWindows(timelineClickPosition)) {
+            log(`Double-clicking time ruler at ${timelineClickPosition.x}, ${timelineClickPosition.y}`)
+            // Pass modifiers 
+            Mouse.doubleClick(0, {...event, ...timelineClickPosition})
+        }
         Keyboard.keyUp('1')
     })
 }

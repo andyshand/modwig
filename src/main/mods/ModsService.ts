@@ -249,13 +249,16 @@ export class ModsService extends BESService {
                 return !(this.Meta || this.Control || this.Alt || this.Shift)
             }
         }
+
+        function intersectsPluginWindows(event) {
+            const pluginLocations = Object.values(Bitwig.getPluginWindowsPosition())
+            return pluginLocations.some(({x,y,w,h}) => {
+                return event.x >= x && event.x < x + w && event.y >= y && event.y < y + h
+            })
+        }
         const MouseEvent = {
             intersectsPluginWindows() {
-                const pluginLocations = Object.values(Bitwig.getPluginWindowsPosition())
-                const event = this
-                return pluginLocations.some(({x,y,w,h}) => {
-                    return event.x >= x && event.x < x + w && event.y >= y && event.y < y + h
-                })
+                return intersectsPluginWindows(this)
             }
         }
 
@@ -348,6 +351,7 @@ export class ModsService extends BESService {
                 showMessage: message => {
                     sendPacketToBitwig({type: 'message', data: message})
                 },
+                intersectsPluginWindows,
                 ...makeEmitterEvents({
                     selectedTrackChanged: this.events.selectedTrackChanged,
                     browserOpen: this.events.browserOpen,
