@@ -44,7 +44,8 @@ function playWithEvent(event) {
             timelineClickPosition = {x: event.x, y: 91 + mainWindowFrame.y}
         }
         log(`Double-clicking time ruler at ${timelineClickPosition.x}, ${timelineClickPosition.y}`)
-        Mouse.doubleClick(0, timelineClickPosition)
+        // Pass modifiers 
+        Mouse.doubleClick(0, {...event, ...timelineClickPosition})
         Keyboard.keyUp('1')
     })
 }
