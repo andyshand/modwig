@@ -32,6 +32,7 @@ Keyboard.on('keyup', event => {
 })
 
 function playWithEvent(event) {
+    const mousePosBefore = Mouse.getPosition()
     Mouse.returnAfter(() => {
         Keyboard.keyDown('1')
         let timelineClickPosition
@@ -47,6 +48,12 @@ function playWithEvent(event) {
             log(`Double-clicking time ruler at ${timelineClickPosition.x}, ${timelineClickPosition.y}`)
             // Pass modifiers 
             Mouse.doubleClick(0, {...event, ...timelineClickPosition})
+        } else {
+            Mod.runAction(`move-plugin-windows-offscreen`, { forceState: 'bottomright' })
+            setTimeout(() => {
+                Mouse.doubleClick(0, {...event, ...timelineClickPosition})
+                Mouse.setPosition(mousePosBefore.x, mousePosBefore.y)
+            }, 100)
         }
         Keyboard.keyUp('1')
     })

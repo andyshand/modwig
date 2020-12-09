@@ -12,12 +12,12 @@ Mod.registerAction({
     defaultSetting: {
         keys: ["Escape"]
     },
-    action: async () => {
+    action: async ({forceState} = {}) => {
         const {
             state,
             positions
         } = await Db.getCurrentTrackData()
-        let newState = state === 'topright' ? 'bottomright' : 'topright'
+        let newState = forceState ? forceState : (state === 'topright' ? 'bottomright' : 'topright')
 
         const pluginWindows = Bitwig.getPluginWindowsPosition()
         Db.setCurrentTrackData({
