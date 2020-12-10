@@ -44,6 +44,21 @@ function playWithEvent(event) {
             const mainWindowFrame = MainWindow.getFrame()
             timelineClickPosition = {x: event.x, y: 91 + mainWindowFrame.y}
         }
+        
+        // Modifiers move start position back further to left to allow run-up
+        // to start position. Left-er modifiers = left-er position :D
+        let backFurther = 0
+        if (event.Meta) {
+            backFurther = 100
+        } else if (event.Alt) {
+            backFurther = 200
+        } else if (event.Control) {
+            backFurther = 400
+        }
+
+        // Make sure the position doesn't cross over into track header 
+        timelineClickPosition.x = Math.max(440, timelineClickPosition.x - backFurther);
+
         if (!Bitwig.intersectsPluginWindows(timelineClickPosition)) {
             log(`Double-clicking time ruler at ${timelineClickPosition.x}, ${timelineClickPosition.y}`)
             // Pass modifiers 
