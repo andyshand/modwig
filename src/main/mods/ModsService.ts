@@ -577,7 +577,12 @@ export class ModsService extends BESService {
                     mod: mod.id
                 }})
                 mod.actions = settingsForMod.map(setting => {
-                    return this.settingsService.postload(setting)
+                    const action = this.shortcutsService.actions[setting.key]
+                    return {
+                        ...this.settingsService.postload(setting),
+                        ...action,
+                        notFound: !action
+                    }
                 })
             }
             return mods

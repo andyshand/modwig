@@ -1,7 +1,7 @@
 /**
  * @name Move Plugin Windows
  * @id move-plugin-windows
- * @description Play from the currently selected item (anything that can be used with Bitwig's "Set Arranger Loop").
+ * @description Adds several actions for manipulating the positions of plugin windows
  * @category devices
  */
 

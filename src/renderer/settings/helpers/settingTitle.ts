@@ -13,7 +13,7 @@ export const humanise = (value) => {
     return caseCorrected;
 };
 export const settingTitle = setting => {
-  return setting.name || titleize(humanise(setting.key))
+  return setting.name || setting.title || titleize(humanise(setting.key))
 }
 
 export const settingShortDescription = setting => {
