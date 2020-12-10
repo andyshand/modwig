@@ -10,18 +10,28 @@ const Number = styled.div`
     height: 24%;
     display: flex;
     align-items: center;
-    border-left: .7rem solid #CCC;
-    padding-left: 1rem;
+    justify-content: center;
+    overflow: hidden;
+    &:after {
+        content: "";
+        display: table;
+        position: absolute;
+        left: 0;
+        width: .7rem;
+        top: 0;
+        height: 100%;
+        bottom: 0;
+        background: ${props => props.track?.color ?? 'transparent'};
+    }
     border-radius: .3rem;
-    border-left-color: ${props => props.track?.color ?? 'transparent'};
     background: ${props => props.active ? '#111' : `#333`};
     flex-direction: column;
+    position: relative;
     >:nth-child(1) {
-        text-align: center;
-        flex-grow: 1;
-        display: flex;
-        align-items: center;
-        font-size: 2rem;
+        font-size: 1.6rem;
+        position: absolute;
+        top:1rem;
+        right: 1rem;
         font-weight: 600;
         color: #545454;
     }
@@ -119,7 +129,7 @@ const Num = ({keyData, pressedKey}) => {
                     <TrackVolume track={track} />
                 </div>
             </TrackData>
-        </div> : <div></div>}
+        </div> : <div style={{opacity: .2, fontSize: '.95em'}}>Track not found</div>}
     </Number>
 }
 

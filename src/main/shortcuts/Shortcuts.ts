@@ -224,7 +224,37 @@ export class ShortcutsService extends BESService {
                     action: () => {
                         Keyboard.keyPress('ArrowRight', { Shift: true })
                     }                
-                }
+                },
+                enterGroup: {
+                    description: 'Enters the currently selected group track',
+                    defaultSetting: {
+                        keys: ['Meta', 'Control', 'S']
+                    },
+                    action: () => {
+                        sendPacketToBitwig({
+                            type: 'action',
+                            data: [
+                                `focus_track_header_area`,
+                                `Enter Group`
+                            ]
+                        })
+                    }
+                },
+                exitGroup: {
+                    description: 'Exits the currently entered group track',
+                    defaultSetting: {
+                        keys: ['Meta', 'Control', 'W']
+                    },
+                    action: () => {
+                        sendPacketToBitwig({
+                            type: 'action',
+                            data: [
+                                `focus_track_header_area`,
+                                `Exit Group`
+                            ]
+                        })
+                    }
+                },
             })),
 
             // DEVICES

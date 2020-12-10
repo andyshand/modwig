@@ -6,6 +6,9 @@
  */
 
 const NUM_HOTKEYS = 10
+let lastTracksByName = {}
+let lastLoadI = -1
+let lastLoaded = new Date(0)
 
 async function highlightNumber(key, context, projectData) {
     if (Bitwig.tracks.length === 0) {
@@ -13,7 +16,9 @@ async function highlightNumber(key, context, projectData) {
     } else {
         Bitwig.sendPacketPromise({type: 'track-selection-hotkeys/send-tracks'})
     }
-    const tracksByName = _.indexBy(Bitwig.tracks, 'name')
+    const tracksByName = {...lastTracksByName, ..._.indexBy(Bitwig.tracks, 'name')}
+    lastTracksByName = tracksByName
+
     let keys = []
     for (let i = 1; i <= 9; i++) {
         keys.push({
@@ -31,6 +36,7 @@ async function highlightNumber(key, context, projectData) {
         timeout: 1000
     })
 }
+
 
 for (let i = 0; i < NUM_HOTKEYS; i++) {
     Mod.registerAction({
@@ -67,15 +73,18 @@ for (let i = 0; i < NUM_HOTKEYS; i++) {
             keys: ["Shift", String(i + 1).slice(-1)]
         },
         action: async (context) => {
-            if (!Bitwig.currentTrack) {
-                Bitwig.showMessage(`No track selected.`)
-                return
-            }
             const projectData = await Db.getCurrentProjectData()
             const track = projectData[i]
             if (track) {
-                Bitwig.sendPacket({type: 'track/select', data: { name: track }})
+                if (lastLoadI === i && new Date().getTime() - lastLoaded.getTime() < 250) {
+                    // Enter group on double tap
+                    Bitwig.sendPacket({type: 'track/select', data: { name: track, allowExitGroup: true, enter: true }})
+                } else {
+                    Bitwig.sendPacket({type: 'track/select', data: { name: track, allowExitGroup: true }})
+                }
             }
+            lastLoadI = i
+            lastLoaded = new Date()
             highlightNumber(i + 1, context, projectData)
         }
     })

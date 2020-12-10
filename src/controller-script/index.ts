@@ -232,8 +232,8 @@ class GlobalController extends Controller {
                 data: this.createTrackInfo(track)
             }
         })
-        packetManager.listen('track/select', ({ data: { name }}) => {
-            this.selectTrackWithName(name)
+        packetManager.listen('track/select', ({ data: { name, allowExitGroup, enter }}) => {
+            this.selectTrackWithName(name, true, allowExitGroup, enter)
         })
         this.deps.app.projectName().markInterested()
         this.deps.app.hasActiveEngine().markInterested()
@@ -433,11 +433,27 @@ class GlobalController extends Controller {
         return this.nameCache[name]
     }
 
-    selectTrackWithName(name, scroll = true) {
+    selectTrackWithName(name, scroll = true, allowExitGroup = false, enter = false) {
         const t = this.findTrackByName(name)
-        t.selectInMixer()
-        if (scroll) {
-            t.makeVisibleInArranger()
+        if (!t) {
+            if (allowExitGroup) {
+                runAction('focus_track_header_area')
+                runAction('Exit Group')
+                host.scheduleTask(() => {
+                    this.selectTrackWithName(name, scroll, false, enter)
+                }, 1000)
+            }
+        } else {
+            t.selectInMixer()
+            if (scroll) {
+                t.makeVisibleInArranger()
+            }
+            if (enter) {
+                host.scheduleTask(() => {
+                    runAction('focus_track_header_area')
+                    runAction('Enter Group')
+                }, 100)
+            }
         }
     }
 }
