@@ -11,7 +11,17 @@ globalController.mapCueMarkers((marker, i) => {
 })
 
 packetManager.listen('transport/nudge', (packet) => {
-    transport.playStartPosition().set(Math.round(transport.playStartPosition().get() + packet.data))
+    const newPosition = Math.round(transport.playStartPosition().get() + packet.data)
+    const positionToString = pos => {
+        return (Math.floor(pos / 4) + 1) + '.' + ((pos % 4) + 1)
+    }
+    const positionString = positionToString(newPosition)
+    const previousMarkerIndex = closestMarkerIndex(false)
+    const marker = globalController.cueMarkerBank.getItemAt(previousMarkerIndex)
+    const markerIn = newPosition - marker.position().get()
+    const message = marker.getName().get() ? `Transport: ${marker.getName().get()} + ${positionToString(markerIn)} (${positionString})` : `Transport: ${positionString}`
+    showMessage(message)
+    transport.playStartPosition().set(newPosition)
 })
 
 function closestMarkerIndex(next) {
