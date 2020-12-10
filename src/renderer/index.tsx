@@ -9,6 +9,7 @@ import { SearchPanel } from './search/SearchPanel';
 import { Setup } from './setup/Setup';
 import { SettingsView } from './settings/SettingsView';
 import { NumpadWindow } from './core/numpad-window/NumpadWindow';
+import { Message } from './core/message/Message';
 
 function removeAllListeners() {
     app.removeAllListeners('browser-window-focus')
@@ -145,6 +146,7 @@ ReactDOM.render(
             <Route path="/search" component={SearchPanel} />
             <Route path="/value-entry" component={ValueEntryView} />
             <Route path="/numpad" component={NumpadWindow} />
+            <Route path="/message" component={Message} />
             <Route path="/loading" component={() => {
                 const history = useHistory();
                 ;(window as any).loadURL = url => history.push(url)

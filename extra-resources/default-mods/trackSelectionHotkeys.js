@@ -59,7 +59,6 @@ for (let i = 0; i < NUM_HOTKEYS; i++) {
                 [i]: Bitwig.currentTrack
             }
             await Db.setCurrentProjectData(newProjectData)
-            Bitwig.showMessage(`Saved track ${i + 1}: ${Bitwig.currentTrack}`)
             highlightNumber(i + 1, context, newProjectData)
         }
     })
@@ -74,6 +73,7 @@ for (let i = 0; i < NUM_HOTKEYS; i++) {
         },
         action: async (context) => {
             const projectData = await Db.getCurrentProjectData()
+            highlightNumber(i + 1, context, projectData)
             const track = projectData[i]
             if (track) {
                 if (lastLoadI === i && new Date().getTime() - lastLoaded.getTime() < 250) {
@@ -85,7 +85,6 @@ for (let i = 0; i < NUM_HOTKEYS; i++) {
             }
             lastLoadI = i
             lastLoaded = new Date()
-            highlightNumber(i + 1, context, projectData)
         }
     })
 }

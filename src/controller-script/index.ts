@@ -1020,7 +1020,12 @@ function init() {
             findTrackByName: deps.globalController.findTrackByName.bind(deps.globalController),
             transport,
             ...deps,
-            showMessage: msg => host.showPopupNotification(msg),
+            showMessage: msg => {
+                deps.packetManager.send({
+                    type: 'message',
+                    data: { msg }
+                })
+            },
             afterUpdates: (fn) => host.scheduleTask(fn, 25),
             onFlush,
             debounce

@@ -9,7 +9,7 @@ transport.isPlaying().markInterested()
 
 packetManager.listen('auto-save/save', () => {
     if (!transport.isPlaying().get()) {
-        host.showPopupNotification('Autosaving...')
+        showMessage('Autosaving...')
         runAction('Save')
     }
 })

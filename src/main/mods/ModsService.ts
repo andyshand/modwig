@@ -19,73 +19,77 @@ import { url } from "../core/Url"
 const chokidar = require('chokidar')
 const colors = require('colors');
 
-let floatingWindowInfo: {
-    window: BrowserWindow,
-    path: string
-} | undefined
-
-let fadeOutTimeout: any
 /**
- * Opens a floating window for a short amount of time, fading out afterwards. Meant for brief display of contextual information
- */
-function openFloatingWindow(path, options: {data?: any, timeout: number, width: number, height: number}) {
-    if (fadeOutTimeout) {
-        clearTimeout(fadeOutTimeout)
-    }
-
-    if (!floatingWindowInfo || path !== floatingWindowInfo.path) {
-        floatingWindowInfo?.window.close()
-        floatingWindowInfo = {
-            path,
-            window: new BrowserWindow({ 
-                width: options.width, 
-                height: options.height, 
-                opacity: 1,
-                frame: false,
-                show: false,
-                alwaysOnTop: true,
-                // focusable: false,
-                // closable: false,
-                x: MainWindow.getMainScreen().w / 2 - options.width / 2,
-                y: MainWindow.getMainScreen().h / 2 - options.height / 2,
-                transparent: true,
-                fullscreenable: false,
-                webPreferences: {
-                    webSecurity: false,
-                    nodeIntegration: true,
-                }
-            })
-        }
-        // ;(floatingWindowInfo!.window as any).toggleDevTools()    
-    }
-
-    floatingWindowInfo.window.loadURL(url(`/#/loading`))
-    if (options.data) {
-        floatingWindowInfo!.window.webContents.executeJavaScript(`
-            window.data = ${JSON.stringify(options.data)};
-            window.loadURL(\`${path}\`)
-        `).then(() => {
-            floatingWindowInfo!.window.setOpacity(1)
-            floatingWindowInfo!.window.showInactive()
-
-            function doFadeOut(opacity: number = 1) {
-                const newOpacity = opacity - .1
-                if (newOpacity <= 0) {
-                    floatingWindowInfo!.window.hide()
-                } else {   
-                    floatingWindowInfo!.window.setOpacity(newOpacity)
-                    fadeOutTimeout = setTimeout(() => {
-                        doFadeOut(newOpacity)
-                    }, 50)
-                }
-            }
-        
-            fadeOutTimeout = setTimeout(() => {
-                doFadeOut(1)
-            }, options.timeout)
-        })
-    }
+* Opens a floating window for a short amount of time, fading out afterwards. Meant for brief display of contextual information
+*/
+function makeWindowOpener() {
+    let floatingWindowInfo: {
+        window: BrowserWindow,
+        path: string
+    } | undefined
+    let fadeOutTimeout: any
+    return function openFloatingWindow(path, options: {data?: any, timeout: number, width: number, height: number}) {
+       if (fadeOutTimeout) {
+           clearTimeout(fadeOutTimeout)
+       }
+   
+       if (!floatingWindowInfo || path !== floatingWindowInfo.path) {
+           floatingWindowInfo?.window.close()
+           floatingWindowInfo = {
+               path,
+               window: new BrowserWindow({ 
+                   width: options.width, 
+                   height: options.height, 
+                   opacity: 1,
+                   frame: false,
+                   show: false,
+                   alwaysOnTop: true,
+                   // focusable: false,
+                   // closable: false,
+                   x: MainWindow.getMainScreen().w / 2 - options.width / 2,
+                   y: MainWindow.getMainScreen().h / 2 - options.height / 2,
+                   transparent: true,
+                   fullscreenable: false,
+                   webPreferences: {
+                       webSecurity: false,
+                       nodeIntegration: true,
+                   }
+               })
+           }
+           // ;(floatingWindowInfo!.window as any).toggleDevTools()    
+       }
+   
+       floatingWindowInfo.window.loadURL(url(`/#/loading`))
+       if (options.data) {
+           floatingWindowInfo!.window.webContents.executeJavaScript(`
+               window.data = ${JSON.stringify(options.data)};
+               window.loadURL(\`${path}\`)
+           `).then(() => {
+               floatingWindowInfo!.window.setOpacity(1)
+               floatingWindowInfo!.window.showInactive()
+   
+               function doFadeOut(opacity: number = 1) {
+                   const newOpacity = opacity - .1
+                   if (newOpacity <= 0) {
+                       floatingWindowInfo!.window.hide()
+                   } else {   
+                       floatingWindowInfo!.window.setOpacity(newOpacity)
+                       fadeOutTimeout = setTimeout(() => {
+                           doFadeOut(newOpacity)
+                       }, 50)
+                   }
+               }
+           
+               fadeOutTimeout = setTimeout(() => {
+                   doFadeOut(1)
+               }, options.timeout)
+           })
+       }
+   }
 }
+
+const openFloatingWindow = makeWindowOpener()
+const openMessageWindow = makeWindowOpener()
 
 const { Keyboard, Mouse, MainWindow, Bitwig } = require('bindings')('bes')
 
@@ -162,6 +166,17 @@ export class ModsService extends BESService {
                 data: args
             })
         }
+    }
+
+    showMessage(msg) {
+        openMessageWindow(`/message`, {
+            data: {
+                msg
+            },
+            width: 528,
+            height: 100,
+            timeout: 700
+        })
     }
 
     async makeApi(mod) {
@@ -370,9 +385,7 @@ export class ModsService extends BESService {
                 runAction: action => {
                     return sendPacketToBitwigPromise({type: 'action', data: action})
                 },
-                showMessage: message => {
-                    sendPacketToBitwig({type: 'message', data: message})
-                },
+                showMessage: this.showMessage,
                 intersectsPluginWindows,
                 ...makeEmitterEvents({
                     selectedTrackChanged: this.events.selectedTrackChanged,
@@ -537,6 +550,9 @@ export class ModsService extends BESService {
                 this.events.selectedTrackChanged.emit(this.currTrack, prev)
             }
         })
+        interceptPacket('message', undefined, async ({ data: { msg } }) => {
+            this.showMessage(msg)
+        })
         interceptPacket('project', undefined, async ({ data: { name: projectName, hasActiveEngine } }) => {
             const projectChanged = this.currProject !== projectName
             if (projectChanged) {
@@ -622,14 +638,14 @@ export class ModsService extends BESService {
                 const value = JSON.parse(data.value)
                 // console.log(modData)
                 if (!modData.noReload) {
-                    sendPacketToBitwig({type: 'message', data: `Settings changed, restarting Modwig...`})
+                    this.showMessage(`Settings changed, restarting Modwig...`)
                     this.refreshMods()
                 } else {
                     logWithTime('Mod marked as `noReload`, not reloading')
                     const data = {
                         [modData.id!]: value.enabled
                     }
-                    sendPacketToBitwig({type: 'message', data: `${modData.name}: ${value.enabled ? 'Enabled' : 'Disabled'}`})
+                    this.showMessage(`${modData.name}: ${value.enabled ? 'Enabled' : 'Disabled'}`)
                     sendPacketToBitwig({type: 'settings/update', data })
                 }
             }
@@ -852,10 +868,7 @@ modsImpl(api)
         if (!localOnly) {
             await this.refreshBitwigMods()
         } else {
-            sendPacketToBitwig({
-                type: 'message',
-                data: 'Reloaded local mods'
-            })
+            this.showMessage('Reloaded local mods')
         }
     }
 }

@@ -24,5 +24,5 @@ packetManager.listen('rename-all.ensure-unique-names.modwig', (packet) => {
             renamedCount++
         }
     })
-    host.showPopupNotification(`Renamed ${renamedCount} tracks`)
+    showMessage(`Renamed ${renamedCount} tracks`)
 })
