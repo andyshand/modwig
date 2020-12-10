@@ -14,12 +14,22 @@ firstChild.exists().markInterested()
 firstChild.name().markInterested()
 let trackName = ''
 let firstChildName = ''
+let lastHid = new Date(0)
 
 packetManager.listen('hide-all-automation.automation-area.modwig', (packet) => {
-    runAction([
-        `toggle_automation_shown_for_all_tracks`, 
-        `toggle_automation_shown_for_all_tracks`
-    ])
+    if (new Date().getTime() - lastHid.getTime() < 5000) {
+        // If we press again after a short period of time, assume ALL tracks have automation
+        // open, which means toggling twice won't help us
+        runAction([
+            `toggle_automation_shown_for_all_tracks`
+        ])
+    } else {
+        runAction([
+            `toggle_automation_shown_for_all_tracks`, 
+            `toggle_automation_shown_for_all_tracks`
+        ])
+    }
+    lastHid = new Date()
 })
 
 packetManager.listen('show-automation.automation-area.modwig', (packet) => {

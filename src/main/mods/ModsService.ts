@@ -302,13 +302,23 @@ export class ModsService extends BESService {
                     }
                     if (eventName === 'click') {
                         let downEvent, downTime
-                        wrappedOnForReloadDisconnect(Keyboard)('mousedown', (event) => {
+                        api.Mouse.on('mousedown', (event) => {
                             downTime = new Date()
                             downEvent = JSON.stringify(event)
                         })
-                        wrappedOnForReloadDisconnect(Keyboard)('mouseup', (event, ...rest) => {
+                        api.Mouse.on('mouseup', (event, ...rest) => {
                             if (JSON.stringify(event) === downEvent && downTime && new Date().getTime() - downTime.getTime() < 250) {
                                 wrappedCb(event, ...rest)
+                            }
+                        })
+                    } else if (eventName === 'doubleClick') {
+                        let lastClickTime = new Date(0)
+                        api.Mouse.on('click', (event, ...rest) => {
+                            if (new Date().getTime() - lastClickTime.getTime() < 250) {
+                                wrappedCb(event, ...rest)
+                                lastClickTime = new Date(0)
+                            } else {
+                                lastClickTime = new Date()
                             }
                         })
                     } else {
