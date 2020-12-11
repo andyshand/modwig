@@ -452,6 +452,7 @@ class GlobalController extends Controller {
                 host.scheduleTask(() => {
                     runAction('focus_track_header_area')
                     runAction('Enter Group')
+                    runAction('select_track1')
                 }, 100)
             }
         }
