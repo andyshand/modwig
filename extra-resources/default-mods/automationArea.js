@@ -80,7 +80,7 @@ Mod.registerAction({
 
 // Quickly create adjacent automation points with mouse button 3
 Mouse.on('mousedown', whenActiveListener(event => {
-    if (event.button === 3) {
+    if (event.button === 3 && event.Shift) {
         Mouse.returnAfter(() => {
             const { x, y } = Mouse.getPosition()
             if (event.Meta) {
@@ -93,3 +93,33 @@ Mouse.on('mousedown', whenActiveListener(event => {
         })
     }
 }))
+
+for (let i = 0; i < 100; i+= 10) {
+    Mod.registerAction({
+        title: `Set selected automation value to ${i}%`,
+        id: `set-automation-${i}%`,
+        description: `Requires inspector panel to be open`,
+        category: 'arranger',
+        defaultSetting: {
+            keys: ["Shift", `Numpad${String(i)[0]}`]
+        },
+        action: ({setEnteringValue}) => {
+            Mod.runAction('setAutomationValue')
+            setTimeout(() => {
+                // Select all (remove trailing "db")
+                Keyboard.keyPress('a', {Meta: true})
+
+                // Type in number
+                String(i).split('').forEach(char => {
+                    Keyboard.keyPress(char)
+                })
+
+                // Percentage sign
+                Keyboard.keyPress('5', {Shift: true})
+        
+                Keyboard.keyPress('NumpadEnter')
+                setEnteringValue(false)
+            }, 100)
+        }
+    })
+}
