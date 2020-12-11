@@ -5,6 +5,7 @@ import { url } from "./Url";
 import { interceptPacket, SocketMiddlemanService } from "./WebsocketToSocket";
 import { SettingsService } from "./SettingsService";
 import { ModsService } from "../mods/ModsService";
+import { ShortcutsService } from "../shortcuts/Shortcuts";
 const { Bitwig } = require('bindings')('bes')
 
 export class TrayService extends BESService {
@@ -15,6 +16,7 @@ export class TrayService extends BESService {
     settingsService = getService<SettingsService>('SettingsService')
     socket = getService<SocketMiddlemanService>('SocketMiddlemanService')
     modsService = getService<ModsService>('ModsService')
+    shortcutsService = getService<ShortcutsService>('ShortcutsService')
 
     async activate() {
         const tray = new Tray(getResourcePath('/images/tray-0Template.png'))
@@ -130,6 +132,18 @@ export class TrayService extends BESService {
                 app.dock.hide()
             }
         }        
+
+        this.shortcutsService.registerAction({
+            title: "Open Modwig Preferences",
+            id: "openPreferences",
+            category: 'global',
+            action: () => {
+                openWindow({type: 'settings'})
+            },
+            defaultSetting: {
+                keys: ["Meta", "Shift", ","]
+            }
+        })
 
         interceptPacket('api/setup/finish', async () => {
             await this.settingsService.setSettingValue('setupComplete', true)

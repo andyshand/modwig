@@ -20,6 +20,18 @@ const MODS_MESSAGE = `Modulators are currently inaccessible from the controller 
 const MODS_MESSAGE_2 = `Modulators are currently inaccessible from the controller API.`
 const PROXY_MESSAGE = key => `Proxy key for the "${key}" key for convenient remapping.`
 
+interface ActionSpec {
+    title: string
+    id: string
+    category: string
+    action: Function
+    defaultSetting?: {
+        keys?: String[],
+        doubleTap?: boolean
+    }
+    mod?: string
+}   
+
 export class ShortcutsService extends BESService {
     browserIsOpen
     browserText = ''
@@ -632,14 +644,14 @@ export class ShortcutsService extends BESService {
         }
     }
 
-    async registerAction(action, skipUpdate = false) {
+    async registerAction(action: ActionSpec, skipUpdate = false) {
         const value = action.defaultSetting || {keys: []}
         if (process.env.NODE_ENV !== 'dev') {
             delete value.keys
         }
         await this.settingsService.insertSettingIfNotExist({
             key: action.id,
-            mod: action.mod || null,
+            mod: action.mod || undefined,
             category: action.category,
             type: 'shortcut',
             value
@@ -682,7 +694,10 @@ export class ShortcutsService extends BESService {
                 res = this.settingsService.postload(res)
                 if (res.key in actions) {
                     const action = actions[res.key]
-                    res.description = action.description
+                    res = {
+                        ...action,
+                        ...res
+                    }
                 }
                 res.modName = res.mod ? modsService.latestModsMap['mod/' + res.mod]?.name ?? null : null
                 return res
