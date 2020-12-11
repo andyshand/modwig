@@ -549,6 +549,15 @@ export class ShortcutsService extends BESService {
                         Bitwig.makeMainWindowActive()
                     } 
                 },
+                scrollSelectedTrackInView: {
+                    defaultSetting: {
+                        keys: ['T'],
+                        doubleTap: true
+                    },
+                    action: () => {
+                        sendPacketToBitwig({type: 'track/selected/scroll'})
+                    } 
+                },
                 setAutomationValue: {
                     defaultSetting: {
                         keys: ['NumpadEnter']

@@ -235,6 +235,9 @@ class GlobalController extends Controller {
         packetManager.listen('track/select', ({ data: { name, allowExitGroup, enter }}) => {
             this.selectTrackWithName(name, true, allowExitGroup, enter)
         })
+        packetManager.listen('track/selected/scroll', () => {
+            this.cursorTrack.makeVisibleInArranger()
+        })
         this.deps.app.projectName().markInterested()
         this.deps.app.hasActiveEngine().markInterested()
 
