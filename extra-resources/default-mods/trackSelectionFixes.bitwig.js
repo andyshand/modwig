@@ -1,0 +1,15 @@
+/**
+ * @name Track Selection Fixes
+ * @id track-selection-fixes
+ * @description "Group Master" tracks switch selection to simply "Group", mouse button 4 selects track while working on automation
+ * @category global
+ */
+
+ globalController.cursorTrack.name().addValueObserver(name => {
+     const masterIndex = name.indexOf('Master')
+     if (masterIndex > 0) {
+         const actualName = name.slice(0, masterIndex).trim()
+         globalController.selectTrackWithName(actualName)
+         showMessage('Forwarding selection to: ' + actualName)
+     }
+ })

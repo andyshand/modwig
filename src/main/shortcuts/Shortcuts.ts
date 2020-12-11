@@ -247,7 +247,8 @@ export class ShortcutsService extends BESService {
                             type: 'action',
                             data: [
                                 `focus_track_header_area`,
-                                `Enter Group`
+                                `Enter Group`,
+                                `select_track1`
                             ]
                         })
                     }
@@ -262,7 +263,8 @@ export class ShortcutsService extends BESService {
                             type: 'action',
                             data: [
                                 `focus_track_header_area`,
-                                `Exit Group`
+                                `Exit Group`,
+                                `select_track1`
                             ]
                         })
                     }
@@ -733,7 +735,10 @@ export class ShortcutsService extends BESService {
         if (code in this.shortcutCache) {
             for (const {runner} of this.shortcutCache[code]) {
                 runner({
-                    keyState: state
+                    keyState: state,
+                    setEnteringValue: (yesOrNo) => {
+                        enteringValue = yesOrNo
+                    }
                 })
                 ran = true
             }
