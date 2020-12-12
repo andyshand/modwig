@@ -98,6 +98,9 @@ AXUIElementRef GetPluginAXUIElement() {
             cachedPluginHostRef = NULL;
         }
         pluginHostPID = GetPID("Bitwig Plug-in Host 64");
+        if (pluginHostPID == -1) {
+            pluginHostPID = GetPID("Bitwig Studio Engine");
+        }
         if (pluginHostPID != -1) {
             cachedPluginHostRef = AXUIElementCreateApplication(pluginHostPID);
         }
