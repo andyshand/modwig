@@ -84,13 +84,17 @@ class PacketManager {
     connection: any
     activeConnection: any
     listenersByType: {[type: string]: ((packet: Packet) => void)[]} = {}
-    constructor({app}) {
+    constructor(deps: Deps) {
+        const { app, globalController } = deps
         this.connection = connection
         log("Created remote connection on port: " + this.connection.getPort())
         this.connection.setClientConnectCallback(connection => {
             host.showPopupNotification("Modwig Connected");
             log("Connected to Node");
             this.activeConnection = connection
+            if (deps.globalController) {
+                deps.globalController.sendProject()
+            }
             this.activeConnection.setDisconnectCallback(() => {
                 log("Disconnected from Node");
                 host.showPopupNotification("Modwig Disconnected");
@@ -283,15 +287,8 @@ class GlobalController extends Controller {
                         // actually showing the group
                         // t.makeVisibleInArranger()
                     }
+                    this.sendProject({ track: t.name().get() })
                 }
-                this.deps.packetManager.send({
-                    type: 'trackselected',
-                    data: {
-                        selected,
-                        ...this.createTrackInfo(t, isFX),
-                        project: {name: this.deps.app.projectName().get()}
-                    }
-                })
             })
         })
 
@@ -374,12 +371,14 @@ class GlobalController extends Controller {
         }
     }
 
-    sendProject() {
+    sendProject({track}: {track?: string} = {}) {
+        const trackObj = this.findTrackByName(track || this.cursorTrack.name().get())
         this.deps.packetManager.send({
             type: 'project',
             data: {
                 name: this.deps.app.projectName().get(),
-                hasActiveEngine: this.deps.app.hasActiveEngine().get()
+                hasActiveEngine: this.deps.app.hasActiveEngine().get(),
+                selectedTrack: trackObj ? this.createTrackInfo(trackObj, false) : null
             }
         })
     }
@@ -961,7 +960,7 @@ function init() {
         arranger,
         transport
     } as any
-    deps.packetManager = new PacketManager({app})
+    deps.packetManager = new PacketManager(deps)
     deps.globalController = new GlobalController(deps)
     
     new TrackSearchController(deps)    

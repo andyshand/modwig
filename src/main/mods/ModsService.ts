@@ -541,19 +541,10 @@ export class ModsService extends BESService {
         })
     }
     async activate() {
-        // Listen out for the current track/project state from the controller script
-        interceptPacket('trackselected', undefined, async ({ data: { name: newTrackName, selected, project } }) => {
-            if (selected) {
-                const prev = this.currTrack
-                this.currProject = project.name
-                this.currTrack = newTrackName
-                this.events.selectedTrackChanged.emit(this.currTrack, prev)
-            }
-        })
         interceptPacket('message', undefined, async ({ data: { msg } }) => {
             this.showMessage(msg)
         })
-        interceptPacket('project', undefined, async ({ data: { name: projectName, hasActiveEngine } }) => {
+        interceptPacket('project', undefined, async ({ data: { name: projectName, hasActiveEngine, selectedTrack } }) => {
             const projectChanged = this.currProject !== projectName
             if (projectChanged) {
                 this.currProject = projectName
@@ -562,6 +553,11 @@ export class ModsService extends BESService {
                     this.activeEngineProject = projectName
                     this.events.activeEngineProjectChanged.emit(projectName)
                 }
+            }
+            if (selectedTrack && this.currTrack !== selectedTrack.name) {
+                const prev = this.currTrack
+                this.currTrack = selectedTrack.name
+                this.events.selectedTrackChanged.emit(this.currTrack, prev)
             }
         })
         interceptPacket('tracks', undefined, async ({ data: tracks }) => {
