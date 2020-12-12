@@ -123,3 +123,53 @@ for (let i = 0; i < 100; i+= 10) {
         }
     })
 }
+
+for (const dir of ['left', 'right']) {
+    const capitalized = dir[0].toUpperCase() + dir.slice(1)
+    Mod.registerAction({
+        title: `Copy automation value ${dir}`,
+        id: `copy-automation-${dir}`,
+        description: `Copies the value of the currently selected automation point to its ${dir}`,
+        category: 'arranger',
+        defaultSetting: {
+            keys: ["Control", dir === 'left' ? '4' : '6']
+        },
+        action: async ({setEnteringValue}) => {
+            Mod.runAction('setAutomationValue')
+            await wait(100)
+
+            // Select all
+            Keyboard.keyPress('a', {Meta: true})
+
+            // Copy
+            Keyboard.keyPress('c', {Meta: true})
+
+            Keyboard.keyPress('NumpadEnter')
+            
+            // Focus arranger
+            Keyboard.keyPress('o', {Alt: true})
+
+            // Move to left/right automation point
+            Keyboard.keyPress(`Arrow${capitalized}`)
+            
+            // Must reset enteringValue for setAutomationValue to trigger
+            // (see implementation)
+            setEnteringValue(false)
+            Mod.runAction('setAutomationValue')
+
+            await wait(100)
+            // Select all
+            Keyboard.keyPress('a', {Meta: true})
+
+            // Paste
+            Keyboard.keyPress('v', {Meta: true})
+
+            // Confirm
+            Keyboard.keyPress('NumpadEnter')
+            setEnteringValue(false)
+
+            // Focus arranger
+            Keyboard.keyPress('o', {Alt: true})
+        }
+    })
+}

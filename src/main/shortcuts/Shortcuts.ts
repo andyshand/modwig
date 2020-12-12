@@ -71,7 +71,7 @@ export class ShortcutsService extends BESService {
                 const runner = (context) => {
                     logWithTime('Running shortcut code: ' + code + ' with action key: ' + key)
                     try {
-                        // console.log(`Action data is: `, this.actions[key])
+                        console.log(`Action data is: `, this.actions[key])
                         this.actions[key].action(context)
                     } catch (e) {
                         console.error(e)
@@ -659,6 +659,7 @@ export class ShortcutsService extends BESService {
             value
         })
         logWithTime(`Registering action: ${colors.yellow(action.id)}`)
+        // logWithTime(action)
         this.actions[action.id] = action
         if (!skipUpdate) {
             await this.updateShortcutCache()
@@ -782,7 +783,7 @@ export class ShortcutsService extends BESService {
 
         Keyboard.on('keydown', event => {
             let { lowerKey, nativeKeyCode, Meta, Shift, Control, Alt, Fn } = event
-            if (/F[0-9]+/.test(lowerKey) || lowerKey === 'Clear') {
+            if (/F[0-9]+/.test(lowerKey) || lowerKey === 'Clear' || lowerKey.indexOf('Arrow') === 0) {
                 // FN defaults to true when using function keys (makes sense I guess?), but also Clear???
                 Fn = false
             }

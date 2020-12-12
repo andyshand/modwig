@@ -790,7 +790,7 @@ export class ModsService extends BESService {
                             eval(setVars + mod.contents)
                             logWithTime('Enabled local mod: ' + colors.green(modId))
                         } catch (e) {
-                            console.error(e)   
+                            logWithTime(colors.red(e))   
                         }
                     }
                 }

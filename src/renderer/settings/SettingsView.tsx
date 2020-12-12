@@ -361,7 +361,9 @@ export class SettingsView extends React.Component<Props> {
         return <NavSplit>
             <div>
                 {Object.keys(modsByCategory).map(category => {
-                    const mods = modsByCategory[category]
+                    const mods = modsByCategory[category].sort((a, b) => {
+                        return a.name < b.name ? -1 : 1
+                    })
                     return <SidebarSection key={category}>
                         <div style={{color: '#777'}}>{humanise(category)}</div>
                         <div>
