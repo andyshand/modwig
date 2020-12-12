@@ -11,5 +11,5 @@ public:
     static Napi::Object Init(Napi::Env env, Napi::Object exports);
     Screenshot(const Napi::CallbackInfo &info);
     ~Screenshot();
-    // Napi::Value ColorAt(const Napi::CallbackInfo &info);
+    Napi::Value ColorAt(const Napi::CallbackInfo &info);
 };

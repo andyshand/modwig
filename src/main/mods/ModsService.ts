@@ -91,7 +91,7 @@ function makeWindowOpener() {
 const openFloatingWindow = makeWindowOpener()
 const openMessageWindow = makeWindowOpener()
 
-const { Keyboard, Mouse, MainWindow, Bitwig } = require('bindings')('bes')
+const { Keyboard, Mouse, MainWindow, Bitwig, Screenshot } = require('bindings')('bes')
 
 interface ModInfo {
     name: string
@@ -518,6 +518,7 @@ export class ModsService extends BESService {
         }
         return {
             ...wrapFunctionsWithTryCatch(api),
+            Screenshot,
             _,
         }
     }
