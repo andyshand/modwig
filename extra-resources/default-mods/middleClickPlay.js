@@ -57,7 +57,7 @@ function playWithEvent(event) {
         }
 
         // Make sure the position doesn't cross over into track header 
-        timelineClickPosition.x = Math.max(440, timelineClickPosition.x - backFurther);
+        timelineClickPosition.x = Math.max(480, timelineClickPosition.x - backFurther);
 
         if (!Bitwig.intersectsPluginWindows(timelineClickPosition)) {
             log(`Double-clicking time ruler at ${timelineClickPosition.x}, ${timelineClickPosition.y}`)
