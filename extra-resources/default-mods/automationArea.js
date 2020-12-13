@@ -148,7 +148,7 @@ for (const dir of ['left', 'right']) {
             Keyboard.keyPress('NumpadEnter')
             
             // Focus arranger
-            Keyboard.keyPress('o', {Alt: true})
+            Mod.runAction('focusArranger')
 
             // Move to left/right automation point
             Keyboard.keyPress(`Arrow${capitalized}`)
@@ -170,7 +170,7 @@ for (const dir of ['left', 'right']) {
             setEnteringValue(false)
 
             // Focus arranger
-            Keyboard.keyPress('o', {Alt: true})
+            Mod.runAction('focusArranger')
         }
     })
 }
