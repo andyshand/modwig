@@ -14,7 +14,7 @@ import { logWithTime } from "../core/Log"
 import { ShortcutsService } from "../shortcuts/Shortcuts"
 import { debounce } from '../../connector/shared/engine/Debounce'
 import _ from 'underscore'
-import { BrowserWindow } from "electron"
+import { BrowserWindow, clipboard } from "electron"
 import { url } from "../core/Url"
 const chokidar = require('chokidar')
 const colors = require('colors');
@@ -305,6 +305,11 @@ export class ModsService extends BESService {
                     }
                     wrappedOnForReloadDisconnect(Keyboard)(eventName, wrappedCb)
                 },
+                type: (str) => {
+                    String(str).split('').forEach(char => {
+                        Keyboard.keyPress(char)
+                    })
+                }
             },
             whenActiveListener: whenActiveListener,
             Mouse: {
@@ -479,6 +484,9 @@ export class ModsService extends BESService {
                         clearInterval(id)
                         logWithTime('Clearing interval id: ' + id)
                     })
+                },
+                getClipboard() {
+                    return clipboard.readText()
                 }
             },
             wait: ms => new Promise(res => {

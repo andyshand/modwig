@@ -602,6 +602,37 @@ export class ShortcutsService extends BESService {
                             enteringValue = true
                         }
                     }
+                },
+                setAutomationPosition: {
+                    defaultSetting: {
+                        keys: ['Control', 'NumpadEnter']
+                    },
+                    description: 'Focuses the automation position field in the inspector for quickly setting position of selected automation.',
+                    action: () => {
+                        if (!this.browserIsOpen && !enteringValue) {
+                            const frame = MainWindow.getFrame()
+
+                            // Ensure arranger panel is active
+                            // TODO we'll need a more reliable way to do this if
+                            // someone changes shortcuts. Or require you add this shortcut?
+                            // First, move focus away from arranger
+                            Keyboard.keyPress('ArrowDown', {Control: true, Shift: true})
+                            Keyboard.keyPress('ArrowLeft', {Control: true, Shift: true})
+                            
+                            // Then move it back (because there is only "Toggle/Focus" not "Focus")
+                            // If arranger is already active, it ends up showing the mixer...
+                            Keyboard.keyPress('o', {Alt: true})
+                            
+                            returnMouseAfter(() => {
+                                Mouse.click(0, {
+                                    x: frame.x + 140,
+                                    y: frame.y + 120,
+                                    Meta: true
+                                })
+                            })
+                            enteringValue = true
+                        }
+                    }
                 }
             })),
 

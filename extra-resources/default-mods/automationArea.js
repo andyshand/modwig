@@ -110,9 +110,7 @@ for (let i = 0; i < 100; i+= 10) {
                 Keyboard.keyPress('a', {Meta: true})
 
                 // Type in number
-                String(i).split('').forEach(char => {
-                    Keyboard.keyPress(char)
-                })
+                Keyboard.type(i)
 
                 // Percentage sign
                 Keyboard.keyPress('5', {Shift: true})
@@ -132,7 +130,7 @@ for (const dir of ['left', 'right']) {
         description: `Copies the value of the currently selected automation point to its ${dir}`,
         category: 'arranger',
         defaultSetting: {
-            keys: ["Control", dir === 'left' ? '4' : '6']
+            keys: ["Control", dir === 'left' ? 'Numpad4' : 'Numpad6']
         },
         action: async ({setEnteringValue}) => {
             Mod.runAction('setAutomationValue')
@@ -173,3 +171,53 @@ for (const dir of ['left', 'right']) {
         }
     })
 }
+
+Mod.registerAction({
+    title: `Snap automation to nearest bar`,
+    id: `snap-automation-nearest-bar`,
+    description: `Rounds the position of the selected automation point to the nearest bar`,
+    category: 'arranger',
+    defaultSetting: {
+        keys: ["Control", 'Numpad5']
+    },
+    action: async ({setEnteringValue}) => {
+        Mod.runAction('setAutomationPosition')
+        await wait(100)
+
+        // Copy
+        Keyboard.keyPress('c', {Meta: true})
+
+        // Wait a little to ensure clipboard is populated
+        await wait(100)
+
+        const position = Mod.getClipboard()        
+        let beats = parseInt(position.split('.')[0], 10)
+
+        const rest = position.split('.').slice(1)
+        if (rest[0] === '1' || rest[0] === '2') {
+            // Round down
+        } else {
+            // Round up
+            beats += 1
+        }
+
+        const toType = beats + '.1.1.00'
+        
+        Keyboard.type(toType)
+        Keyboard.keyPress('NumpadEnter')
+        
+        setEnteringValue(false)
+        Mod.runAction('setAutomationPosition')
+        await wait(100)
+        
+        // Do it again because it doesn't always work first time
+        Keyboard.type(toType)
+        Keyboard.keyPress('NumpadEnter')
+        
+        // Focus arranger
+        Keyboard.keyPress('o', {Alt: true})
+        setEnteringValue(false)
+
+        Bitwig.showMessage(`Set automation point to ${toType}`)
+    }
+})
