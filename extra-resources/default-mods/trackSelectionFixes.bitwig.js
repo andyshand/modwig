@@ -10,6 +10,6 @@
      if (masterIndex > 0) {
          const actualName = name.slice(0, masterIndex).trim()
          globalController.selectTrackWithName(actualName)
-         showMessage('Forwarding selection to: ' + actualName)
+         log('Forwarding selection to: ' + actualName)
      }
  })

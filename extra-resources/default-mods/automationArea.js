@@ -133,6 +133,9 @@ for (const dir of ['left', 'right']) {
             keys: ["Control", dir === 'left' ? 'Numpad4' : 'Numpad6']
         },
         action: async ({setEnteringValue}) => {
+            // Incase modifiers are still pressed
+            Keyboard.keyUp('Control')
+
             Mod.runAction('setAutomationValue')
             await wait(100)
 
@@ -181,6 +184,10 @@ Mod.registerAction({
         keys: ["Control", 'Numpad5']
     },
     action: async ({setEnteringValue}) => {
+        // Incase modifiers are still pressed, they prevent
+        // the value from being set for some reason
+        Keyboard.keyUp('Control')
+
         Mod.runAction('setAutomationPosition')
         await wait(100)
 
@@ -207,17 +214,6 @@ Mod.registerAction({
         Keyboard.keyPress('NumpadEnter')
         
         setEnteringValue(false)
-        Mod.runAction('setAutomationPosition')
-        await wait(100)
-        
-        // Do it again because it doesn't always work first time
-        Keyboard.type(toType)
-        Keyboard.keyPress('NumpadEnter')
-        
-        // Focus arranger
-        Keyboard.keyPress('o', {Alt: true})
-        setEnteringValue(false)
-
-        Bitwig.showMessage(`Set automation point to ${toType}`)
+        log(`Set automation point to ${toType}`)
     }
 })
