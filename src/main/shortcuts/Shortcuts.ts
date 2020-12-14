@@ -626,6 +626,28 @@ export class ShortcutsService extends BESService {
                             enteringValue = true
                         }
                     }
+                },
+                locatePlayhead: {
+                    defaultSetting: {
+                        keys: ['F']
+                    },
+                    description: 'Scrolls the arranger to the currently playing position',
+                    action: () => {
+                        sendPacketToBitwig({
+                            type: 'action',
+                            data: [
+                                'toggle_playhead_follow'
+                            ]
+                        })
+                        setTimeout(() => {
+                            sendPacketToBitwig({
+                                type: 'action',
+                                data: [
+                                    'toggle_playhead_follow'
+                                ]
+                            })
+                        }, 100)
+                    }
                 }
             })),
 
