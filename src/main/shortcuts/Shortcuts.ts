@@ -69,12 +69,12 @@ export class ShortcutsService extends BESService {
                 const code = this.makeShortcutValueCode(value)
                 // code is our ID, key is the action to run
                 const runner = (context) => {
-                    logWithTime('Running shortcut code: ' + code + ' with action key: ' + key)
+                    logWithTime('Running shortcut code: ' + code + ' with action key: ' + colors.yellow(key))
                     try {
-                        console.log(`Action data is: `, this.actions[key])
+                        // console.log(`Action data is: `, this.actions[key])
                         this.actions[key].action(context)
                     } catch (e) {
-                        console.error(e)
+                        logWithTime(colors.red(e))
                     }
                 }
                 this.shortcutCache[code] = (this.shortcutCache[code] || []).concat({

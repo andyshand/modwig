@@ -166,6 +166,7 @@ export class ModsService extends BESService {
                 data: args
             })
         }
+        logWithTime(colors.green(modId), ...args)
     }
 
     showMessage(msg) {
@@ -251,7 +252,14 @@ export class ModsService extends BESService {
             }
             return {
                 on: (eventName: string, cb: Function) => {
-                    return handlers[eventName].on(cb)
+                    const wrappedCb = (...args) => {
+                        try {
+                            cb(...args)
+                        } catch (e) {
+                            this.logForMod(mod.id, colors.red(e))
+                        }
+                    }
+                    return handlers[eventName].on(wrappedCb)
                 },
                 off: (eventName: string, id: number) => {
                     handlers[eventName].off(id)
@@ -288,7 +296,6 @@ export class ModsService extends BESService {
         const that = this
         const api = {
             log: (...args) => {
-                logWithTime(`${colors.green(mod.id)}:`, ...args)
                 this.logForMod(mod.id, ...args)
             },
             error: (...args) => {
@@ -407,14 +414,14 @@ export class ModsService extends BESService {
             Db: {
                 getTrackData: async (name, options: {modId?: string} = {}) => {
                     if (!this.simplifiedProjectName) {
-                        console.warn('Tried to get track data but no project loaded')
+                        this.logForMod(mod.id, colors.yellow('Tried to get track data but no project loaded'))
                         return null
                     }
                     return (await loadDataForTrack(name, this.simplifiedProjectName))[options?.modId ?? mod.id] || {}
                 },
                 setCurrentProjectData: async (data) => {
                     if (!this.simplifiedProjectName) {
-                        console.warn('Tried to set track data but no project loaded')
+                        this.logForMod(mod.id, colors.yellow('Tried to set project data but no project loaded'))
                         return null
                     }
                     const projectName = this.simplifiedProjectName
@@ -429,7 +436,7 @@ export class ModsService extends BESService {
                 },
                 getCurrentProjectData: async () => {
                     if (!this.simplifiedProjectName) {
-                        console.warn('Tried to set track data but no project loaded')
+                        this.logForMod(mod.id, colors.yellow('Tried to get project data but no project loaded'))
                         return null
                     }
                     const project = this.simplifiedProjectName
@@ -438,14 +445,14 @@ export class ModsService extends BESService {
                 },
                 setTrackData: (name, data) => {
                     if (!this.simplifiedProjectName) {
-                        console.warn('Tried to set track data but no project loaded')
+                        this.logForMod(mod.id, colors.yellow('Tried to set track data but no project loaded'))
                         return null
                     }
                     return createOrUpdateTrack(name, this.simplifiedProjectName, {[mod.id]: data})
                 },
                 setExistingTracksData: async (data, exclude: string[] = []) => {
                     if (!this.simplifiedProjectName) {
-                        console.warn('Tried to set track data but no project loaded')
+                        this.logForMod(mod.id, colors.yellow('Tried to set track data but no project loaded'))
                         return null
                     }
                     const project = this.simplifiedProjectName
@@ -475,7 +482,17 @@ export class ModsService extends BESService {
                 },
                 registerAction: (action) => {
                     action.category = action.category || mod.category
-                    this.shortcutsService.registerAction({...action, mod: mod.id})
+                    this.shortcutsService.registerAction({
+                        ...action, 
+                        mod: mod.id,
+                        action: async (...args) => {
+                            try {
+                                await (async () => action.action(...args))()
+                            } catch (e) {
+                                this.logForMod(mod.id, colors.red(e))
+                            }
+                        }
+                    })
                 },
                 setInterval: (fn, ms) => {
                     const id = setInterval(fn, ms)
