@@ -217,3 +217,37 @@ Mod.registerAction({
         log(`Set automation point to ${toType}`)
     }
 })
+
+Mod.registerAction({
+    title: `Copy automation value`,
+    id: `copy-automation-value`,
+    description: `Copies the value of the currently selected automation`,
+    category: 'arranger',
+    defaultSetting: {
+        keys: ["Meta", "Shift", "C"]
+    },
+    action: async ({setEnteringValue}) => {
+        Mod.runAction('setAutomationValue')
+        Keyboard.keyPress('c', {Meta: true})
+        Keyboard.keyPress('NumpadEnter')
+        setEnteringValue(false)
+        Mod.runAction('focusArranger')
+    }
+})
+
+Mod.registerAction({
+    title: `Paste automation value`,
+    id: `paste-automation-value`,
+    description: `Pastes the value of the currently selected automation`,
+    category: 'arranger',
+    defaultSetting: {
+        keys: ["Meta", "Shift", "V"]
+    },
+    action: async ({setEnteringValue}) => {
+        Mod.runAction('setAutomationValue')
+        Keyboard.keyPress('v', {Meta: true})
+        Keyboard.keyPress('NumpadEnter')
+        setEnteringValue(false)
+        Mod.runAction('focusArranger')
+    }
+})
