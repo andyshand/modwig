@@ -6,6 +6,7 @@ import { sendPromise } from '../bitwig-api/Bitwig'
 import { humanise, settingShortDescription, settingTitle, shortcutToTextDescription } from './helpers/settingTitle'
 import _ from 'underscore'
 import { ModLogs } from './ModLogs'
+import { SettingsFooter } from './SettingsFooter'
 const xPad = `4rem`
 const SettingsViewWrap = styled.div`
     background: #131313;
@@ -26,6 +27,9 @@ const SettingsViewWrap = styled.div`
     }
     >:nth-child(2) {
         flex-grow: 1;
+    }
+    >:nth-child(3) {
+        flex-shrink: 0;
     }
 `
 const NavSplit = styled.div`
@@ -116,6 +120,7 @@ const SettingDesc = styled.div`
     font-size: 1em;
 
 `
+
 const SidebarSetting = styled.div`
     font-size: .9em;
     white-space: nowrap;
@@ -463,6 +468,7 @@ export class SettingsView extends React.Component<Props> {
                 <Search type={'search'} spellCheck={false} autoComplete={"off"} autoCorrect={"off"} onChange={e => this.setState({searchQuery: e.target.value.toLowerCase().trim()})} autoCapitalize={"off"} placeholder="Search..." />
             </div>
             {this.state.category === 'mod' ? this.renderMods() : this.renderSettings()}
+            <SettingsFooter />
         </SettingsViewWrap>
     }
 }

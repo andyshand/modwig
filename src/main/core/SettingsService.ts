@@ -1,7 +1,7 @@
 import { BESService, getService, makeEvent } from "./Service"
 import { getDb } from "../db"
 import { Setting } from "../db/entities/Setting"
-import { interceptPacket, SocketMiddlemanService } from "./WebsocketToSocket"
+import { addAPIMethod, interceptPacket, SocketMiddlemanService } from "./WebsocketToSocket"
 import * as path from 'path'
 
 interface SettingTemplate {
@@ -25,9 +25,30 @@ export class SettingsService extends BESService {
         this.db = await getDb()
         this.Settings = this.db.getRepository(Setting)
 
-        interceptPacket('api/settings/set', async ({ data: setting }) => {
+        addAPIMethod('api/settings/set', async (setting) => {
             await this.setSettingValue(setting.key, setting.value)
         })
+        addAPIMethod('api/settings/get', async (key) => {
+            return await this.getSettingValue(key)
+        })
+
+        const settings = [
+            {
+                key: 'uiScale',
+                value: '100%',
+                type: 'string',
+                category: 'global'
+            },
+            {
+                key: 'uiLayout',
+                value: 'Single Display (Large)',
+                type: 'string',
+                category: 'global'
+            }
+        ]
+        for (const setting of settings) {
+            this.insertSettingIfNotExist(setting as any)
+        }
     }
 
     async getSettingsForCategory(category: string) {
