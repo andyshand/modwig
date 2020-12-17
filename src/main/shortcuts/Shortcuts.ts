@@ -1,5 +1,5 @@
 import { sendPacketToBitwig, interceptPacket, addAPIMethod, sendPacketToBitwigPromise } from "../core/WebsocketToSocket"
-import { BESService, getService } from "../core/Service"
+import { BESService, getService, makeEvent } from "../core/Service"
 import { getDb } from "../db"
 import { Setting } from "../db/entities/Setting"
 import { BrowserWindow } from "electron"
@@ -36,10 +36,13 @@ export class ShortcutsService extends BESService {
     browserIsOpen
     browserText = ''
     actions = this.getActions()
-    shortcutCache = {}
+    shortcutCache: {[key: string]: {runner: Function, action?: ActionSpec}[]} = {}
     settingsService = getService<SettingsService>('SettingsService')
     searchWindow: BrowserWindow
     extraShortcuts: any[]
+    events = {
+        actionTriggered: makeEvent<ActionSpec>(),
+    }
 
     repeatActionWithRange(name, startIncl, endIncl, genTakesI) {
         let out = {}
@@ -78,7 +81,8 @@ export class ShortcutsService extends BESService {
                     }
                 }
                 this.shortcutCache[code] = (this.shortcutCache[code] || []).concat({
-                    runner
+                    runner,
+                    action: this.actions[key]
                 })
             }
         }        
@@ -780,13 +784,20 @@ export class ShortcutsService extends BESService {
         let ran = false
         logWithTime(`State code is ${code}`)
         if (code in this.shortcutCache) {
-            for (const {runner} of this.shortcutCache[code]) {
+            for (const { runner, action } of this.shortcutCache[code]) {
                 runner({
                     keyState: state,
                     setEnteringValue: (yesOrNo) => {
                         enteringValue = yesOrNo
                     }
                 })
+                
+                // Need vocab clarification. Not all "actions" are really full fletched actions.
+                // The shortcut to disable/enable a mod is one of these such pseudo actions
+                // that doesn't fully fulfil the ActionSpec
+                if (action) {
+                    this.events.actionTriggered.emit(action)
+                }
                 ran = true
             }
         }

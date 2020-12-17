@@ -90,7 +90,8 @@ export class SettingsService extends BESService {
     }
 
     async getSetting(key: string) {
-        return this.postload(await this.Settings.findOne({where: {key}}))
+        const setting = await this.Settings.findOne({where: {key}})
+        return setting ? this.postload(setting) : null
     }
 
     async getSettingValue(key: string) {

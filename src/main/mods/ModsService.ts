@@ -28,7 +28,7 @@ function makeWindowOpener() {
         path: string
     } | undefined
     let fadeOutTimeout: any
-    return function openFloatingWindow(path, options: {data?: any, timeout: number, width: number, height: number}) {
+    return function openFloatingWindow(path, options: {data?: any, timeout?: number, width: number, height: number}) {
        if (fadeOutTimeout) {
            clearTimeout(fadeOutTimeout)
        }
@@ -56,10 +56,10 @@ function makeWindowOpener() {
                    }
                })
            }
+           floatingWindowInfo.window.loadURL(url(`/#/loading`))
            // ;(floatingWindowInfo!.window as any).toggleDevTools()    
        }
    
-       floatingWindowInfo.window.loadURL(url(`/#/loading`))
        if (options.data) {
            floatingWindowInfo!.window.webContents.executeJavaScript(`
                window.data = ${JSON.stringify(options.data)};
@@ -80,9 +80,11 @@ function makeWindowOpener() {
                    }
                }
            
-               fadeOutTimeout = setTimeout(() => {
-                   doFadeOut(1)
-               }, options.timeout)
+               if (options.timeout) {
+                fadeOutTimeout = setTimeout(() => {
+                    doFadeOut(1)
+                }, options.timeout)
+                }
            })
        }
    }
@@ -103,9 +105,16 @@ interface ModInfo {
     noReload: boolean
 }
 
+interface CueMarker {
+    name: string
+    position: number
+    color: string
+}
+
 export class ModsService extends BESService {
     currProject: string | null = null
     currTrack: string | null = null
+    cueMarkers: CueMarker[] = []
     browserIsOpen = false
     settingsService = getService<SettingsService>('SettingsService')
     folderWatcher?: any
@@ -152,13 +161,18 @@ export class ModsService extends BESService {
         clearTimeout(this.logTimeout)
         this.logTimeout = setTimeout(() => {
             for (const { msg, count } of messagesForMod) {
-                this.logForMod(modId, msg + (count > 1 ? ` (${count})` : ''))
+                this.logForModWebOnly(modId, msg + (count > 1 ? ` (${count})` : ''))
             }
             this.waitingMessagesByModId[modId] = []
         }, 250)
     }
 
     logForMod(modId: string, ...args: any[]) {
+        this.logForModWebOnly(modId, ...args)
+        logWithTime(colors.green(modId), ...args)
+    }
+
+    logForModWebOnly(modId: string, ...args: any[]) {
         const socketsForWithModId = this.suckitService.getActiveWebsockets().filter(({id, ws, activeModLogKey}) => activeModLogKey === modId)
         for (const socc of socketsForWithModId) {
             socc.send({
@@ -166,7 +180,6 @@ export class ModsService extends BESService {
                 data: args
             })
         }
-        logWithTime(colors.green(modId), ...args)
     }
 
     showMessage(msg) {
@@ -385,6 +398,9 @@ export class ModsService extends BESService {
                 get currentTrack() {
                     return that.currTrack
                 },
+                get cueMarkers() {
+                    return that.cueMarkers
+                },
                 get currentProject() {
                     return that.simplifiedProjectName
                 },
@@ -504,7 +520,10 @@ export class ModsService extends BESService {
                 },
                 getClipboard() {
                     return clipboard.readText()
-                }
+                },
+                ...makeEmitterEvents({
+                    actionTriggered: this.shortcutsService.events.actionTriggered   
+                })
             },
             wait: ms => new Promise(res => {
                 setTimeout(res, ms)
@@ -527,7 +546,7 @@ export class ModsService extends BESService {
                     try {
                         const called = value.name || key || 'Unknown function'
                         if (value !== api.log) {
-                            this.logForMod(mod.id, `Called ${called}`)
+                            this.logForModWebOnly(mod.id, `Called ${called}`)
                         }
                         return value(...args)
                     } catch (e) {
@@ -587,6 +606,9 @@ export class ModsService extends BESService {
         })
         interceptPacket('tracks', undefined, async ({ data: tracks }) => {
             this.tracks = tracks
+        })
+        interceptPacket('cue-markers', undefined, async ({ data: cueMarkers }) => {
+            this.cueMarkers = cueMarkers
         })
         interceptPacket('browser/state', undefined, ({ data: {isOpen} }) => {
             const previous = this.browserIsOpen
@@ -789,7 +811,7 @@ export class ModsService extends BESService {
     }
 
     async isModEnabled(mod) {
-        return (await this.settingsService.getSetting(mod.settingsKey)).value.enabled
+        return (await this.settingsService.getSetting(mod.settingsKey))?.value.enabled ?? false;
     }
 
     async refreshLocalMods() {

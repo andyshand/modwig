@@ -8,9 +8,9 @@ import { parse } from 'ansicolor'
 
 const Logs = styled.div`
     background: 0;  
-    font-family: Monaco, monospace;
-    font-size: .7em;
     padding: 1em;
+    font-size: .7em;
+    font-family: Monaco, monospace;
     > * {
         @keyframes flashIn {
             from {
@@ -28,6 +28,7 @@ const Logs = styled.div`
             color: #666;
         }
     }
+    
 `
 
 let nextLogId = 0
@@ -46,7 +47,11 @@ export const ModLogs = ({mod}) => {
     setLogsG = setLogs
 
     useEffect(() => {
-        setLogs([])
+        setLogs([{
+            id: nextLogId++,
+            date: new Date(),
+            msg: `Waiting for logs from ${mod.name}...`
+        }])
         send({
             type: `api/mods/log`,
             data: mod.id

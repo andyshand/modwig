@@ -90,6 +90,7 @@ const ModAndLogs = styled.div`
         overflow-y: auto;
     }
     >:nth-child(2) {
+        height: 33%;        
         flex-grow: 1;
         overflow-y: auto;
     }

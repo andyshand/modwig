@@ -381,6 +381,7 @@ class GlobalController extends Controller {
                 selectedTrack: trackObj ? this.createTrackInfo(trackObj, false) : null
             }
         })
+        this.sendAllCueMarkers()
     }
 
     sendAllTracks() {
