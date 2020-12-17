@@ -19,8 +19,8 @@ packetManager.listen('transport/nudge', (packet) => {
     const previousMarkerIndex = closestMarkerIndex(false)
     const marker = globalController.cueMarkerBank.getItemAt(previousMarkerIndex)
     const markerIn = newPosition - marker.position().get()
-    const message = marker.getName().get() ? `Transport: ${marker.getName().get()} + ${positionToString(markerIn)} (${positionString})` : `Transport: ${positionString}`
-    showMessage(message)
+    // const message = marker.getName().get() ? `Transport: ${marker.getName().get()} + ${positionToString(markerIn)} (${positionString})` : `Transport: ${positionString}`
+    // showMessage(message)
     transport.playStartPosition().set(newPosition)
 })
 
@@ -54,7 +54,6 @@ function jump(next) {
         const marker = globalController.cueMarkerBank.getItemAt(index)
         transport.playStartPosition().set(marker.position().get())
         globalController.cueMarkerBank.scrollToMarker(index)
-        showMessage(`Jumping to ${marker.getName().get()} (${index + 1})`)
     } else {
         showMessage(`No ${next ? 'next' : 'previous'} marker found`)
     }

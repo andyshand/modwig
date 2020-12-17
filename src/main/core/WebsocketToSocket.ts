@@ -9,7 +9,7 @@ const net = require('net');
 const logInOut = false
 const RECONNECT_IN = 1000 * 3;
 
-let nextSocketId = 0
+let nextId = 0
 let waiting = 0
 let partialMsg = ''
 let bitwigClient: any = null
@@ -50,12 +50,18 @@ const bitwigToClientQueue = async.queue(async function ({data}, callback) {
 }, 1);
 
 type BitwigToClientInterceptorResponse = {modified: boolean} | void
-type BitwigToClientInterceptor = (packet: any) => BitwigToClientInterceptorResponse | Promise<BitwigToClientInterceptorResponse>
-type ClientToBitwigInterceptor = (packet: any, websocket?: WebsocketData) => any
+type BitwigToClientInterceptor = {
+    id: string,
+    handler: (packet: any) => BitwigToClientInterceptorResponse | Promise<BitwigToClientInterceptorResponse>
+}
+type ClientToBitwigInterceptor = {
+    id: string,
+    handler: (packet: any, websocket?: WebsocketData) => any
+}
 let toBWInterceptors: {[type: string]: ClientToBitwigInterceptor[]} = {}
 let fromBWInterceptors: {[type: string]: BitwigToClientInterceptor[]} = {}
 
-async function processInterceptors(packetStr, ceptors: {[type: string]: Function[]}, websocketSrc?: WebsocketData) {
+async function processInterceptors(packetStr, ceptors: {[type: string]: (ClientToBitwigInterceptor | BitwigToClientInterceptor)[]}, websocketSrc?: WebsocketData) {
     const packet = JSON.parse(packetStr)
     if (packet.id in waitingForResponseById) {
         try {
@@ -70,7 +76,7 @@ async function processInterceptors(packetStr, ceptors: {[type: string]: Function
     if ((ceptors[packet.type] || []).length) {
         const ceptorsForPacket = ceptors[packet.type]
         for (const cept of ceptorsForPacket) {
-            let out = cept(packet, websocketSrc)
+            let out = cept.handler(packet, websocketSrc)
             // If our cb was async, wait for it to finish
             if (out && (out as any).then) {
                 out = await out
@@ -131,7 +137,7 @@ export class SocketMiddlemanService extends BESService {
         connectBitwig();
         
         wss.on('connection', ws => {
-            const id = nextSocketId++
+            const id = nextId++
             let socketData: WebsocketData = {
                 ws, 
                 id,
@@ -207,12 +213,30 @@ export function sendPacketToBrowser(packet) {
 /**
  * Bitwig->Client interceptors may modify the packet in any way before it reaches the browser, but must
  * return {modified: true} from their handler function. Otherwise changes will not be registered.
+ * 
+ * Returns a function to remove the interceptor
  */
-export function interceptPacket(type: string, toBitwig?: ClientToBitwigInterceptor, fromBitwig?: BitwigToClientInterceptor) {
+export function interceptPacket(type: string, toBitwig?: ClientToBitwigInterceptor["handler"], fromBitwig?: BitwigToClientInterceptor["handler"]) : Function {
+    const id = String(nextId++)
     if (toBitwig) {
-        toBWInterceptors[type] = (toBWInterceptors[type] || []).concat(toBitwig)
-    } else if (fromBitwig) {
-        fromBWInterceptors[type] = (fromBWInterceptors[type] || []).concat(fromBitwig)
+        toBWInterceptors[type] = (toBWInterceptors[type] || []).concat({
+            handler: toBitwig,
+            id
+        })
+    }
+    if (fromBitwig) {
+        fromBWInterceptors[type] = (fromBWInterceptors[type] || []).concat({
+            handler: fromBitwig,
+            id
+        })
+    }
+    return () => {
+        if (toBitwig && toBWInterceptors[type]) {
+            toBWInterceptors[type] = toBWInterceptors[type].filter(cept => cept.id !== id)
+        }
+        if (fromBitwig && fromBWInterceptors[type]) {
+            fromBWInterceptors[type] = fromBWInterceptors[type].filter(cept => cept.id !== id)
+        }
     }
 }
 

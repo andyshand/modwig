@@ -946,6 +946,7 @@ function init() {
     // fix for bug that doesn't reset automation at specific point
     transport.getPosition().markInterested()
     transport.playStartPosition().markInterested()
+    
     let isPlaying = false
     transport.isPlaying().addValueObserver(yesOrNo => {
         if (yesOrNo) {
@@ -955,7 +956,7 @@ function init() {
             transport.getPosition().set(transport.playStartPosition().get())
         }
     })
-
+    
     let deps: Deps = {
         app,
         arranger,
@@ -963,6 +964,12 @@ function init() {
     } as any
     deps.packetManager = new PacketManager(deps)
     deps.globalController = new GlobalController(deps)
+    transport.playStartPosition().addValueObserver(position => {
+        deps.packetManager.send({
+            type: 'transport/play-start',
+            position
+        })
+    })
     
     new TrackSearchController(deps)    
     new BackForwardController(deps)    

@@ -33,6 +33,7 @@ function makeWindowOpener() {
            clearTimeout(fadeOutTimeout)
        }
    
+       const debug = false
        if (!floatingWindowInfo || path !== floatingWindowInfo.path) {
            floatingWindowInfo?.window.close()
            floatingWindowInfo = {
@@ -44,8 +45,8 @@ function makeWindowOpener() {
                    frame: false,
                    show: false,
                    alwaysOnTop: true,
-                   // focusable: false,
-                   // closable: false,
+                   focusable: debug,
+                   closable: debug,
                    x: MainWindow.getMainScreen().w / 2 - options.width / 2,
                    y: MainWindow.getMainScreen().h / 2 - options.height / 2,
                    transparent: true,
@@ -55,6 +56,9 @@ function makeWindowOpener() {
                        nodeIntegration: true,
                    }
                })
+           }
+           if (!debug) {
+            floatingWindowInfo.window.setIgnoreMouseEvents(true);
            }
            floatingWindowInfo.window.loadURL(url(`/#/loading`))
            // ;(floatingWindowInfo!.window as any).toggleDevTools()    
@@ -80,7 +84,7 @@ function makeWindowOpener() {
                    }
                }
            
-               if (options.timeout) {
+               if (options.timeout && !debug) {
                 fadeOutTimeout = setTimeout(() => {
                     doFadeOut(1)
                 }, options.timeout)
@@ -520,6 +524,10 @@ export class ModsService extends BESService {
                 },
                 getClipboard() {
                     return clipboard.readText()
+                },
+                interceptPacket: (type: string, ...rest) => {
+                    const remove = interceptPacket(type, ...rest)
+                    this.onReloadMods.push(remove)
                 },
                 ...makeEmitterEvents({
                     actionTriggered: this.shortcutsService.events.actionTriggered   

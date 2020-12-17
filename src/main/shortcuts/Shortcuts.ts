@@ -24,7 +24,15 @@ interface ActionSpec {
     title: string
     id: string
     category: string
+
+    /**
+     * Any extra info to attach to the action that may
+     * be helpful to event listeners etc
+     */
+    meta?: any
+    
     action: Function
+    
     defaultSetting?: {
         keys?: String[],
         doubleTap?: boolean
