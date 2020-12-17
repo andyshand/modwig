@@ -18,7 +18,7 @@ Mod.on('actionTriggered', action => {
                 },
                 width: 700,
                 height: 70,
-                timeout: 1000
+                timeout: 500
             })
         }
     }

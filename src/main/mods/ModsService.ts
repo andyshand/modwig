@@ -319,7 +319,7 @@ export class ModsService extends BESService {
                 ...Keyboard,
                 on: (eventName: string, cb: Function) => {
                     const wrappedCb = (event, ...rest) => {
-                        this.logForMod(mod.id, `${eventName}`)
+                        this.logForModWebOnly(mod.id, `${eventName}`)
                         Object.setPrototypeOf(event, KeyboardEvent)
                         cb(event, ...rest)
                     }
@@ -391,8 +391,8 @@ export class ModsService extends BESService {
                 get isBrowserOpen() {
                     return that.browserIsOpen
                 },
-                get isActiveApplication() {
-                    return Bitwig.isActiveApplication()
+                isActiveApplication(...args) {
+                    return Bitwig.isActiveApplication(...args)
                 },
                 MainWindow,
                 get currentTrack() {
@@ -789,8 +789,7 @@ export class ModsService extends BESService {
                         path: path.join(modsFolder, filePath)
                     }
                 } catch (e) {
-                    console.error(`Error with ${filePath}`)
-                    console.error(e)
+                    logWithTime(colors.red(`Error with ${filePath}`, e))
                 }
             }
         }

@@ -13,6 +13,69 @@ AXUIElementRef cachedBitwigRef;
 AXUIElementRef cachedPluginHostRef;
 pid_t pluginHostPID = -1;
 pid_t bitwigPID = -1;
+struct AppData {
+    AXUIElementRef ref;
+    pid_t pid;
+};
+std::map<std::string,AppData> appDataByProcessName = {};
+
+bool pidIsAlive(pid_t pid)  {
+    return 0 == kill(pid, 0);
+}
+
+pid_t GetPID(std::string name) {
+    // Go through all on screen windows, find BW
+    CFArrayRef array = CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements, kCGNullWindowID);
+    CFIndex count = CFArrayGetCount(array);
+    for (CFIndex i = 0; i < count; i++) {
+        CFDictionaryRef dict = (CFDictionaryRef)CFArrayGetValueAtIndex(array, i);
+        auto str = CFStringToString((CFStringRef)CFDictionaryGetValue(dict, kCGWindowOwnerName));
+        if (str == name) {
+            CFNumberRef ownerPidRef = (CFNumberRef) CFDictionaryGetValue(dict, kCGWindowOwnerPID);
+            pid_t ownerPid;
+            CFNumberGetValue(ownerPidRef, kCFNumberSInt32Type, &ownerPid);
+            return ownerPid;
+        }
+    }
+    return -1;
+}
+
+AXUIElementRef findAXUIElementByName(std::string name) {
+    if (!appDataByProcessName.count(name)) {
+        auto pid = GetPID(name);
+        if (pid == -1) {
+            return NULL;
+        }
+        auto ref = AXUIElementCreateApplication(pid);
+        appDataByProcessName[name] = AppData({
+            ref,
+            pid
+        });
+        return ref;
+    } else {
+        auto data = appDataByProcessName[name];
+        if (!pidIsAlive(data.pid)) {
+            appDataByProcessName.erase(name);
+            // Try again
+            return findAXUIElementByName(name);
+        }
+        return data.ref;
+    }
+}
+
+AXUIElementRef GetBitwigAXUIElement() {
+    if (bitwigPID == -1 || !pidIsAlive(bitwigPID)) {
+        if (cachedPluginHostRef != NULL) {
+            CFRelease(cachedBitwigRef);
+            cachedBitwigRef = NULL;
+        }
+        bitwigPID = GetPID("Bitwig Studio");
+        if (bitwigPID != -1) {
+            cachedBitwigRef = AXUIElementCreateApplication(bitwigPID);
+        }
+    }
+    return cachedBitwigRef;
+}
 
 Napi::Value AccessibilityEnabled(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
@@ -31,23 +94,6 @@ Napi::Value AccessibilityEnabled(const Napi::CallbackInfo &info) {
         env, 
         trusted
     );
-}
-
-pid_t GetPID(std::string name) {
-    // Go through all on screen windows, find BW
-    CFArrayRef array = CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements, kCGNullWindowID);
-    CFIndex count = CFArrayGetCount(array);
-    for (CFIndex i = 0; i < count; i++) {
-        CFDictionaryRef dict = (CFDictionaryRef)CFArrayGetValueAtIndex(array, i);
-        auto str = CFStringToString((CFStringRef)CFDictionaryGetValue(dict, kCGWindowOwnerName));
-        if (str == name) {
-            CFNumberRef ownerPidRef = (CFNumberRef) CFDictionaryGetValue(dict, kCGWindowOwnerPID);
-            pid_t ownerPid;
-            CFNumberGetValue(ownerPidRef, kCFNumberSInt32Type, &ownerPid);
-            return ownerPid;
-        }
-    }
-    return -1;
 }
 
 AXUIElementRef GetAXUIElement(std::string name) {
@@ -71,24 +117,6 @@ bool refIsValidOrRelease(AXUIElementRef cachedRef) {
         }
     }
     return false;
-}
-
-bool pidIsAlive(pid_t pid)  {
-    return 0 == kill(pid, 0);
-}
-
-AXUIElementRef GetBitwigAXUIElement() {
-    if (bitwigPID == -1 || !pidIsAlive(bitwigPID)) {
-        if (cachedPluginHostRef != NULL) {
-            CFRelease(cachedBitwigRef);
-            cachedBitwigRef = NULL;
-        }
-        bitwigPID = GetPID("Bitwig Studio");
-        if (bitwigPID != -1) {
-            cachedBitwigRef = AXUIElementCreateApplication(bitwigPID);
-        }
-    }
-    return cachedBitwigRef;
 }
 
 AXUIElementRef GetPluginAXUIElement() {
@@ -205,6 +233,13 @@ bool isAXUIElementActiveApp(AXUIElementRef element) {
 
 Napi::Value IsActiveApplication(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
+    if (info[0].IsString()) {
+        auto axUIEl = findAXUIElementByName(info[0].As<Napi::String>());
+        return Napi::Boolean::New(
+            env, 
+            isAXUIElementActiveApp(axUIEl)
+        );
+    }
     return Napi::Boolean::New(
         env, 
         isAXUIElementActiveApp(GetBitwigAXUIElement()) || isAXUIElementActiveApp(GetPluginAXUIElement())

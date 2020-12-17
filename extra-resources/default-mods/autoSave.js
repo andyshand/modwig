@@ -6,7 +6,7 @@
  */
 
 Mod.setInterval(() => {
-    if (Bitwig.isActiveApplication) {
+    if (Bitwig.isActiveApplication()) {
         Bitwig.sendPacket({type: 'auto-save/save'})
     }
 }, 1000 * 60)

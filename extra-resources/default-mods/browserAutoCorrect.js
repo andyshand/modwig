@@ -64,10 +64,10 @@ const checkSpelling = () => {
             lowestMatch = device
         }
     }
-    if (lowestMatch && Bitwig.isActiveApplication) {
+    if (lowestMatch && Bitwig.isActiveApplication()) {
         Keyboard.keyPress('a', { Meta: true })
         for (const char of lowestMatch) {
-            if (!Bitwig.isActiveApplication) {
+            if (!Bitwig.isActiveApplication()) {
                 return
             }
             Keyboard.keyPress(char.replace(' ', 'Space'))
