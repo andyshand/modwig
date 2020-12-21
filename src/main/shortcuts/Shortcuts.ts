@@ -51,6 +51,7 @@ export class ShortcutsService extends BESService {
     events = {
         actionTriggered: makeEvent<ActionSpec>(),
     }
+    uiScale: number = 1 // Cached from setting
 
     repeatActionWithRange(name, startIncl, endIncl, genTakesI) {
         let out = {}
@@ -60,6 +61,42 @@ export class ShortcutsService extends BESService {
             }
         }
         return out
+    }
+
+    bwToScreen({ x, y, ...rest }) {
+        const frame = MainWindow.getFrame()
+        const scaled = this.scaleXY({ x, y })
+        return {
+            x: scaled.x + frame.x,
+            y: scaled.y + frame.y,
+            ...rest
+        }
+    }
+
+    screenToBw({ x, y, ...rest }) {
+        const frame = MainWindow.getFrame()
+        const bwRelative = {
+            x: x - frame.x,
+            y: y - frame.y,
+            ...rest
+        }
+        return this.unScaleXY(bwRelative)
+    }
+
+    scaleXY({ x, y, ...rest }) {
+        return {
+            x: x * this.uiScale,
+            y: y * this.uiScale,
+            ...rest
+        }
+    }
+
+    unScaleXY({ x, y, ...rest }) {
+        return {
+            x: x / this.uiScale,
+            y: y / this.uiScale,
+            ...rest
+        }
     }
 
     makeShortcutValueCode = (value) => {
@@ -605,15 +642,13 @@ export class ShortcutsService extends BESService {
                     description: 'Focuses the automation value field in the inspector for quickly setting value of selected automation.',
                     action: () => {
                         if (!this.browserIsOpen && !enteringValue) {
-                            const frame = MainWindow.getFrame()
-
                             this.runAction('focusArranger')
                             returnMouseAfter(() => {
-                                Mouse.click(0, {
-                                    x: frame.x + 140,
-                                    y: frame.y + 140,
+                                Mouse.click(0, this.bwToScreen({
+                                    x: 140,
+                                    y: 140,
                                     Meta: true
-                                })
+                                }))
                             })
                             enteringValue = true
                         }
@@ -626,14 +661,13 @@ export class ShortcutsService extends BESService {
                     description: 'Focuses the automation position field in the inspector for quickly setting position of selected automation.',
                     action: () => {
                         if (!this.browserIsOpen && !enteringValue) {
-                            const frame = MainWindow.getFrame()
                             this.runAction('focusArranger')
                             returnMouseAfter(() => {
-                                Mouse.click(0, {
-                                    x: frame.x + 140,
-                                    y: frame.y + 120,
+                                Mouse.click(0, this.bwToScreen({
+                                    x: 140,
+                                    y: 120,
                                     Meta: true
-                                })
+                                }))
                             })
                             enteringValue = true
                         }
@@ -827,6 +861,10 @@ export class ShortcutsService extends BESService {
         this.settingsService = getService('SettingsService')
         this.seedSettings()
         this.setupPacketListeners()
+        this.settingsService.onSettingValueChange('uiScale', val => {
+            this.uiScale = parseInt(val, 10) / 100
+            logWithTime(`Ui scale set to ${this.uiScale}`)
+        })
 
         const getEventKeysArray = event => {
             const { lowerKey, Meta, Shift, Control, Alt } = event

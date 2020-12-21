@@ -339,9 +339,15 @@ export class ModsService extends BESService {
             Mouse: {
                 ...Mouse,
                 on: (eventName: string, cb: Function) => {
-                    const wrappedCb = (event, ...rest) => {
+                    const wrappedCb = async (event, ...rest) => {
                         this.eventLogger({msg: eventName, modId: mod.id})
                         Object.setPrototypeOf(event, MouseEvent)
+
+                        // Add Bitwig coordinates
+                        const bwPos = await this.shortcutsService.screenToBw({x: event.x, y: event.y})
+                        event.bitwigX = bwPos.x
+                        event.bitwigY = bwPos.y
+
                         cb(event, ...rest)
                     }
                     if (eventName === 'click') {
@@ -419,6 +425,24 @@ export class ModsService extends BESService {
                 },
                 showMessage: this.showMessage,
                 intersectsPluginWindows,
+                scaleXY: this.shortcutsService.scaleXY,
+                unScaleXY: this.shortcutsService.unScaleXY,
+                bwToScreen: this.shortcutsService.bwToScreen,
+                screenToBw: this.shortcutsService.screenToBw,
+                click: (button, positionAndStuff, ...rest) => {
+                    return api.Mouse.click(button, this.shortcutsService.bwToScreen(positionAndStuff), ...rest)
+                },
+                doubleClick: (button, positionAndStuff, ...rest) => {
+                    return api.Mouse.doubleClick(button, this.shortcutsService.bwToScreen(positionAndStuff), ...rest)
+                },
+                setMousePosition: (x, y, ...rest) => {
+                    const screen = this.shortcutsService.bwToScreen({ x , y })
+                    return api.Mouse.setPosition(screen.x, screen.y, ...rest)
+                },
+                getMousePosition: () => {
+                    const pos = api.Mouse.getPosition()
+                    return this.shortcutsService.screenToBw(pos)
+                },
                 ...makeEmitterEvents({
                     selectedTrackChanged: this.events.selectedTrackChanged,
                     browserOpen: this.events.browserOpen,

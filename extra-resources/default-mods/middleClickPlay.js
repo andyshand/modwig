@@ -35,15 +35,7 @@ function playWithEvent(event) {
     const mousePosBefore = Mouse.getPosition()
     Mouse.returnAfter(() => {
         Keyboard.keyDown('1')
-        let timelineClickPosition
-        if (event.y > editorBorderLineY && editorIsProbablyOpen) {
-            // We're in the note editor
-            timelineClickPosition = {x: event.x, y: editorBorderLineY + 7}
-        } else {
-            // We're in the arranger
-            const mainWindowFrame = MainWindow.getFrame()
-            timelineClickPosition = {x: event.x, y: 91 + mainWindowFrame.y}
-        }
+        const timelineClickPosition = {x: event.bitwigX, y: 91}
         
         // Modifiers move start position back further to left to allow run-up
         // to start position. Left-er modifiers = left-er position :D
@@ -62,11 +54,11 @@ function playWithEvent(event) {
         if (!Bitwig.intersectsPluginWindows(timelineClickPosition)) {
             log(`Double-clicking time ruler at ${timelineClickPosition.x}, ${timelineClickPosition.y}`)
             // Pass modifiers 
-            Mouse.doubleClick(0, {...event, ...timelineClickPosition})
+            Bitwig.doubleClick(0, {...event, ...timelineClickPosition})
         } else {
             Mod.runAction(`move-plugin-windows-offscreen`, { forceState: 'bottomright' })
             setTimeout(() => {
-                Mouse.doubleClick(0, {...event, ...timelineClickPosition})
+                Bitwig.doubleClick(0, {...event, ...timelineClickPosition})
                 Mouse.setPosition(mousePosBefore.x, mousePosBefore.y)
             }, 100)
         }

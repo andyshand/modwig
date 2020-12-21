@@ -3,6 +3,7 @@ import { getDb } from "../db"
 import { Setting } from "../db/entities/Setting"
 import { addAPIMethod, interceptPacket, SocketMiddlemanService } from "./WebsocketToSocket"
 import * as path from 'path'
+import { logWithTime } from "./Log"
 
 interface SettingTemplate {
     key: string
@@ -48,6 +49,22 @@ export class SettingsService extends BESService {
         ]
         for (const setting of settings) {
             this.insertSettingIfNotExist(setting as any)
+        }
+    }
+
+    async onSettingValueChange(key: string, cb: (value: any) => any) {
+        this.events.settingUpdated.listen(setting => {
+            if (setting.key === key) {
+                cb(setting.value)
+            }
+        })
+
+        try {
+            // Call with initial value
+            cb(await this.getSettingValue(key))
+        } catch (e) {
+            // Setting not found
+            logWithTime(e)
         }
     }
 
