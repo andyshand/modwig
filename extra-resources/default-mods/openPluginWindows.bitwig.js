@@ -35,9 +35,9 @@ const firstLayerDevice = layerBank.getDevice(0)
 firstLayerDevice.exists().markInterested()
 
 function waitForContextUpdateThen(cb){
-    host.scheduleTask(() => {
+    setTimeout(() => {
         cb()
-    }, 100)
+    }, 100, 'Wait for context update')
 }
 
 /**
@@ -56,10 +56,10 @@ function waitForChange(getter, cb){
     //         cb()
     //     } else {
     //         modLog(`${now} === ${getter()}`)
-    //         host.scheduleTask(check, checkInterval)
+    //         setTimeout(check, checkInterval)
     //     }
     // }
-    // host.scheduleTask(check, checkInterval)
+    // setTimeout(check, checkInterval)
 }
 
 /**

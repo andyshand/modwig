@@ -53,11 +53,18 @@ class EventEmitter<T> {
     }
 }
 
+function setTimeout2(fn, wait, name = 'Unnamed') : any {
+    host.scheduleTask(() => {
+        log(`Running scheduled task: ${name}`)
+        fn()
+    }, wait)
+}
+
 function debounce(fn, wait = 1) {
     let id = 0
     return function(...args) {
         let waitingId = ++id
-        host.scheduleTask(() => {
+        setTimeout2(() => {
             if (id === waitingId) {
                 fn(...args)
             }
@@ -442,7 +449,7 @@ class GlobalController extends Controller {
             if (allowExitGroup) {
                 runAction('focus_track_header_area')
                 runAction('Exit Group')
-                host.scheduleTask(() => {
+                setTimeout2(() => {
                     this.selectTrackWithName(name, scroll, false, enter)
                 }, 1000)
             }
@@ -452,7 +459,7 @@ class GlobalController extends Controller {
                 t.makeVisibleInArranger()
             }
             if (enter) {
-                host.scheduleTask(() => {
+                setTimeout2(() => {
                     runAction('focus_track_header_area')
                     runAction('Enter Group')
                     runAction('select_track1')
@@ -499,10 +506,10 @@ class BugFixController extends Controller {
         const { packetManager, globalController } = deps
         packetManager.listen('bugfix/buzzing', () => {
             globalController.mapTracks((track, i) => {
-                host.scheduleTask(() => {
+                setTimeout2(() => {
                     track.solo().set(true)
                 }, wait * i)
-                host.scheduleTask(() => {
+                setTimeout2(() => {
                     track.solo().set(false)
                 }, wait * i + wait)
             })
@@ -675,7 +682,7 @@ class DeviceController extends Controller {
                             input.getChannel(i).selectInEditor()
                         }
                     }
-                    host.scheduleTask(() => {
+                    setTimeout2(() => {
                         this.cursorLayerDeviceBank.getDevice(0).selectInEditor()
                     }, 0)
                 }
@@ -685,7 +692,7 @@ class DeviceController extends Controller {
                     withDrumPadsOrLayers(this.drumPadBank)
                 } else {
                     device.selectParent()
-                    host.scheduleTask(() => {
+                    setTimeout2(() => {
                         recurseUp(levelsUp + 1)
                     }, 100)
                 }
@@ -721,7 +728,7 @@ class DeviceController extends Controller {
                     }
                 } else {
                     this.cursorDevice.selectParent()
-                    host.scheduleTask(() => {
+                    setTimeout2(() => {
                         recurseUp(levelsUp + 1)
                     }, 100)
                 }
@@ -1037,7 +1044,8 @@ function init() {
                     data: { msg }
                 })
             },
-            afterUpdates: (fn) => host.scheduleTask(fn, 25),
+            setTimeout: setTimeout2,
+            afterUpdates: (fn) => setTimeout2(fn, 25),
             onFlush,
             debounce
         }

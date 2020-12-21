@@ -41,7 +41,7 @@ packetManager.listen('play-from-selection', (packet) => {
         if (mousedown) {
             startOnMouseDown = transport.playStartPosition().get()
         } else if (mouseup) {
-            host.scheduleTask(() => {
+            setTimeout(() => {
                 const startNow = transport.playStartPosition().get()
                 if (startNow === startOnMouseDown) {
                     // The user didn't do something to change transport, try changing it to selected item
@@ -49,7 +49,7 @@ packetManager.listen('play-from-selection', (packet) => {
                     runAction("Loop Selection")
                     runAction("jump_to_beginning_of_arranger_loop")
                     
-                    host.scheduleTask(() => {
+                    setTimeout(() => {
                         if (transport.playStartPosition().get() === 0) {
                             // There was nothing selected, revert!
                             transport.playStartPosition().set(startNow)
@@ -71,7 +71,7 @@ packetManager.listen('play-from-selection', (packet) => {
         }
         if (transport.isPlaying().get()) {
             transport.stop()
-            host.scheduleTask(doIt, 100)
+            setTimeout(doIt, 100)
         } else {
             doIt()
         }
