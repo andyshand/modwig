@@ -19,6 +19,8 @@ import { url } from "../core/Url"
 const chokidar = require('chokidar')
 const colors = require('colors');
 
+let nextId = 0
+
 /**
 * Opens a floating window for a short amount of time, fading out afterwards. Meant for brief display of contextual information
 */
@@ -129,6 +131,7 @@ export class ModsService extends BESService {
     suckitService = getService<SocketMiddlemanService>("SocketMiddlemanService")
     activeEngineProject: string | null = null
     tracks: any[] = []
+    activeModApiIds: {[key: string]: boolean} = {}
     events = {
         selectedTrackChanged: makeEvent<any>(),
         browserOpen: makeEvent<boolean>(),
@@ -311,7 +314,9 @@ export class ModsService extends BESService {
             return obj
         }
         const that = this
+        const thisApiId = nextId++
         const api = {
+            id: thisApiId,
             log: (...args) => {
                 this.logForMod(mod.id, ...args)
             },
@@ -545,6 +550,13 @@ export class ModsService extends BESService {
                         clearInterval(id)
                         logWithTime('Clearing interval id: ' + id)
                     })
+                    return id
+                },
+                get isActive() {
+                    return thisApiId in that.activeModApiIds
+                },
+                onExit: (cb) => {
+                    this.onReloadMods.push(cb)
                 },
                 getClipboard() {
                     return clipboard.readText()
@@ -847,10 +859,11 @@ export class ModsService extends BESService {
 
     async refreshLocalMods() {
         const modsFolders = await this.getModsFolderPaths()
+        this.activeModApiIds = {}
 
         try {
             const modsById = await this.gatherModsFromPaths(modsFolders, { type: 'local'})
-            
+
             ;(async () => {
                 for (const modId in modsById) {
                     const mod = modsById[modId]
@@ -870,6 +883,7 @@ export class ModsService extends BESService {
                         } catch (e) {
                             logWithTime(colors.red(e))   
                         }
+                        this.activeModApiIds[api.id] = true
                     }
                 }
             })()
