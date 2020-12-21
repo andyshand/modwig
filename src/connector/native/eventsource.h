@@ -2,4 +2,4 @@
 
 #include <CoreGraphics/CoreGraphics.h>
 
-CGEventSourceRef getCGEventSource();
+CGEventSourceRef getCGEventSource(bool modwigListeners = false);

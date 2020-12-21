@@ -209,7 +209,7 @@ export class ShortcutsService extends BESService {
                         keys: []
                     },
                     action: () => {
-                        Keyboard.keyPress('Enter')
+                        Keyboard.keyPress('Enter', { modwigListeners: true })
                     }                
                 },
                 arrowUp: {

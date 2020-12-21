@@ -406,6 +406,7 @@ Napi::Value keyPresser(const Napi::CallbackInfo &info, bool down) {
     std::string s = info[0].As<Napi::String>();
     CGKeyCode keyCode = (CGKeyCode)macKeycodeMapReverse[s];    
     CGEventFlags flags = (CGEventFlags)0;
+    bool modwigListeners = false;
     if (info[1].IsObject()) {
         Napi::Object obj = info[1].As<Napi::Object>();
         if (obj.Has("Meta")) {
@@ -423,8 +424,9 @@ Napi::Value keyPresser(const Napi::CallbackInfo &info, bool down) {
         if (obj.Has("Fn")) {
             flags |= kCGEventFlagMaskSecondaryFn;
         }
+        modwigListeners = obj.Has("modwigListeners");
     }
-    CGEventRef keyevent = CGEventCreateKeyboardEvent(getCGEventSource(), keyCode, down);
+    CGEventRef keyevent = CGEventCreateKeyboardEvent(getCGEventSource(modwigListeners), keyCode, down);
     CGEventSetFlags(keyevent, flags);
     CGEventPost(kCGSessionEventTap, keyevent);
     CFRelease(keyevent);
