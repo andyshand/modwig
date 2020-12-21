@@ -19,16 +19,26 @@ const runTerminal = async cmd => {
     if (stderr) error(stderr)
 }
 
+const apps = [
+    'Backup and Sync',
+    'Rectangle',
+    'Wacom Tablet Driver'
+]
+
 Mod.interceptPacket('transport/play-start', undefined, async () => {
     if (isOpen) {
-        runTerminal(`osascript -e 'quit app "Backup and Sync"'`)
+        for (const app of apps) {
+            runTerminal(`osascript -e 'quit app "${app}"'`)
+        }
     }
     isOpen = false
     clearTimeout(inactiveTimeout)
     inactiveTimeout = setTimeout(() => {
         if (Mod.isActive) {
             // Possible this mod was restarted but timeout was still scheduled
-            runTerminal(`osascript -e 'open app "Backup and Sync"'`)
+            for (const app of apps) {
+                runTerminal(`osascript -e 'open app "${app}"'`)
+            }
             isOpen = true
         }
     }, inactivityThresholdMS)

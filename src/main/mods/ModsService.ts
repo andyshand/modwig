@@ -348,10 +348,15 @@ export class ModsService extends BESService {
                         this.eventLogger({msg: eventName, modId: mod.id})
                         Object.setPrototypeOf(event, MouseEvent)
 
-                        // Add Bitwig coordinates
-                        const bwPos = await this.shortcutsService.screenToBw({x: event.x, y: event.y})
-                        event.bitwigX = bwPos.x
-                        event.bitwigY = bwPos.y
+                        try {
+                            // Add Bitwig coordinates
+                            const bwPos = await this.shortcutsService.screenToBw({x: event.x, y: event.y})
+                            event.bitwigX = bwPos.x
+                            event.bitwigY = bwPos.y
+                        } catch (e) {
+                            // Bitwig may not be open
+                            logWithTime(colors.red(e))
+                        }
 
                         cb(event, ...rest)
                     }
@@ -429,7 +434,12 @@ export class ModsService extends BESService {
                     return sendPacketToBitwigPromise({type: 'action', data: action})
                 },
                 showMessage: this.showMessage,
-                intersectsPluginWindows,
+                intersectsPluginWindows: event => {
+                    return intersectsPluginWindows({
+                        ...event,
+                        ...(this.shortcutsService.bwToScreen(event))
+                    })
+                },
                 scaleXY: this.shortcutsService.scaleXY,
                 unScaleXY: this.shortcutsService.unScaleXY,
                 bwToScreen: this.shortcutsService.bwToScreen,
