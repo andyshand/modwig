@@ -141,37 +141,6 @@ std::map<int,std::string> macKeycodeMap = {
 };
 std::map<std::string, int> macKeycodeMapReverse;
 
-struct CallbackInfo {
-    Napi::ThreadSafeFunction cb;
-    Napi::Function bareCb;
-    CGEventMask mask;
-    int id;
-    CFMachPortRef tap;
-    std::string eventType;
-    CFRunLoopSourceRef runloopsrc;
-
-    bool operator ==(const CallbackInfo& other) const {
-        return other.cb == cb;
-    }
-
-    ~CallbackInfo() {
-        cb.Release();
-
-        if (CGEventTapIsEnabled(tap)) CGEventTapEnable(tap, false);
-        CFMachPortInvalidate(tap);
-        CFRunLoopRemoveSource(CFRunLoopGetMain(), runloopsrc, kCFRunLoopCommonModes);
-        CFRelease(runloopsrc);
-        CFRelease(tap);
-    }
-};
-
-struct JSEvent {
-    UInt16 nativeKeyCode;
-    std::string lowerKey;
-    bool Meta, Shift, Control, Alt, Fn;
-    int button, x, y;
-};
-
 forward_list<CallbackInfo*> callbacks; 
 
 void processCallback(Napi::Env env, Napi::Function jsCallback, JSEvent* value) {
@@ -206,6 +175,7 @@ CGEventRef eventtap_callback(CGEventTapProxy proxy, CGEventType type, CGEventRef
     }
 
     JSEvent *jsEvent = new JSEvent();
+    jsEvent->type = e->eventType;
 
     CGEventFlags flags = CGEventGetFlags(event);
     if ((flags & kCGEventFlagMaskAlphaShift) != 0) {
@@ -251,7 +221,14 @@ CGEventRef eventtap_callback(CGEventTapProxy proxy, CGEventType type, CGEventRef
 
         jsEvent->nativeKeyCode = CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
         jsEvent->lowerKey = macKeycodeMap[jsEvent->nativeKeyCode];
-        e->cb.BlockingCall( jsEvent, callback );  
+
+        if (e->cb != NULL) {
+            e->cb.BlockingCall( jsEvent, callback );  
+        } 
+        if (e->nativeFn != NULL) {
+            e->nativeFn( jsEvent );
+            delete jsEvent;
+        }
     } else {
         // Mouse event
         CGPoint point = CGEventGetLocation(event);
@@ -281,7 +258,9 @@ CGEventRef eventtap_callback(CGEventTapProxy proxy, CGEventType type, CGEventRef
             processCallback(env, jsCallback, value);
         };
 
-        if (button > 2) {
+        if (button > 2 && e->cb != NULL) {
+            // TODO Implement for native fns too
+
             // Don't pass button 3, 4, etc to Bitwig because it just interprets them as middle click,
             // interefering with our ability to map these buttons ourselves
 
@@ -296,44 +275,48 @@ CGEventRef eventtap_callback(CGEventTapProxy proxy, CGEventType type, CGEventRef
             e->cb.BlockingCall( jsEvent, callback );  
             return NULL;
         } else {
-            e->cb.BlockingCall( jsEvent, callback );  
+            if (e->cb != NULL) {
+                e->cb.BlockingCall( jsEvent, callback );  
+            } 
+            if (e->nativeFn != NULL) {
+                e->nativeFn( jsEvent );
+                delete jsEvent;
+            }
         }
     }
     // can return NULL to ignore event
     return event;
 }
 
-/// Note that mousemove events seem to get fired when mouse is clicked too - TODO investigate
-Napi::Value on(const Napi::CallbackInfo &info) {
-    Napi::Env env = info.Env();
-    auto eventType = info[0].As<Napi::String>().Utf8Value();
-    auto cb = info[1].As<Napi::Function>();
-
+CallbackInfo* addEventListener(EventListenerSpec spec) {
     CGEventMask mask = kCGEventMaskForAllEvents;
 
-    if ("keyup" == eventType) {
+    if ("keyup" == spec.eventType) {
         mask = CGEventMaskBit(kCGEventKeyUp);
-    } else if ("keydown" == eventType) {
+    } else if ("keydown" == spec.eventType) {
         mask = CGEventMaskBit(kCGEventKeyDown);
-    } else if ("mousemoved" == eventType) {
+    } else if ("mousemoved" == spec.eventType) {
         mask = CGEventMaskBit(kCGEventMouseMoved) | CGEventMaskBit(kCGEventOtherMouseDragged);
-    } else if ("mousedown" == eventType) {
+    } else if ("mousedown" == spec.eventType) {
         mask = CGEventMaskBit(kCGEventLeftMouseDown) | CGEventMaskBit(kCGEventRightMouseDown) | CGEventMaskBit(kCGEventOtherMouseDown);
-    } else if ("mouseup" == eventType) {
+    } else if ("mouseup" == spec.eventType) {
         mask = CGEventMaskBit(kCGEventLeftMouseUp) | CGEventMaskBit(kCGEventRightMouseUp) | CGEventMaskBit(kCGEventOtherMouseUp);
     }
 
     // TODO FREE
     CallbackInfo *ourInfo = new CallbackInfo;
-    ourInfo->bareCb = cb;
+    ourInfo->bareCb = spec.jsFunction;
+    ourInfo->nativeFn = spec.cb;
     ourInfo->id = nextId++;
-    ourInfo->eventType = eventType;
-    ourInfo->cb = Napi::ThreadSafeFunction::New(
-      env,
-      cb,                      // JavaScript function called asynchronously
-      "Resource Name",         // Name
-      0,                       // Unlimited queue
-      1);                      // Initial thread count 
+    ourInfo->eventType = spec.eventType;
+    if (spec.jsFunction != NULL) {
+        ourInfo->cb = Napi::ThreadSafeFunction::New(
+        spec.env,
+        spec.jsFunction,                      // JavaScript function called asynchronously
+        "Resource Name",         // Name
+        0,                       // Unlimited queue
+        1);                      // Initial thread count 
+    }
 
     ourInfo->tap = CGEventTapCreate(
         kCGSessionEventTap,
@@ -360,6 +343,19 @@ Napi::Value on(const Napi::CallbackInfo &info) {
         }
     }
     callbacks.push_front(ourInfo);
+}
+
+/// Note that mousemove events seem to get fired when mouse is clicked too - TODO investigate
+Napi::Value on(const Napi::CallbackInfo &info) {
+    Napi::Env env = info.Env();
+    auto eventType = info[0].As<Napi::String>().Utf8Value();
+    auto cb = info[1].As<Napi::Function>();
+    auto ourInfo = addEventListener(EventListenerSpec({
+        eventType,
+        NULL,
+        cb,
+        env
+    }));
     return Napi::Number::New(env, ourInfo->id);
 }
 

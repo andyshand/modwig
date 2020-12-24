@@ -8,7 +8,7 @@
 const util = require('util');
 const exec = util.promisify(require('child_process').exec)
 
-const inactivityThresholdMS = 1000 * 60 * 5
+const inactivityThresholdMS = 1000 * 60 * 60
 let inactiveTimeout
 let isOpen = true // Might be false but no harm in quitting an already quit app to start with
 

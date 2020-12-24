@@ -14,6 +14,7 @@
         "src/connector/native/window.cc",
         "src/connector/native/eventsource.cc",
         "src/connector/native/bitwig.cc",
+        "src/connector/native/ui.cc"
       ],
       "include_dirs": [
         "<!@(node -p \"require('node-addon-api').include\")"

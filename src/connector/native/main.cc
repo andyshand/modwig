@@ -10,6 +10,7 @@
 #include "keyboard.h"
 #include "screen.h"
 #include "window.h"
+#include "ui.h"
 
 Napi::Object InitAll(Napi::Env env, Napi::Object exports) {
   BESColor::Init(env, exports);
@@ -19,6 +20,7 @@ Napi::Object InitAll(Napi::Env env, Napi::Object exports) {
   InitMouse(env, exports);
   InitWindow(env, exports);
   InitBitwig(env, exports);
+  InitUI(env, exports);
   return Screenshot::Init(env, exports);
 }
 

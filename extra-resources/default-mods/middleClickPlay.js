@@ -39,17 +39,17 @@ function playWithEvent(event) {
         
         // Modifiers move start position back further to left to allow run-up
         // to start position. Left-er modifiers = left-er position :D
-        let backFurther = 0
-        if (event.Meta) {
-            backFurther = 100
-        } else if (event.Alt) {
-            backFurther = 200
-        } else if (event.Control) {
-            backFurther = 400
-        }
+        // let backFurther = 0
+        // if (event.Meta) {
+        //     backFurther = 100
+        // } else if (event.Alt) {
+        //     backFurther = 200
+        // } else if (event.Control) {
+        //     backFurther = 400
+        // }
 
         // Make sure the position doesn't cross over into track header 
-        timelineClickPosition.x = Math.max(480, timelineClickPosition.x - backFurther);
+        timelineClickPosition.x = Math.max(480, timelineClickPosition.x);
 
         if (!Bitwig.intersectsPluginWindows(timelineClickPosition)) {
             log(`Double-clicking time ruler at ${timelineClickPosition.x}, ${timelineClickPosition.y}`)
@@ -60,6 +60,7 @@ function playWithEvent(event) {
             setTimeout(() => {
                 Bitwig.doubleClick(0, {...event, ...timelineClickPosition})
                 Mouse.setPosition(mousePosBefore.x, mousePosBefore.y)
+                Mod.runAction(`move-plugin-windows-offscreen`, { forceState: 'topright' })
             }, 100)
         }
         Keyboard.keyUp('1')
