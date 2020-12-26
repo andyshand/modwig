@@ -222,10 +222,10 @@ CGEventRef eventtap_callback(CGEventTapProxy proxy, CGEventType type, CGEventRef
         jsEvent->nativeKeyCode = CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
         jsEvent->lowerKey = macKeycodeMap[jsEvent->nativeKeyCode];
 
-        if (e->cb != NULL) {
+        if (e->cb != nullptr) {
             e->cb.BlockingCall( jsEvent, callback );  
         } 
-        if (e->nativeFn != NULL) {
+        if (e->nativeFn != nullptr) {
             e->nativeFn( jsEvent );
             delete jsEvent;
         }
@@ -258,8 +258,12 @@ CGEventRef eventtap_callback(CGEventTapProxy proxy, CGEventType type, CGEventRef
             processCallback(env, jsCallback, value);
         };
 
-        if (button > 2 && e->cb != NULL) {
-            // TODO Implement for native fns too
+        if (button > 2) {
+            if (e->nativeFn != nullptr) {
+                // TODO Implement for native fns too
+                delete jsEvent;
+                return event;
+            }
 
             // Don't pass button 3, 4, etc to Bitwig because it just interprets them as middle click,
             // interefering with our ability to map these buttons ourselves
@@ -269,16 +273,18 @@ CGEventRef eventtap_callback(CGEventTapProxy proxy, CGEventType type, CGEventRef
             for (auto cbInfo : callbacks) {
                 if (cbInfo->eventType == e->eventType && cbInfo != e) {
                     // Call all other listeners except for this one
-                    cbInfo->cb.BlockingCall( jsEvent, callbackNoDelete );  
+                    if (cbInfo->cb != nullptr) {
+                        cbInfo->cb.BlockingCall( jsEvent, callbackNoDelete );  
+                    }
                 }
             }
             e->cb.BlockingCall( jsEvent, callback );  
             return NULL;
         } else {
-            if (e->cb != NULL) {
+            if (e->cb != nullptr) {
                 e->cb.BlockingCall( jsEvent, callback );  
             } 
-            if (e->nativeFn != NULL) {
+            if (e->nativeFn != nullptr) {
                 e->nativeFn( jsEvent );
                 delete jsEvent;
             }
@@ -305,17 +311,18 @@ CallbackInfo* addEventListener(EventListenerSpec spec) {
 
     // TODO FREE
     CallbackInfo *ourInfo = new CallbackInfo;
-    ourInfo->bareCb = spec.jsFunction;
     ourInfo->nativeFn = spec.cb;
     ourInfo->id = nextId++;
     ourInfo->eventType = spec.eventType;
-    if (spec.jsFunction != NULL) {
+    if (spec.jsFunction != nullptr) {
+        std::cout << "Adding JS Listener";
         ourInfo->cb = Napi::ThreadSafeFunction::New(
-        spec.env,
-        spec.jsFunction,                      // JavaScript function called asynchronously
-        "Resource Name",         // Name
-        0,                       // Unlimited queue
-        1);                      // Initial thread count 
+            spec.env,
+            *spec.jsFunction, // JavaScript function called asynchronously                      
+            "Resource Name", // Name         
+            0, // Unlimited queue                      
+            1 // Initial thread count 
+        );                      
     }
 
     ourInfo->tap = CGEventTapCreate(
@@ -352,8 +359,8 @@ Napi::Value on(const Napi::CallbackInfo &info) {
     auto cb = info[1].As<Napi::Function>();
     auto ourInfo = addEventListener(EventListenerSpec({
         eventType,
-        NULL,
-        cb,
+        nullptr,
+        &cb,
         env
     }));
     return Napi::Number::New(env, ourInfo->id);

@@ -12,9 +12,8 @@ struct JSEvent {
 };
 
 struct CallbackInfo {
-    Napi::ThreadSafeFunction cb;
-    Napi::Function bareCb;
-    std::function<void(JSEvent*)> nativeFn;
+    Napi::ThreadSafeFunction cb = nullptr;
+    std::function<void(JSEvent*)> nativeFn = nullptr;
     CGEventMask mask;
     int id;
     CFMachPortRef tap;
@@ -26,7 +25,7 @@ struct CallbackInfo {
     }
 
     ~CallbackInfo() {
-        if (cb != NULL) {
+        if (cb != nullptr) {
             cb.Release();
         }
 
@@ -41,9 +40,9 @@ struct CallbackInfo {
 
 struct EventListenerSpec {
     std::string eventType;
-    std::function<void(JSEvent*)> cb;
-    Napi::Function jsFunction;
-    Napi::Env env; 
+    std::function<void(JSEvent*)> cb = nullptr;
+    Napi::Function* jsFunction = nullptr;
+    Napi::Env env = nullptr; 
 };
 
 CallbackInfo* addEventListener(EventListenerSpec spec);

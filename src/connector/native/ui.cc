@@ -40,6 +40,7 @@ class BitwigWindow {
     MWRect lastBWFrame;
     CGImageRef latestImage;
     CFDataRef latestImageData;
+
     public:
     MWRect getFrame() {
         // Go through all on screen windows, find BW, get its frame
@@ -90,14 +91,17 @@ class BitwigWindow {
      * our JS callbacks) so it can update its internal state accordingly
      */
     void processEvent(JSEvent* event) {
-        std::cout << "Got event!";
-        std::cout.flush();
+        // TODO events appear to be coming through more than once, why? Investigate
+        // std::cout << "Got event!" << event->type << '\n';
+
         if (event->type == "mousedown") {
             mouseDownAt = XYPoint({event->x, event->y});
             mouseDownButton = event->button;
         } else if (event->type == "mouseup") {
 
         }
+
+        // updateScreenshot();
     }
 
     // UIPoint getInspector() {
@@ -117,23 +121,23 @@ BitwigWindow* mainWindow = new BitwigWindow();
 Napi::Value InitUI(Napi::Env env, Napi::Object exports) {
     Napi::Object obj = Napi::Object::New(env);
 
-    // addEventListener(EventListenerSpec({
-    //     "mouseup",
-    //     [](JSEvent* event) -> void {
-    //         mainWindow->processEvent(event);
-    //     },
-    //     NULL,
-    //     NULL
-    // }));
+    addEventListener(EventListenerSpec{
+        "mouseup",
+        [](JSEvent* event) -> void {
+            mainWindow->processEvent(event);
+        },
+        nullptr,
+        nullptr
+    });
 
-    // addEventListener(EventListenerSpec({
-    //     "keyup",
-    //     [](JSEvent* event) -> void {
-    //         mainWindow->processEvent(event);
-    //     },
-    //     NULL,
-    //     NULL
-    // }))
+    addEventListener(EventListenerSpec{
+        "keyup",
+        [](JSEvent* event) -> void {
+            mainWindow->processEvent(event);
+        },
+        nullptr,
+        nullptr
+    });
 
     // obj.Set(Napi::String::New(env, "getFrame"), Napi::Function::New(env, GetFrame));
     // obj.Set(Napi::String::New(env, "getMainScreen"), Napi::Function::New(env, GetMainScreen));
