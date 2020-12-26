@@ -315,7 +315,7 @@ CallbackInfo* addEventListener(EventListenerSpec spec) {
     ourInfo->id = nextId++;
     ourInfo->eventType = spec.eventType;
     if (spec.jsFunction != nullptr) {
-        std::cout << "Adding JS Listener";
+        // std::cout << "Adding JS Listener";
         ourInfo->cb = Napi::ThreadSafeFunction::New(
             spec.env,
             *spec.jsFunction, // JavaScript function called asynchronously                      

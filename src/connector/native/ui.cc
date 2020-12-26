@@ -3,6 +3,8 @@
 #include "keyboard.h"
 #include "string.h"
 #include <iostream>
+#include <CoreGraphics/CoreGraphics.h>
+#include <ApplicationServices/ApplicationServices.h>
 
 struct XYPoint {
     int x, y;
@@ -13,6 +15,9 @@ struct UIPoint {
 };
 struct MWRect {
     int x, y, w, h;
+};
+struct MWColor {
+    int r, g, b;
 };
 struct ArrangerTrack {
     UIPoint point;
@@ -32,14 +37,62 @@ bool operator==(const UIPoint& lhs, const UIPoint& rhs)
     return lhs.point == rhs.point && lhs.window == rhs.window;
 }
 
+struct ImageDeets {
+    CFDataRef imageData;
+    size_t bytesPerRow;
+    size_t bytesPerPixel;
+    CGImageRef imageRef;
+    CGBitmapInfo info;
+    MWRect frame;
+    size_t maxInclOffset;
+
+    ImageDeets(CGImageRef latestImage, MWRect frame) {
+        this->frame = frame;
+        this->imageRef = latestImage;
+        CGDataProviderRef provider = CGImageGetDataProvider(latestImage);
+        imageData = CGDataProviderCopyData(provider);
+
+        bytesPerRow = CGImageGetBytesPerRow(latestImage);
+        bytesPerPixel = CGImageGetBitsPerPixel(latestImage) / 8;
+
+        info = CGImageGetBitmapInfo(latestImage);
+        maxInclOffset = getPixelOffset(frame.w - 1, frame.h - 1);
+    }
+
+    size_t getPixelOffset(int x, int y) {
+        return y*bytesPerRow + x*bytesPerPixel;
+    }
+
+    bool isWithinBounds(int x, int y) {
+        return x >= 0 && y >= 0 && getPixelOffset(x, y) <= maxInclOffset;
+    }
+
+    MWColor colorAt(int x, int y) {
+        size_t offset = getPixelOffset(x, y);
+        const UInt8* dataPtr = CFDataGetBytePtr(imageData);
+
+        int alpha = dataPtr[offset + 3],
+            red = dataPtr[offset + 2],
+            green = dataPtr[offset + 1],
+            blue = dataPtr[offset + 0];
+        return MWColor{red, green, blue};
+    }
+
+    ~ImageDeets() {
+        CFRelease(imageRef);
+        if (imageData != NULL) {
+            CFRelease(imageData);
+        }
+    }
+};
+
 class BitwigWindow {
     int index;
     bool arrangerDirty;
     XYPoint mouseDownAt;
     int mouseDownButton;
     MWRect lastBWFrame;
-    CGImageRef latestImage;
-    CFDataRef latestImageData;
+    ImageDeets* latestImageDeets;
 
     public:
     MWRect getFrame() {
@@ -70,20 +123,16 @@ class BitwigWindow {
 
     void updateScreenshot() {
         this->lastBWFrame = getFrame();
-        if (latestImage != NULL) {
-            CFRelease(latestImage);
-            if (latestImageData != NULL) {
-                CFRelease(latestImageData);
-            }
+        if (latestImageDeets != nullptr) {
+            delete latestImageDeets;
         }
-        latestImage = CGDisplayCreateImageForRect(CGMainDisplayID(), CGRectMake(
+        auto image = CGDisplayCreateImageForRect(CGMainDisplayID(), CGRectMake(
             lastBWFrame.x,
             lastBWFrame.y,
             lastBWFrame.w,
             lastBWFrame.h
         ));
-        CGDataProviderRef provider = CGImageGetDataProvider(latestImage);
-        latestImageData = CGDataProviderCopyData(provider);
+        latestImageDeets = new ImageDeets(image, lastBWFrame);
     }
 
     /**
@@ -98,10 +147,16 @@ class BitwigWindow {
             mouseDownAt = XYPoint({event->x, event->y});
             mouseDownButton = event->button;
         } else if (event->type == "mouseup") {
-
+            // updateScreenshot();
+            // auto frame = getFrame();
+            // auto bwX = event->x - frame.x;
+            // auto bwY = event->y - frame.y;
+            // if (latestImageDeets->isWithinBounds(bwX, bwY)) {
+            //     auto color = latestImageDeets->colorAt(bwX, bwY);
+            //     std::cout << "Color is r: " << color.r << " g: " << color.g << " b: " << color.b;
+            //     std::cout.flush();
+            // }
         }
-
-        // updateScreenshot();
     }
 
     // UIPoint getInspector() {
