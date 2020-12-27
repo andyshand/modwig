@@ -158,10 +158,12 @@ export class ShortcutsService extends BESService {
                 toggleRecord: {            
                     description: `This "Toggle Record" shortcut can optionally pass through VSTs, whereas the built-in shortcut cannot.`,
                     action: () => {
-                        sendPacketToBitwig({
-                            type: 'action',
-                            data: 'Toggle Record'
-                        })
+                        if (!this.browserIsOpen) {
+                            sendPacketToBitwig({
+                                type: 'action',
+                                data: 'Toggle Record'
+                            })
+                        }
                     }                
                 },
                 goBack: {
