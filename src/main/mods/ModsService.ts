@@ -832,6 +832,9 @@ export class ModsService extends BESService {
                     const version = checkForTag('version', false) || '0.0.1'
                     const noReload = contents.indexOf('@noReload') >= 0
                     const settingsKey = `mod/${id}`
+                    const p = path.join(modsFolder, filePath)
+                    const isDefault = p.indexOf(getResourcePath('/default-mods')) >= 0
+
                     modsById[id] = {
                         id,
                         name,
@@ -841,7 +844,8 @@ export class ModsService extends BESService {
                         version,
                         contents,
                         noReload,
-                        path: path.join(modsFolder, filePath)
+                        path: p,
+                        isDefault
                     }
                 } catch (e) {
                     logWithTime(colors.red(`Error with ${filePath}`, e))

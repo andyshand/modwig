@@ -3,10 +3,12 @@ import { getSettings } from './helpers/settingsApi'
 import { styled } from 'linaria/react'
 import { SettingShortcut } from './setting/SettingShortcut'
 import { sendPromise } from '../bitwig-api/Bitwig'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { humanise, settingShortDescription, settingTitle, shortcutToTextDescription } from './helpers/settingTitle'
 import _ from 'underscore'
 import { ModLogs } from './ModLogs'
 import { SettingsFooter } from './SettingsFooter'
+import { faSearch } from '@fortawesome/free-solid-svg-icons'
 const xPad = `4rem`
 const SettingsViewWrap = styled.div`
     background: #131313;
@@ -127,11 +129,12 @@ const SidebarSetting = styled.div`
     white-space: nowrap;
     margin-bottom: .2rem;
     user-select: none;
+    
     &:hover {
         cursor: pointer;
         color: ${(props: any) => props.focused ? '#CCC' : '#AAA'};
     }
-    color: ${(props: any) => props.focused ? '#CCC' : ''};
+    color: ${(props: any) => (props.focused ? '#CCC' : '')};
     display: flex;
     >:nth-child(1) {
         width: 4rem;
@@ -139,6 +142,7 @@ const SidebarSetting = styled.div`
         margin-right: .5rem;
     }
     >:nth-child(2) {
+    color: ${(props: any) => (props.focused ? '#CCC' : props.enabled ? '#999' : '')};
         text-overflow: ellipsis;
         overflow: hidden;    
     }
@@ -242,6 +246,21 @@ const ModRow = styled.div`
         margin-top: 2rem;
     }
 `
+const Badge = styled.div`
+    background: #bd8723;
+    color: white;
+    border-radius: .3em;
+    display: inline-flex;
+    padding: .1em .3em;
+    font-size: 0.8em;
+    margin-left: .5em;
+`
+const SettingPath = styled.div`
+    font-size: 0.8em;
+    display: inline-block;
+    color: #666;
+    margin: 0.5rem 0;
+`
 const ModContent = styled.div`
     display: flex;
     >:nth-child(1) {
@@ -287,7 +306,26 @@ const Toggle = ({value, onChange}) => {
     return <ToggleStyle onClick={onClick} value={ourValue} />
 }
 
-
+const SearchIconWrapStyle = styled.div`
+    font-size: .7em;
+    background: #5f5f5f;
+    width: 2em;
+    height: 2em;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    border-radius: 1000px;
+    cursor: pointer;
+    &:hover {
+        background: #444;
+    }
+`
+const SearchIconWrap = ({ onClick }) => {
+    return <SearchIconWrapStyle onClick={onClick}>
+        <FontAwesomeIcon icon={faSearch} />
+    </SearchIconWrapStyle>
+}
 
 export class SettingsView extends React.Component<Props> {
 
@@ -379,7 +417,7 @@ export class SettingsView extends React.Component<Props> {
                                         focusedSettingKey: mod.key
                                     })
                                 }
-                                return <SidebarSetting focused={mod.key === this.state.focusedSettingKey} title={mod.name || mod.key} onClick={onClick} key={mod.key}>
+                                return <SidebarSetting enabled={mod.value.enabled} focused={mod.key === this.state.focusedSettingKey} title={mod.name || mod.key} onClick={onClick} key={mod.key}>
                                     <span>{mod.value.enabled ? 'On' : 'Off'}</span>
                                     <span>{mod.name || mod.key}</span>
                                 </SidebarSetting>
@@ -392,8 +430,9 @@ export class SettingsView extends React.Component<Props> {
                 <ModRow key={chosenMod.id} id={chosenMod.key}>
                     <ModContent>
                         <div>
-                            <SettingTitle style={{fontSize: '1.1em'}}>{chosenMod.name}</SettingTitle>
-                            <SettingDesc style={{maxWidth: '40rem', fontSize: '1em', marginTop: `1.2rem`}}>{chosenMod.description}</SettingDesc>
+                            <SettingTitle style={{fontSize: '1.1em'}}>{chosenMod.name} {chosenMod.isDefault ? null : <Badge>User</Badge>}</SettingTitle>
+                            <SettingPath>{chosenMod.path} <SearchIconWrap onClick={() => require('electron').remote.shell.showItemInFolder(chosenMod.path)} /></SettingPath>
+                            <SettingDesc style={{color: 'white', maxWidth: '40rem', fontSize: '1em', marginTop: `1.2rem`}}>{chosenMod.description}</SettingDesc>
                         </div>
                         <ToggleAndText>
                             <Toggle onChange={onToggleChange.bind(null, chosenMod)} value={chosenMod.value.enabled} />
