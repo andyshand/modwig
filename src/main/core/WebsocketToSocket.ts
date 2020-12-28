@@ -6,7 +6,7 @@ const { Bitwig } = require('bindings')('bes')
 const async = require('async')
 const WebSocket = require('ws');
 const net = require('net');
-const logInOut = false
+const logInOut = true
 const RECONNECT_IN = 1000 * 3;
 
 let nextId = 0

@@ -11,6 +11,7 @@ import { SettingsView } from './settings/SettingsView';
 import { NumpadWindow } from './core/numpad-window/NumpadWindow';
 import { Message } from './core/message/Message';
 import { TransportNavPopup } from './mods/TransportNavPopup';
+import { Canvas } from './mods/Canvas';
 
 function removeAllListeners() {
     app.removeAllListeners('browser-window-focus')
@@ -149,6 +150,7 @@ ReactDOM.render(
             <Route path="/numpad" component={NumpadWindow} />
             <Route path="/message" component={Message} />
             <Route path="/transport-nav-popup" component={TransportNavPopup} />
+            <Route path="/canvas" component={Canvas} />
             <Route path="/loading" component={() => {
                 const history = useHistory();
                 ;(window as any).loadURL = url => history.push(url)

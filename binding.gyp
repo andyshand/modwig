@@ -19,12 +19,20 @@
       "include_dirs": [
         "<!@(node -p \"require('node-addon-api').include\")"
       ],
-      'cflags!': [ '-fno-exceptions', '-Wno-unused-variable' ],
-      'cflags_cc!': [ '-fno-exceptions', '-Wno-unused-variable' ],
+      'cflags!': [ 
+        '-fno-exceptions', 
+        '-Wno-unused-variable',
+        "-std=c++17"
+      ],
+      'cflags_cc!': [ 
+        '-fno-exceptions', 
+        '-Wno-unused-variable' 
+      ],
       'xcode_settings': {
         'GCC_ENABLE_CPP_EXCEPTIONS': 'YES',
         'CLANG_CXX_LIBRARY': 'libc++',
         'MACOSX_DEPLOYMENT_TARGET': '10.7',
+        'OTHER_CFLAGS': [ "-std=c++17" ]
       },
       'msvs_settings': {
         'VCCLCompilerTool': { 'ExceptionHandling': 1 },

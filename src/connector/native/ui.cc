@@ -5,6 +5,8 @@
 #include <iostream>
 #include <CoreGraphics/CoreGraphics.h>
 #include <ApplicationServices/ApplicationServices.h>
+#include <functional>
+#include <experimental/optional>
 
 struct XYPoint {
     int x, y;
@@ -37,6 +39,13 @@ bool operator==(const UIPoint& lhs, const UIPoint& rhs)
     return lhs.point == rhs.point && lhs.window == rhs.window;
 }
 
+int DIRECTION_UP = -1;
+int DIRECTION_DOWN = 1;
+int DIRECTION_LEFT = -1;
+int DIRECTION_RIGHT = 1;
+int AXIS_X = 0;
+int AXIS_Y = 1;
+
 struct ImageDeets {
     CFDataRef imageData;
     size_t bytesPerRow;
@@ -45,6 +54,7 @@ struct ImageDeets {
     CGBitmapInfo info;
     MWRect frame;
     size_t maxInclOffset;
+    int width, height;
 
     ImageDeets(CGImageRef latestImage, MWRect frame) {
         this->frame = frame;
@@ -56,26 +66,65 @@ struct ImageDeets {
         bytesPerPixel = CGImageGetBitsPerPixel(latestImage) / 8;
 
         info = CGImageGetBitmapInfo(latestImage);
-        maxInclOffset = getPixelOffset(frame.w - 1, frame.h - 1);
+        width = frame.w;
+        height = frame.h;
+        maxInclOffset = getPixelOffset(XYPoint{width - 1, height - 1});
     }
 
-    size_t getPixelOffset(int x, int y) {
-        return y*bytesPerRow + x*bytesPerPixel;
+    size_t getPixelOffset(XYPoint point) {
+        return point.y*bytesPerRow + point.x*bytesPerPixel;
     }
 
-    bool isWithinBounds(int x, int y) {
-        return x >= 0 && y >= 0 && getPixelOffset(x, y) <= maxInclOffset;
+    bool isWithinBounds(XYPoint point) {
+        return point.x >= 0 && point.y >= 0 && getPixelOffset(point) <= maxInclOffset;
     }
 
-    MWColor colorAt(int x, int y) {
-        size_t offset = getPixelOffset(x, y);
+    MWColor colorAt(XYPoint point) {
+        size_t offset = getPixelOffset(point);
         const UInt8* dataPtr = CFDataGetBytePtr(imageData);
 
-        int alpha = dataPtr[offset + 3],
-            red = dataPtr[offset + 2],
+        // int alpha = dataPtr[offset + 3],
+        int red = dataPtr[offset + 2],
             green = dataPtr[offset + 1],
             blue = dataPtr[offset + 0];
         return MWColor{red, green, blue};
+    }
+
+    std::experimental::optional<XYPoint> seekUntilColor(
+        XYPoint startPoint,
+        std::function<bool(MWColor)> tester, 
+        int changeAxis,
+        int direction, 
+        int step = 1
+    ) {
+        auto isYChanging = changeAxis == AXIS_Y;
+        auto endChange = isYChanging ? height - 1 : width - 1;
+        if (direction == DIRECTION_UP || direction == DIRECTION_LEFT) {
+            endChange = 0;
+        }
+        int start = isYChanging ? startPoint.y : startPoint.x;
+        
+        for (int i = start; i != endChange; i += (direction * step)) {
+            auto point = isYChanging ? XYPoint{startPoint.x, i} : XYPoint{i, startPoint.y};
+            auto colorAtPoint = colorAt(point);
+            auto pointMatches = tester(colorAtPoint);
+            if (pointMatches) {
+                if (abs(step) > 1) {
+                    // Backtrack to find earliest match that we may have missed
+                    for (int b = i; b != i - (direction * step); b += direction) {
+                        auto point = isYChanging ? XYPoint{startPoint.x, b} : XYPoint{b, startPoint.y};
+                        auto colorAtPoint = colorAt(point);
+                        auto pointMatches = tester(colorAtPoint);
+                        if (pointMatches) {
+                            return point;
+                        }
+                    }
+                }
+                return point;
+            }
+        }
+
+        return {};
     }
 
     ~ImageDeets() {
@@ -87,7 +136,7 @@ struct ImageDeets {
 };
 
 class BitwigWindow {
-    int index;
+    int index = 0;
     bool arrangerDirty;
     XYPoint mouseDownAt;
     int mouseDownButton;
