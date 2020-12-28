@@ -9,6 +9,7 @@ import _ from 'underscore'
 import { ModLogs } from './ModLogs'
 import { SettingsFooter } from './SettingsFooter'
 import { faSearch } from '@fortawesome/free-solid-svg-icons'
+import { ModwigComponent } from '../core/ModwigComponent'
 const xPad = `4rem`
 const SettingsViewWrap = styled.div`
     background: #131313;
@@ -142,7 +143,7 @@ const SidebarSetting = styled.div`
         margin-right: .5rem;
     }
     >:nth-child(2) {
-    color: ${(props: any) => (props.focused ? '#CCC' : props.enabled ? '#999' : '')};
+        color: ${(props: any) => ((!props.valid || props.error) ? 'red' : (props.focused ? '#CCC' : props.enabled ? '#999' : ''))};
         text-overflow: ellipsis;
         overflow: hidden;    
     }
@@ -327,7 +328,7 @@ const SearchIconWrap = ({ onClick }) => {
     </SearchIconWrapStyle>
 }
 
-export class SettingsView extends React.Component<Props> {
+export class SettingsView extends ModwigComponent<Props> {
 
     state = {
         category: 'mod',
@@ -347,7 +348,7 @@ export class SettingsView extends React.Component<Props> {
             this.setState({
                 mods,
                 loading: false,
-                focusedSettingKey: mods[0]?.key
+                focusedSettingKey: mods.find(mod => mod.key === this.state.focusedSettingKey) ? this.state.focusedSettingKey : mods[0]?.key
             })
         } else {
             const { data: settings } = await getSettings(this.state.category ? {category: this.state.category} : undefined)
@@ -360,6 +361,9 @@ export class SettingsView extends React.Component<Props> {
 
     async componentWillMount() {
         await this.fetchData()
+        this.addAutoPacketListener('event/mods-reloaded', packet => {
+            this.fetchData()
+        })
     }
 
     renderShortcutList(addedByMod) {   
@@ -417,7 +421,7 @@ export class SettingsView extends React.Component<Props> {
                                         focusedSettingKey: mod.key
                                     })
                                 }
-                                return <SidebarSetting enabled={mod.value.enabled} focused={mod.key === this.state.focusedSettingKey} title={mod.name || mod.key} onClick={onClick} key={mod.key}>
+                                return <SidebarSetting {...mod} enabled={mod.value.enabled} focused={mod.key === this.state.focusedSettingKey} title={mod.name || mod.key} onClick={onClick} key={mod.key}>
                                     <span>{mod.value.enabled ? 'On' : 'Off'}</span>
                                     <span>{mod.name || mod.key}</span>
                                 </SidebarSetting>

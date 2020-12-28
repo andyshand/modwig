@@ -110,6 +110,8 @@ interface ModInfo {
     id: string
     path: string
     noReload: boolean
+    valid: boolean
+    error?: any
 }
 
 interface CueMarker {
@@ -628,17 +630,27 @@ export class ModsService extends BESService {
             where.category = category
         }
         const results = await settings.find({where})
-        return results.filter(mod => mod.key in this.latestModsMap).map(res => {
-            res = this.settingsService.postload(res)
-            const modInfo = this.latestModsMap[res.key]
+        const byKey = {}
+        for (const r of results) {
+            byKey[r.key] = r
+        }
+        return Object.keys(this.latestModsMap).map(settingKey => {
+            const res = byKey[settingKey] ? this.settingsService.postload(byKey[settingKey]) : {
+                value: { 
+                    enabled: false,
+                    keys: []
+                }
+            }
+            const modInfo = this.latestModsMap[settingKey]
             return {
                 ...res,
                 ...modInfo
             }
         }).filter((mod) => {
             return inMenu ? mod.value.showInMenu : true
-        })
+        }) as any
     }
+
     async activate() {
         interceptPacket('message', undefined, async ({ data: { msg } }) => {
             this.showMessage(msg)
@@ -818,25 +830,23 @@ export class ModsService extends BESService {
                 }
                 try { 
                     const contents = await fs.readFile(path.join(modsFolder, filePath), 'utf8')
-                    const checkForTag = (tag, required = true) => {
+                    const checkForTag = (tag) => {
                         const result = new RegExp(`@${tag} (.*)`).exec(contents)
-                        if (!result && required) {
-                            throw new Error(`Missing @${tag} tag`)
-                        }
                         return result ? result[1] : undefined
                     }
-                    const id = checkForTag('id')!
-                    const name = checkForTag('name')!
-                    const description = checkForTag('description', false) || ''
-                    const category = checkForTag('category', false) || 'global'
-                    const version = checkForTag('version', false) || '0.0.1'
+                    const id = checkForTag('id')
+                    const name = checkForTag('name') ?? 'No name set'
+                    const description = checkForTag('description') || ''
+                    const category = checkForTag('category') ?? 'global'
+                    const version = checkForTag('version') ?? '0.0.1'
                     const noReload = contents.indexOf('@noReload') >= 0
                     const settingsKey = `mod/${id}`
                     const p = path.join(modsFolder, filePath)
                     const isDefault = p.indexOf(getResourcePath('/default-mods')) >= 0
+                    const actualId = id === undefined ? ('temp' + nextId++) : id
 
-                    modsById[id] = {
-                        id,
+                    modsById[actualId] = {
+                        id: actualId,
                         name,
                         settingsKey,
                         description,
@@ -845,8 +855,10 @@ export class ModsService extends BESService {
                         contents,
                         noReload,
                         path: p,
-                        isDefault
+                        isDefault,
+                        valid: id !== undefined
                     }
+                    logWithTime(actualId)
                 } catch (e) {
                     logWithTime(colors.red(`Error with ${filePath}`, e))
                 }
@@ -855,16 +867,19 @@ export class ModsService extends BESService {
         return modsById
     }
 
-    async initMod(mod) {
-        await this.settingsService.insertSettingIfNotExist({
-            key: mod.settingsKey,
-            value: {
-                enabled: false,
-                keys: []
-            },
-            type: 'mod',
-            category: mod.category
-        })
+    async initModAndStoreInMap(mod) {
+        if (mod.valid) {
+            // Don't add settings for invalid (not loaded properly mods)
+            await this.settingsService.insertSettingIfNotExist({
+                key: mod.settingsKey,
+                value: {
+                    enabled: false,
+                    keys: []
+                },
+                type: 'mod',
+                category: mod.category
+            })
+        }
         this.latestModsMap[mod.settingsKey] = mod
     }
 
@@ -882,7 +897,7 @@ export class ModsService extends BESService {
             ;(async () => {
                 for (const modId in modsById) {
                     const mod = modsById[modId]
-                    this.initMod(mod)
+                    this.initModAndStoreInMap(mod)
                     const isEnabled = await this.isModEnabled(mod)
                     if (isEnabled) {
                         const api = await this.makeApi(mod)
@@ -896,6 +911,7 @@ export class ModsService extends BESService {
                             eval(setVars + mod.contents)
                             logWithTime('Enabled local mod: ' + colors.green(modId))
                         } catch (e) {
+                            mod.error = e
                             logWithTime(colors.red(e))   
                         }
                         this.activeModApiIds[api.id] = true
@@ -907,7 +923,7 @@ export class ModsService extends BESService {
         }
     }
 
-    async refreshBitwigMods() {
+    async refreshBitwigMods(noWriteFile: boolean) {
         const modsFolders = await this.getModsFolderPaths()
         let controllerScript = `
 // AUTO GENERATED BY MODWIG
@@ -926,7 +942,7 @@ function modsImpl(api) {
 
         for (const modId in modsById) {
             const mod = modsById[modId]
-            this.initMod(mod)
+            this.initModAndStoreInMap(mod)
             const isEnabled = await this.isModEnabled(mod)
             if (isEnabled || mod.noReload) {
                 logWithTime('Enabled Bitwig Mod: ' + colors.green(modId))
@@ -950,8 +966,10 @@ return `settings['${key}'] = ${defaultControllerScriptSettings[key]}`
 modsImpl(api)            
 \n}`
         const controllerScriptMods = getResourcePath('/controller-script/mods.js')
-        await fs.writeFile(controllerScriptMods, controllerScript)
-        await this.copyControllerScript()
+        if (!noWriteFile) {
+            await fs.writeFile(controllerScriptMods, controllerScript)
+            await this.copyControllerScript()
+        }
     }
 
     async refreshMods(localOnly = false) {
@@ -966,12 +984,14 @@ modsImpl(api)
             }
         }
         this.onReloadMods = []
-
+        this.latestModsMap = {}
+        
         await this.refreshLocalMods()
-        if (!localOnly) {
-            await this.refreshBitwigMods()
-        } else {
-            this.showMessage('Reloaded local mods')
-        }
+        await this.refreshBitwigMods(localOnly)
+        this.showMessage(`Reloaded ${localOnly ? 'local' : 'all'} mods`)
+
+        sendPacketToBrowser({
+            type: 'event/mods-reloaded'
+        })
     }
 }
