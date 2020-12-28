@@ -813,6 +813,7 @@ class BrowserController extends Controller {
         }
         pb.exists().markInterested()
         pb.exists().addValueObserver(exists => {
+            log('Browser open: ' + exists)
             this.isOpen = exists
             packetManager.send({
                 type: "browser/state", 

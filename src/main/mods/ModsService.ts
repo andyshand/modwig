@@ -30,7 +30,7 @@ function makeWindowOpener() {
         path: string
     } | undefined
     let fadeOutTimeout: any
-    return function openFloatingWindow(path, options: {data?: any, timeout?: number, width: number, height: number}) {
+    return function openFloatingWindow(path, options: {x?: number, y?: number, data?: any, timeout?: number, width: number, height: number}) {
        if (fadeOutTimeout) {
            clearTimeout(fadeOutTimeout)
        }
@@ -49,8 +49,8 @@ function makeWindowOpener() {
                    alwaysOnTop: true,
                    focusable: debug,
                    closable: debug,
-                   x: MainWindow.getMainScreen().w / 2 - options.width / 2,
-                   y: MainWindow.getMainScreen().h / 2 - options.height / 2,
+                   x: options.x ?? MainWindow.getMainScreen().w / 2 - options.width / 2,
+                   y: options.y ?? MainWindow.getMainScreen().h / 2 - options.height / 2,
                    transparent: true,
                    fullscreenable: false,
                    webPreferences: {
@@ -98,6 +98,7 @@ function makeWindowOpener() {
 
 const openFloatingWindow = makeWindowOpener()
 const openMessageWindow = makeWindowOpener()
+const openCanvasWindow = makeWindowOpener()
 
 const { Keyboard, Mouse, MainWindow, Bitwig } = require('bindings')('bes')
 

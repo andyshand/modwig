@@ -307,6 +307,8 @@ CallbackInfo* addEventListener(EventListenerSpec spec) {
         mask = CGEventMaskBit(kCGEventLeftMouseDown) | CGEventMaskBit(kCGEventRightMouseDown) | CGEventMaskBit(kCGEventOtherMouseDown);
     } else if ("mouseup" == spec.eventType) {
         mask = CGEventMaskBit(kCGEventLeftMouseUp) | CGEventMaskBit(kCGEventRightMouseUp) | CGEventMaskBit(kCGEventOtherMouseUp);
+    } else if ("scroll" == spec.eventType) {
+        mask = CGEventMaskBit(kCGEventScrollWheel);
     }
 
     // TODO FREE
