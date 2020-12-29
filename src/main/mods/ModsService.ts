@@ -105,6 +105,7 @@ const { Keyboard, Mouse, MainWindow, Bitwig } = require('bindings')('bes')
 interface ModInfo {
     name: string
     version: string
+    settingsKey: string
     description: string
     category: string
     id: string
@@ -632,7 +633,7 @@ export class ModsService extends BESService {
             _,
         }
     }
-    async getMods({category, inMenu} = {} as any) {
+    async getModsWithInfo({category, inMenu} = {} as any) : Promise<(ModInfo & {key: string, value: any})[]> {
         const db = await getDb()
         const settings = db.getRepository(Setting) 
         const where = {type: 'mod'} as any
@@ -705,7 +706,7 @@ export class ModsService extends BESService {
         })
 
         addAPIMethod('api/mods', async () => {
-            const mods = await this.getMods()
+            const mods = await this.getModsWithInfo() as any
             const db = await getDb()
             const settings = db.getRepository(Setting) 
             for (const mod of mods) {
@@ -767,25 +768,33 @@ export class ModsService extends BESService {
                     }
                     this.showMessage(`${modData.name}: ${value.enabled ? 'Enabled' : 'Disabled'}`)
                     sendPacketToBitwig({type: 'settings/update', data })
-                }
+
+                    // FIXME shortcuts service deregisters on settingUpdated event, so re-register all in a setTimeout
+                    setTimeout(async () => {
+                        const mods = await this.getModsWithInfo()
+                        for (const mod of mods) {
+                            this.registerEnableDisableShortcut(mod)
+                        }
+                    }, 100)
+                }               
             }
         })
 
         this.refreshMods()
         refreshFolderWatcher()
+    }
 
-        // Register shortcuts for disabling/enabling mods
-        const modShortcuts = await this.getMods()
-        for (const mod of modShortcuts) {
-            if (mod.value.keys.length > 0) {
-                this.shortcutsService.registerShortcut(mod.value, async () => {
-                    const value = (await this.settingsService.getSettingValue(mod.key))
-                    await this.settingsService.setSettingValue(mod.key, {
-                        ...value,
-                        enabled: !value.enabled
-                    })
+    async registerEnableDisableShortcut(mod: ModInfo) {
+        // Re-register shortcuts for disabling/enabling mods
+        const enabledValue = await this.settingsService.getSettingValue(mod.settingsKey)
+        if (enabledValue && enabledValue.keys.length > 0) {
+            this.shortcutsService.registerShortcut(enabledValue, async () => {
+                const currentVal = (await this.settingsService.getSettingValue(mod.settingsKey))
+                await this.settingsService.setSettingValue(mod.settingsKey, {
+                    ...currentVal,
+                    enabled: !currentVal.enabled
                 })
-            }
+            })
         }
     }
 
@@ -868,7 +877,6 @@ export class ModsService extends BESService {
                         isDefault,
                         valid: id !== undefined
                     }
-                    logWithTime(actualId)
                 } catch (e) {
                     logWithTime(colors.red(`Error with ${filePath}`, e))
                 }
@@ -890,6 +898,8 @@ export class ModsService extends BESService {
                 category: mod.category
             })
         }
+
+        this.registerEnableDisableShortcut(mod)
         this.latestModsMap[mod.settingsKey] = mod
     }
 
