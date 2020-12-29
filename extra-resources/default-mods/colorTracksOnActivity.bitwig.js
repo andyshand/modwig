@@ -6,12 +6,18 @@
  * @noReload
  */
 
+let threshold = 40
+
 const colors = {
     ORANGE: [1, 0.5137255191802979, 0.24313725531101227],
     RED: [0.8509804010391235, 0.18039216101169586, 0.1411764770746231],
     YELLOW: [0.8941176533699036, 0.7176470756530762, 0.30588236451148987],
+    BRIGHT_YELLOW: [1, 1, 0.47843137383461],
     LIGHT_BLUE: [0.2666666805744171, 0.7843137383460999, 1],
+    BROWN: [0.6392157077789307, 0.4745098054409027, 0.26274511218070984],
     DARK_GREY: [0.3294117748737335, 0.3294117748737335, 0.3294117748737335],
+    LIGHT_GREY: [0.47843137383461, 0.47843137383461, 0.47843137383461],
+    BG_GREY: [0.47843137383461, 0.47843137383461, 0.47843137383461],
     WHITE: [1, 1, 1],
     BLACK: [0, 0, 0],
     // TRANSPARENT: Color.nullColor(),
@@ -36,21 +42,33 @@ const makeMatcher = (tests) => {
 const sets = [
     [
         makeMatcher([
-            'hat',
-            'drums',
-            'snare',
             'kick',
+            'kik',
+            'snare'
+        ]), 
+        colors.BRIGHT_YELLOW
+    ],
+    [
+        makeMatcher([
+            'hat',
+            'kit',
+            'addictive'
+        ]), 
+        colors.BROWN
+    ],
+    [
+        makeMatcher([
+            'drums',
             'tom',
             'clap',
             'rim',
+            'click',
             'tamb',
             '505',
             '606',
             '707',
             '808',
             '909',
-            'kit',
-            'addictive drums',
             'perc',
         ]), 
         colors.YELLOW
@@ -139,6 +157,7 @@ function setColorIfNotAlready(t, color, trackName) {
     }
 }
 
+let paused = false
 let selectedTrackName = ''
 cursorTrack.name().addValueObserver(name => {
     selectedTrackName = name
@@ -153,7 +172,7 @@ tracks.forEach((t, i) => {
     let calcDiff = () => new Date().getTime() - trackLastActive.getTime()
 
     t.addVuMeterObserver(128, -1, true, val => {
-        if (!Mod.enabled) {
+        if (!Mod.enabled || paused) {
             return
         }
         
@@ -161,7 +180,7 @@ tracks.forEach((t, i) => {
         if (trackName === selectedTrackName) {
             // Don't flash selected track and make it always clear if its selected
             setColorIfNotAlready(t, colors.WHITE, trackName)
-        } else if (val > 66) {
+        } else if (val > threshold) {
             // If we have levels and wasn't active since 3 seconds, flash white
             // if (calcDiff() > 3 * 1000) {
             //     setColorIfNotAlready(t, colors.WHITE)
@@ -174,10 +193,27 @@ tracks.forEach((t, i) => {
             // trackLastActive = new Date()
         } else {
             // if (calcDiff() > 1 * 1000) {
-                setColorIfNotAlready(t, colors.DARK_GREY, trackName)
+                setColorIfNotAlready(t, colors.BG_GREY, trackName)
             // }
         }
     })
+})
+
+packetManager.listen('color-tracks-on-activity/pause', () => {
+    paused = true
+    // if (Mod.enabled) {
+    //     showMessage('Pausing color changes while undoing/redoing')
+    // }
+})
+packetManager.listen('color-tracks-on-activity/unpause', () => {
+    // if (paused && Mod.enabled) {
+    //     showMessage('Resuming color changes')
+    // }
+    paused = false
+})
+packetManager.listen('color-tracks-on-activity/threshold', packet => {
+    threshold = Math.min(128, Math.max(0, threshold + packet.data))
+    showMessage("Threshold set to " + Math.round((threshold / 128) * 100) + '%')
 })
 
 // cursorTrack.color().markInterested()

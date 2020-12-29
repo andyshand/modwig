@@ -53,7 +53,7 @@ export class TrayService extends BESService {
         }
         
         const updateMenu = async () => {
-            const modItems = ((await this.modsService.getModsWithInfo({inMenu: true})) as any).map(modSetting => {
+            const modItems: Electron.MenuItemConstructorOptions[] = (await this.modsService.getModsWithInfo({inMenu: true})).map(modSetting => {
                 return {
                     label: modSetting.name,
                     checked: modSetting.value.enabled,
@@ -77,9 +77,9 @@ export class TrayService extends BESService {
                 } },
               ]),
               ...(modItems.length ? [
+                 ...modItems,
                 { type: 'separator' },
-                ...modItems
-              ] : []),
+              ] : []) as any,
             { type: 'separator' },
               { label: 'Preferences...', click: () => openWindow({type: 'settings'}) },
               { label: 'Setup...', click: () => openWindow({type: 'setup'}) },

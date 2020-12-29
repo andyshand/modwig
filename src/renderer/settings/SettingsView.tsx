@@ -137,13 +137,17 @@ const SidebarSetting = styled.div`
     }
     color: ${(props: any) => (props.focused ? '#CCC' : '')};
     display: flex;
+    align-items: center;
+    > * {
+        display: flex;
+    }
     >:nth-child(1) {
         width: 4rem;
         flex-shrink: 0;
         margin-right: .5rem;
     }
     >:nth-child(2) {
-        color: ${(props: any) => ((!props.valid || props.error) ? 'red' : (props.focused ? '#CCC' : props.enabled ? '#999' : ''))};
+        color: ${(props: any) => ((!props.valid || props.error) ? 'red' : (props.focused ? '#CCC' : props.enabled ? '' : '#4c4c4c'))};
         text-overflow: ellipsis;
         overflow: hidden;    
     }
@@ -214,9 +218,8 @@ const SidebarSection = styled.div`
         margin-bottom: 1.5rem;
     }
     >:nth-child(1) {
-        margin-bottom: .5rem;
+        margin-bottom: 0.5rem;
     }
-
 `
 const ToggleAndText = styled.div`
     display: flex;
@@ -247,6 +250,14 @@ const ModRow = styled.div`
         margin-top: 2rem;
     }
 `
+const Indicator = styled.div`
+    width: .3em;
+    height: .3em;
+    background: ${props => props.on ? 'green' : '#444'};
+    display: inline-block;
+    border-radius: 1000px;
+`
+
 const Badge = styled.div`
     background: #bd8723;
     color: white;
@@ -422,7 +433,7 @@ export class SettingsView extends ModwigComponent<Props> {
                                     })
                                 }
                                 return <SidebarSetting {...mod} enabled={mod.value.enabled} focused={mod.key === this.state.focusedSettingKey} title={mod.name || mod.key} onClick={onClick} key={mod.key}>
-                                    <span>{mod.value.enabled ? 'On' : 'Off'}</span>
+                                    <span style={{width: '.6em'}}><Indicator on={mod.value.enabled} /></span>
                                     <span>{mod.name || mod.key}</span>
                                 </SidebarSetting>
                             })}
@@ -450,7 +461,7 @@ export class SettingsView extends ModwigComponent<Props> {
                         })}
                     </div>
                 </ModRow> 
-                <ModLogs mod={chosenMod} />
+                {/* <ModLogs mod={chosenMod} /> */}
             </ModAndLogs> : null}
         </NavSplit>
     }

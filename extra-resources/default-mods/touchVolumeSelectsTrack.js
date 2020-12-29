@@ -5,34 +5,10 @@
  * @category arranger
  */
 
-Mouse.on('click', whenActiveListener(async event => {
-    if (event.button === 0 && !event.Meta && !event.intersectsPluginWindows()) {
-        const frame = MainWindow.getFrame()
-        const yWithinArranger = x => {
-            return event.y >= frame.y + 130 && event.y < (frame.y + frame.h) - 313
-        }
-        if (!yWithinArranger()) {
-            return
-        }
-        const { data } = await Bitwig.sendPacketPromise({type: 'touch-volume-selects-track/view-data'})
-        const { doubleTrackHeight, topLevel } = data
-        const withinXRange = (minX, maxX) => {
-            return event.x >= minX && event.x < maxX
-        }
-        const arrangerX = x => {
-            return frame.x + 175 + (topLevel ? 0 : 22) + x
-        }
-        if (doubleTrackHeight && withinXRange(arrangerX(70), arrangerX(220))) {
-            // Click the track faders to select
-            Mouse.returnAfter(() => {
-                Mouse.click(0, {x: arrangerX(202), y: event.y})  
-            })
-        } else if (!doubleTrackHeight && withinXRange(arrangerX(70), arrangerX(250))) {
-            // Click the track faders to select
-            Mouse.returnAfter(() => {
-                const clickAt = {x: arrangerX(252), y: event.y}
-                Mouse.click(0, clickAt)  
-            })
-        }
-    }
-}))
+UI.Arranger.TrackHeaderView.SelectedTrack.on('click', async event => {
+    const ui = event.currentTarget
+    const { x } = Bitwig.scaleXY({ x: 2, y: 0 }) // 2 pixels scaled
+    Mouse.returnAfter(() => {
+        Mouse.click(0, {x: event.x - x, y: ui.y + (ui.h / 2) })  
+    })
+})
