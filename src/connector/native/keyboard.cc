@@ -352,6 +352,7 @@ CallbackInfo* addEventListener(EventListenerSpec spec) {
         }
     }
     callbacks.push_front(ourInfo);
+    return ourInfo;
 }
 
 /// Note that mousemove events seem to get fired when mouse is clicked too - TODO investigate

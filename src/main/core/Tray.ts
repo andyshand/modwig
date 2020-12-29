@@ -53,7 +53,7 @@ export class TrayService extends BESService {
         }
         
         const updateMenu = async () => {
-            const modItems = (await this.modsService.getMods({inMenu: true})).map(modSetting => {
+            const modItems = ((await this.modsService.getModsWithInfo({inMenu: true})) as any).map(modSetting => {
                 return {
                     label: modSetting.name,
                     checked: modSetting.value.enabled,

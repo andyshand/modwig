@@ -104,6 +104,7 @@ export class ShortcutsService extends BESService {
     }
 
     async updateShortcutCache() {
+        logWithTime('Updating shortcut cache')
         const db = await getDb()
         const settings = db.getRepository(Setting) 
         const results = await settings.find({where: {type: 'shortcut'}})
@@ -760,6 +761,9 @@ export class ShortcutsService extends BESService {
         }
     }
 
+    /**
+     * TODO these shortcuts get deregistered every time the shortcut cache is emptied, fix!
+     */
     async registerShortcut(shortcut, action) {
         const code = this.makeShortcutValueCode(shortcut)
         this.shortcutCache[code] = (this.shortcutCache[code] || []).concat({
@@ -778,7 +782,7 @@ export class ShortcutsService extends BESService {
             const modsService = getService<ModsService>('ModsService')
             const db = await getDb()
             const settings = db.getRepository(Setting) 
-            const enabledMods = (await modsService.getMods({category})).filter(mod => mod.value.enabled)
+            const enabledMods = (await modsService.getModsWithInfo({category})).filter(mod => mod.value.enabled)
             const enabledModIds = new Set(enabledMods.map(mod => mod.key.substr(4)))
             const results = (await settings.find({where: {
                 type: 'shortcut', 
@@ -887,7 +891,6 @@ export class ShortcutsService extends BESService {
         }
 
         Keyboard.on('keydown', event => {
-            console.log(event)
             let { lowerKey, nativeKeyCode, Meta, Shift, Control, Alt, Fn } = event
             if (/F[0-9]+/.test(lowerKey) || lowerKey === 'Clear' || lowerKey.indexOf('Arrow') === 0) {
                 // FN defaults to true when using function keys (makes sense I guess?), but also Clear???

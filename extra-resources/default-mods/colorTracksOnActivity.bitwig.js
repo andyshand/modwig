@@ -3,6 +3,7 @@
  * @id color-tracks-on-activity
  * @description Gives more control over auto arm to disable while mods are doing their thing.
  * @category global
+ * @noReload
  */
 
 const colors = {
@@ -152,6 +153,10 @@ tracks.forEach((t, i) => {
     let calcDiff = () => new Date().getTime() - trackLastActive.getTime()
 
     t.addVuMeterObserver(128, -1, true, val => {
+        if (!Mod.enabled) {
+            return
+        }
+        
         // let setWhite = false
         if (trackName === selectedTrackName) {
             // Don't flash selected track and make it always clear if its selected

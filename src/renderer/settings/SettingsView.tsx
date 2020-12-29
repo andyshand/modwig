@@ -444,7 +444,7 @@ export class SettingsView extends ModwigComponent<Props> {
                     </ModContent>
                     <div></div>
                     <div style={{background: `#161616`, padding: `2rem 4rem`, paddingTop: `0`}}>
-                        <SettingItem focused={false} key={chosenMod.id} setting={{...chosenMod, description: `Toggle all actions and related functionality for ${chosenMod.name}.`, name: `Enabled/Disable ${chosenMod.name}`}} />
+                        <SettingItem focused={false} key={chosenMod.id} setting={{...chosenMod, description: `Toggle all actions and related functionality for ${chosenMod.name}.`, name: `Enable/Disable ${chosenMod.name}`}} />
                         {chosenMod.actions.map(action => {
                             return <SettingItem focused={false} key={action.id} setting={action} />
                         })}
