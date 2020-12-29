@@ -16,9 +16,17 @@ let editorBorderLineY = 9999
 let draggingBorderLine = false
 let shiftEDown = false
 
+let numDown = null
+
 Keyboard.on('keydown', event => {
     const { lowerKey, Shift } = event
     shiftEDown = Shift && lowerKey === 'e'
+
+    // restore tools after middle click + 1 timeline
+    let num = parseInt(lowerKey, 10)
+    if (num > 1 && num <= 5) {
+        numDown = num
+    }
 })
 
 Keyboard.on('keyup', event => {
@@ -29,11 +37,18 @@ Keyboard.on('keyup', event => {
     } else if (lowerKey === 'e') {
         editorIsProbablyOpen = true
     }
+    let num = parseInt(lowerKey, 10)
+    if (num === numDown) {
+        numDown = null
+    }
 })
 
 function playWithEvent(event) {
     const mousePosBefore = Mouse.getPosition()
     Mouse.returnAfter(() => {
+        if (numDown) {
+            Keyboard.keyUp(String(numDown))
+        }
         Keyboard.keyDown('1')
         const timelineClickPosition = {x: event.bitwigX, y: 91}
         
@@ -64,6 +79,9 @@ function playWithEvent(event) {
             }, 100)
         }
         Keyboard.keyUp('1')
+        if (numDown) {
+            Keyboard.keyDown(String(numDown))
+        }
     })
 }
 
