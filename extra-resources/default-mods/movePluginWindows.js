@@ -121,3 +121,34 @@ Mod.registerAction({
         })
     }
 })
+
+let downEvent = null
+let draggingWindowId = null
+let initialPositions = {}
+
+Mouse.on('mousedown', event => {
+    if (event.button !== 1) {
+        return
+    }
+    const pluginWindowHit = event.intersectsPluginWindows()
+    if (pluginWindowHit) {
+        draggingWindowId = pluginWindowHit.id
+        initialPositions = Bitwig.getPluginWindowsPosition()
+        downEvent = event
+    }
+})
+
+Mouse.on('mouseup', event => {
+    if (draggingWindowId) {
+        let pos = initialPositions[draggingWindowId]
+        initialPositions[draggingWindowId] = {
+            ...pos,
+            x: pos.x + event.x - downEvent.x,
+            y: pos.y + event.y - downEvent.y
+        }
+        Bitwig.setPluginWindowsPosition(initialPositions)
+    }
+    downEvent = null
+    draggingWindowId = null
+    initialPositions = {}
+})

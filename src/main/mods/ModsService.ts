@@ -297,10 +297,20 @@ export class ModsService extends BESService {
         }
 
         function intersectsPluginWindows(event) {
-            const pluginLocations = Object.values(Bitwig.getPluginWindowsPosition())
-            return pluginLocations.some(({x,y,w,h}) => {
-                return event.x >= x && event.x < x + w && event.y >= y && event.y < y + h
-            })
+            const pluginLocations = Bitwig.getPluginWindowsPosition()
+            for (const key in pluginLocations) {
+                const {x, y, w, h} = pluginLocations[key]
+                if (event.x >= x && event.x < x + w && event.y >= y && event.y < y + h) {
+                    return {
+                        id: key,
+                        x,
+                        y,
+                        w,
+                        h
+                    }
+                }
+            }
+            return false
         }
         const MouseEvent = {
             intersectsPluginWindows() {
