@@ -153,7 +153,7 @@ tracks.forEach((t, i) => {
 
     t.addVuMeterObserver(128, -1, true, val => {
         // let setWhite = false
-        if (val > 80 || trackName === selectedTrackName) { // Don't flash selected track
+        if (val > 66 || trackName === selectedTrackName) { // Don't flash selected track
             // If we have levels and wasn't active since 3 seconds, flash white
             // if (calcDiff() > 3 * 1000) {
             //     setColorIfNotAlready(t, colors.WHITE)
