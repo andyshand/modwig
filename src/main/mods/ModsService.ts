@@ -98,7 +98,7 @@ function makeWindowOpener() {
 
 const openFloatingWindow = makeWindowOpener()
 const openMessageWindow = makeWindowOpener()
-const openCanvasWindow = makeWindowOpener()
+// const openCanvasWindow = makeWindowOpener()
 
 const { Keyboard, Mouse, MainWindow, Bitwig } = require('bindings')('bes')
 
