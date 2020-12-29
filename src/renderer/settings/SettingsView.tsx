@@ -12,7 +12,7 @@ import { faSearch } from '@fortawesome/free-solid-svg-icons'
 import { ModwigComponent } from '../core/ModwigComponent'
 const xPad = `4rem`
 const SettingsViewWrap = styled.div`
-    background: #131313;
+    background: #1e1e1e;
     display: flex;
     height: 100%;
     width:100%;
@@ -443,7 +443,7 @@ export class SettingsView extends ModwigComponent<Props> {
                         </ToggleAndText>
                     </ModContent>
                     <div></div>
-                    <div style={{padding: `2rem 4rem`, paddingTop: `0`}}>
+                    <div style={{background: `#161616`, padding: `2rem 4rem`, paddingTop: `0`}}>
                         <SettingItem focused={false} key={chosenMod.id} setting={{...chosenMod, description: `Toggle all actions and related functionality for ${chosenMod.name}.`, name: `Enabled/Disable ${chosenMod.name}`}} />
                         {chosenMod.actions.map(action => {
                             return <SettingItem focused={false} key={action.id} setting={action} />

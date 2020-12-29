@@ -135,7 +135,54 @@ struct ImageDeets {
     }
 };
 
-class BitwigWindow {
+class BitwigUI {
+    public:
+    MWRect rect;
+    std::string identifier = "Bitwig Window";
+    void processEvent(JSEvent* event) {}
+    void setFrame(MWRect frame) {
+        this->rect = frame;
+    }
+};
+
+class BitwigDeviceView : public BitwigUI {
+    BitwigDeviceView() {
+        this->identifier = "Bitwig Device View";
+    }  
+};
+
+/**
+ * The entire arranger view, encompassing track header view,
+ * timeline and ruler
+ */
+class BitwigArranger : public BitwigUI {
+    BitwigArranger() {
+        this->identifier = "Bitwig Arranger";
+    }  
+};
+
+class BitwigInspector : public BitwigUI {
+    BitwigInspector() {
+        this->identifier = "Bitwig Inspector";
+    } 
+};
+
+/**
+ * The scrolling portion of the arranger view
+ */
+class BitwigArrangerTimeline : public BitwigUI {
+    BitwigArrangerTimeline() {
+        this->identifier = "Bitwig Arranger Timeline";
+    } 
+};
+
+class BitwigTrackHeaderView : public BitwigUI {
+    BitwigTrackHeaderView() {
+        this->identifier = "Bitwig Track Header View";
+    } 
+};
+
+class BitwigWindow : public BitwigUI {
     int index = 0;
     bool arrangerDirty;
     XYPoint mouseDownAt;
@@ -225,23 +272,23 @@ BitwigWindow* mainWindow = new BitwigWindow();
 Napi::Value InitUI(Napi::Env env, Napi::Object exports) {
     Napi::Object obj = Napi::Object::New(env);
 
-    addEventListener(EventListenerSpec{
-        "mouseup",
-        [](JSEvent* event) -> void {
-            mainWindow->processEvent(event);
-        },
-        nullptr,
-        nullptr
-    });
+    // addEventListener(EventListenerSpec{
+    //     "mouseup",
+    //     [](JSEvent* event) -> void {
+    //         mainWindow->processEvent(event);
+    //     },
+    //     nullptr,
+    //     nullptr
+    // });
 
-    addEventListener(EventListenerSpec{
-        "keyup",
-        [](JSEvent* event) -> void {
-            mainWindow->processEvent(event);
-        },
-        nullptr,
-        nullptr
-    });
+    // addEventListener(EventListenerSpec{
+    //     "keyup",
+    //     [](JSEvent* event) -> void {
+    //         mainWindow->processEvent(event);
+    //     },
+    //     nullptr,
+    //     nullptr
+    // });
 
     // obj.Set(Napi::String::New(env, "getFrame"), Napi::Function::New(env, GetFrame));
     // obj.Set(Napi::String::New(env, "getMainScreen"), Napi::Function::New(env, GetMainScreen));

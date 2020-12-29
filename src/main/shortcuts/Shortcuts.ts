@@ -887,6 +887,7 @@ export class ShortcutsService extends BESService {
         }
 
         Keyboard.on('keydown', event => {
+            console.log(event)
             let { lowerKey, nativeKeyCode, Meta, Shift, Control, Alt, Fn } = event
             if (/F[0-9]+/.test(lowerKey) || lowerKey === 'Clear' || lowerKey.indexOf('Arrow') === 0) {
                 // FN defaults to true when using function keys (makes sense I guess?), but also Clear???
@@ -897,6 +898,11 @@ export class ShortcutsService extends BESService {
 
             // Keep track of whether an action itself declares that we are entering a value (e.g entering automation)
             let enteringBefore = enteringValue
+
+            if (enteringValue && (Meta || Control || Alt)) {
+                // Assume a shortcut must have been pressed, must no longer be entering value?
+                enteringValue = false
+            }
 
             if (Bitwig.isActiveApplication() && !enteringValue) {
                 if (this.browserIsOpen && /[a-z]{1}/.test(lowerKey) && noMods) {

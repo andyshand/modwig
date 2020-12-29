@@ -9,26 +9,30 @@ import { ModsService } from "./mods/ModsService";
 
 app.whenReady().then(async () => {
 
-  app.whenReady().then(() => {
-    protocol.registerFileProtocol('file', (request, callback) => {
-      const pathname = request.url.replace('file:///', '');
-      callback(pathname);
+  try {
+    app.whenReady().then(() => {
+      protocol.registerFileProtocol('file', (request, callback) => {
+        const pathname = request.url.replace('file:///', '');
+        callback(pathname);
+      });
     });
-  });
 
-  // Service creation order is manually controlled atm, but each
-  // has dependencies
-  // TODO automate this - is error prone
-  const socketMiddleMan = await registerService(SocketMiddlemanService)
-  const settingsService = await registerService<SettingsService>(SettingsService)
-  settingsService.insertSettingIfNotExist({
-    key: 'userLibraryPath',
-    value: '',
-    category: 'internal',
-    type: 'string',
-  })
+    // Service creation order is manually controlled atm, but each
+    // has dependencies
+    // TODO automate this - is error prone
+    const socketMiddleMan = await registerService(SocketMiddlemanService)
+    const settingsService = await registerService<SettingsService>(SettingsService)
+    settingsService.insertSettingIfNotExist({
+      key: 'userLibraryPath',
+      value: '',
+      category: 'internal',
+      type: 'string',
+    })
 
-  const shortcutsService = await registerService(ShortcutsService)
-  const modsService = await registerService(ModsService)
-  const trayService = await registerService(TrayService)
+    const shortcutsService = await registerService(ShortcutsService)
+    const modsService = await registerService(ModsService)
+    const trayService = await registerService(TrayService)
+  } catch (e) {
+    console.error(e)  
+  }
 })

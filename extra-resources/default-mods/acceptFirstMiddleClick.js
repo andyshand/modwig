@@ -1,7 +1,7 @@
 /**
  * @name Accept Middle-Click When Inactive
  * @id accept-middle-click
- * @description Allow middle-click dragging when Bitwig's main window is not currently active, e.g. when a plugin window has focus
+ * @description Only necessary on Mac. Allow middle-click dragging when Bitwig's main window is not currently active, e.g. when a plugin window has focus.
  * @category global
  */
 

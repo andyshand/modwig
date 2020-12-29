@@ -5,7 +5,7 @@ declare const load: any
 declare const Object2: any
 declare const loadMods: any
 
-loadAPI(10);
+loadAPI(12);
 load('es5-shim.min.js')
 load('json3.min.js')
 load('Object2.js')
