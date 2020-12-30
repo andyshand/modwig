@@ -77,7 +77,11 @@ const sets = [
         makeMatcher([
             'keys',
             'lead',
-            'arp'
+            'arp',
+            'phone',
+            'xylo',
+            'glock',
+            'vibra'
         ]),
         colors.PURPLE
     ],
