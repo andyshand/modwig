@@ -7,28 +7,39 @@
  */
 
 let paused = false
+async function pause() {
+    paused = true
+    await Bitwig.sendPacketPromise({
+        type: 'color-tracks-on-activity/pause' 
+    })  
+}
+async function unpause() {
+    paused = false
+    // Pause coloring tracks while we undo past coloring points
+    await Bitwig.sendPacketPromise({
+        type: 'color-tracks-on-activity/unpause' 
+    }) 
+}
+
 Keyboard.on('keydown', async e => {
     if (e.lowerKey === 'z' && e.Meta) {
         // Pause coloring tracks while we undo past coloring points
-        paused = true
-        await Bitwig.sendPacketPromise({
-            type: 'color-tracks-on-activity/pause' 
-        })    
-    } else if (paused) {
-        paused = false
-        // Pause coloring tracks while we undo past coloring points
-        await Bitwig.sendPacketPromise({
-            type: 'color-tracks-on-activity/unpause' 
-        }) 
+        pause()
+    } else if (paused && !Bitwig.isBrowserOpen) {
+        unpause()
+    }
+})
+
+Bitwig.on('browserOpen', (isOpen) => {
+    log('got browserOpen event')
+    if (isOpen)  {
+        pause()
     }
 })
 
 Mouse.on('mouseup', async e => {
-    if (paused && e.button === 0) {
-        paused = false
-        await Bitwig.sendPacketPromise({
-            type: 'color-tracks-on-activity/unpause' 
-        })
+    if (paused && e.button === 0 && !Bitwig.isBrowserOpen) {
+        unpause()
     }
  })
 

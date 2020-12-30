@@ -139,6 +139,20 @@ const GlobalStyle = css`
     }
 `
 
+/**
+ * Required wrapper for anything that uses the 'windowOpener' style functions in ModsService.
+ * Attaching data to the window object is the simplest way of passing it I've found
+ */
+const windowDataAsProps = (Component) => {
+    return () => {
+        const windowData = (window as any).data
+        if (!windowData) {
+            return <div>No data ready</div>
+        }
+        return <Component {...windowData} />
+    }
+}
+
 ReactDOM.render(
     <HashRouter>
         {/* <GlobalStyle /> */}
@@ -148,9 +162,9 @@ ReactDOM.render(
             <Route path="/search" component={SearchPanel} />
             <Route path="/value-entry" component={ValueEntryView} />
             <Route path="/numpad" component={NumpadWindow} />
-            <Route path="/message" component={Message} />
-            <Route path="/transport-nav-popup" component={TransportNavPopup} />
-            <Route path="/canvas" component={Canvas} />
+            <Route path="/message" component={windowDataAsProps(Message)} />
+            <Route path="/transport-nav-popup" component={windowDataAsProps(TransportNavPopup)} />
+            <Route path="/canvas" component={windowDataAsProps(Canvas)} />
             <Route path="/loading" component={() => {
                 const history = useHistory();
                 ;(window as any).loadURL = url => history.push(url)

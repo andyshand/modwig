@@ -22,6 +22,23 @@ const colors = require('colors');
 let nextId = 0
 let modsLoading = false
 
+export function showMessage(msg, { timeout } = { timeout: 5000 }) {
+    openCanvasWindow(`/canvas`, {
+        data: {
+            notifications: [
+                {
+                    content: msg,
+                    id: nextId++,
+                    timeout: new Date().getTime() + timeout,
+                    date: new Date().getTime()
+                }   
+            ]
+        },
+        width: 2560,
+        height: 1440
+    })
+}
+
 /**
 * Opens a floating window for a short amount of time, fading out afterwards. Meant for brief display of contextual information
 */
@@ -112,8 +129,7 @@ function makeWindowOpener() {
 }
 
 const openFloatingWindow = makeWindowOpener()
-const openMessageWindow = makeWindowOpener()
-// const openCanvasWindow = makeWindowOpener()
+const openCanvasWindow = makeWindowOpener()
 
 const { Keyboard, Mouse, MainWindow, Bitwig } = require('bindings')('bes')
 
@@ -209,17 +225,6 @@ export class ModsService extends BESService {
         }
     }
 
-    showMessage(msg) {
-        openMessageWindow(`/message`, {
-            data: {
-                msg
-            },
-            width: 528,
-            height: 100,
-            timeout: 700
-        })
-    }
-
     async makeApi(mod) {
         const db = await getDb()
         const projectTracks = db.getRepository(ProjectTrack)
@@ -294,6 +299,7 @@ export class ModsService extends BESService {
                 on: (eventName: string, cb: Function) => {
                     const wrappedCb = (...args) => {
                         try {
+                            this.logForMod(mod.id, `Event ${colors.yellow(eventName)} received`)
                             cb(...args)
                         } catch (e) {
                             this.logForMod(mod.id, colors.red(e))
@@ -463,7 +469,7 @@ export class ModsService extends BESService {
                 runAction: action => {
                     return sendPacketToBitwigPromise({type: 'action', data: action})
                 },
-                showMessage: this.showMessage,
+                showMessage: showMessage,
                 intersectsPluginWindows: event => {
                     return intersectsPluginWindows({
                         ...event,
@@ -680,7 +686,7 @@ export class ModsService extends BESService {
 
     async activate() {
         interceptPacket('message', undefined, async ({ data: { msg } }) => {
-            this.showMessage(msg)
+            showMessage(msg)
         })
         interceptPacket('project', undefined, async ({ data: { name: projectName, hasActiveEngine, selectedTrack } }) => {
             const projectChanged = this.currProject !== projectName
@@ -705,6 +711,7 @@ export class ModsService extends BESService {
             this.cueMarkers = cueMarkers
         })
         interceptPacket('browser/state', undefined, ({ data: {isOpen} }) => {
+            this.log('received browser state packet: ' + isOpen)
             const previous = this.browserIsOpen
             this.browserIsOpen = isOpen
             this.events.browserOpen.emit(isOpen, previous)
@@ -775,14 +782,14 @@ export class ModsService extends BESService {
                 const value = JSON.parse(data.value)
                 // console.log(modData)
                 if (!modData.noReload) {
-                    this.showMessage(`Settings changed, restarting Modwig...`)
+                    showMessage(`Settings changed, restarting Modwig...`)
                     this.refreshMods()
                 } else {
                     this.log('Mod marked as `noReload`, not reloading')
                     const data = {
                         [modData.id!]: value.enabled
                     }
-                    this.showMessage(`${modData.name}: ${value.enabled ? 'Enabled' : 'Disabled'}`)
+                    showMessage(`${modData.name}: ${value.enabled ? 'Enabled' : 'Disabled'}`)
                     sendPacketToBitwig({type: 'settings/update', data })
 
                     // FIXME shortcuts service deregisters on settingUpdated event, so re-register all in a setTimeout
@@ -950,6 +957,7 @@ export class ModsService extends BESService {
                         } catch (e) {
                             mod.error = e
                             this.log(colors.red(e))   
+                            showMessage(`There was an error loading mod ${modId}: ${e}`)
                         }
                         this.activeModApiIds[api.id] = true
                     }
@@ -1028,7 +1036,7 @@ modsImpl(api)
         
         await this.refreshLocalMods()
         await this.refreshBitwigMods(localOnly)
-        this.showMessage(`Reloaded ${localOnly ? 'local' : 'all'} mods`)
+        showMessage(`Reloaded ${localOnly ? 'local' : 'all'} mods`)
 
         sendPacketToBrowser({
             type: 'event/mods-reloaded'

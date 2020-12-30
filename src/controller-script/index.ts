@@ -123,11 +123,10 @@ class PacketManager {
     activeConnection: any
     listenersByType: {[type: string]: ((packet: Packet) => void)[]} = {}
     constructor(deps: Deps) {
-        const { app, globalController } = deps
+        const { app, globalController, showMessage } = deps
         this.connection = connection
         log("Created remote connection on port: " + this.connection.getPort())
         this.connection.setClientConnectCallback(connection => {
-            host.showPopupNotification("Modwig Connected");
             log("Connected to Node");
             this.activeConnection = connection
             if (deps.globalController) {
@@ -135,7 +134,6 @@ class PacketManager {
             }
             this.activeConnection.setDisconnectCallback(() => {
                 log("Disconnected from Node");
-                host.showPopupNotification("Modwig Disconnected");
                 this.activeConnection = null
             })
             this.activeConnection.setReceiveCallback(data => {
@@ -223,7 +221,9 @@ type Deps = {
     app: any,
     arranger: any,
     transport: any,
-    deviceController: DeviceController
+    deviceController: DeviceController,
+    browserController: BrowserController,
+    showMessage: Function
 }
 
 class Controller {
@@ -999,7 +999,13 @@ function init() {
     let deps: Deps = {
         app,
         arranger,
-        transport
+        transport,
+        showMessage: msg => {
+            deps.packetManager.send({
+                type: 'message',
+                data: { msg }
+            })
+        }
     } as any
     deps.packetManager = new PacketManager(deps)
     deps.globalController = new GlobalController(deps)
@@ -1012,7 +1018,7 @@ function init() {
     
     new TrackSearchController(deps)    
     new BackForwardController(deps)    
-    new BrowserController(deps)    
+    deps.browserController = new BrowserController(deps)    
     new BugFixController(deps)    
     deps.deviceController = new DeviceController(deps)    
     new SettingsController(deps)    
@@ -1070,12 +1076,6 @@ function init() {
             findTrackByName: deps.globalController.findTrackByName.bind(deps.globalController),
             transport,
             ...deps,
-            showMessage: msg => {
-                deps.packetManager.send({
-                    type: 'message',
-                    data: { msg }
-                })
-            },
             setTimeout: setTimeout2,
             afterUpdates: (fn) => setTimeout2(fn, 25),
             onFlush,
