@@ -1,3 +1,6 @@
+import { logWithTime } from "./Log"
+const colors = require('colors');
+
 export class EventEmitter<T> {
     nextId = 0
     listenersById: {[id: number]: (...values: [T, ...any[]]) => void} = {}
@@ -22,14 +25,18 @@ export function makeEvent<T>() : EventEmitter<T> {
 
 const servicesByName: {[name: string]: BESService} = {}
 
-export abstract class BESService {
+export class BESService {
     constructor(public readonly name: string) {}
-
+    
     /**
      * Try not to run any long-running tasks in activate as this will slow down app startup and
      * make it unresponsive
      */
-    abstract async activate()
+    activate() : any {}
+
+    log(...args) {
+        logWithTime(colors.brightMagenta(`${this.constructor.name}:`), ...args)
+    }
 }
 
 /**

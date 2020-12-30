@@ -5,7 +5,6 @@ import { Setting } from "../db/entities/Setting"
 import { BrowserWindow } from "electron"
 import { url } from "../core/Url"
 import { SettingsService } from "../core/SettingsService"
-import { logWithTime } from "../core/Log"
 import { ModsService } from "../mods/ModsService"
 import { returnMouseAfter } from "../../connector/shared/EventUtils"
 const colors = require('colors')
@@ -104,7 +103,7 @@ export class ShortcutsService extends BESService {
     }
 
     async updateShortcutCache() {
-        logWithTime('Updating shortcut cache')
+        this.log('Updating shortcut cache')
         const db = await getDb()
         const settings = db.getRepository(Setting) 
         const results = await settings.find({where: {type: 'shortcut'}})
@@ -118,12 +117,12 @@ export class ShortcutsService extends BESService {
                 const code = this.makeShortcutValueCode(value)
                 // code is our ID, key is the action to run
                 const runner = (context) => {
-                    logWithTime('Running shortcut code: ' + code + ' with action key: ' + colors.yellow(key))
+                    this.log('Running shortcut code: ' + code + ' with action key: ' + colors.yellow(key))
                     try {
                         // console.log(`Action data is: `, this.actions[key])
                         this.actions[key].action(context)
                     } catch (e) {
-                        logWithTime(colors.red(e))
+                        this.log(colors.red(e))
                     }
                 }
                 this.shortcutCache[code] = (this.shortcutCache[code] || []).concat({
@@ -132,7 +131,7 @@ export class ShortcutsService extends BESService {
                 })
             }
         }        
-        // logWithTime(this.shortcutCache)
+        // this.log(this.shortcutCache)
     }
 
     actionsWithCategory(cat, actions) {
@@ -753,10 +752,11 @@ export class ShortcutsService extends BESService {
             type: 'shortcut',
             value
         })
-        logWithTime(`Registering action: ${colors.yellow(action.id)}`)
-        // logWithTime(action)
+        this.log(`Registering action: ${colors.yellow(action.id)}`)
+        // this.log(action)
         this.actions[action.id] = action
         if (!skipUpdate) {
+            this.log('Not skipping')
             await this.updateShortcutCache()
         }
     }
@@ -830,7 +830,7 @@ export class ShortcutsService extends BESService {
     maybeRunActionForState(state) {
         const code = this.makeShortcutValueCode(state)
         let ran = false
-        logWithTime(`State code is ${code}`)
+        this.log(`State code is ${code}`)
         if (code in this.shortcutCache) {
             for (const { runner, action } of this.shortcutCache[code]) {
                 runner({
@@ -869,7 +869,7 @@ export class ShortcutsService extends BESService {
         this.setupPacketListeners()
         this.settingsService.onSettingValueChange('uiScale', val => {
             this.uiScale = parseInt(val, 10) / 100
-            logWithTime(`Ui scale set to ${this.uiScale}`)
+            this.log(`Ui scale set to ${this.uiScale}`)
         })
 
         const getEventKeysArray = event => {
@@ -896,7 +896,7 @@ export class ShortcutsService extends BESService {
                 // FN defaults to true when using function keys (makes sense I guess?), but also Clear???
                 Fn = false
             }
-            // logWithTime(event, Bitwig.isActiveApplication())
+            // this.log(event, Bitwig.isActiveApplication())
             const noMods = !(Meta || Control || Alt)
 
             // Keep track of whether an action itself declares that we are entering a value (e.g entering automation)
@@ -915,7 +915,7 @@ export class ShortcutsService extends BESService {
 
                 let keys = getEventKeysArray(event)
                 const asJSON = JSON.stringify(keys)
-                logWithTime(asJSON)
+                this.log(asJSON)
 
                 let ranDouble = false
                 if (asJSON === lastKey && new Date().getTime() - lastKeyPressed.getTime() < 250) {
