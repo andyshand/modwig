@@ -86,7 +86,7 @@ const sets = [
             'pad',
             'chord',
             'choir',
-            'strings',
+            'string',
             'orchestra',
             'staccato',
             'kontakt',
@@ -164,37 +164,21 @@ cursorTrack.name().addValueObserver(name => {
 })
 
 tracks.forEach((t, i) => {
-    let trackLastActive = new Date(0)
     let trackName = t.name().get()
     t.name().addValueObserver(name => {
         trackName = name
     })
-    let calcDiff = () => new Date().getTime() - trackLastActive.getTime()
 
     t.addVuMeterObserver(128, -1, true, val => {
         if (!Mod.enabled || paused) {
             return
         }
         
-        // let setWhite = false
-        if (trackName === selectedTrackName) {
-            // Don't flash selected track and make it always clear if its selected
-            setColorIfNotAlready(t, colors.WHITE, trackName)
-        } else if (val > threshold) {
-            // If we have levels and wasn't active since 3 seconds, flash white
-            // if (calcDiff() > 3 * 1000) {
-            //     setColorIfNotAlready(t, colors.WHITE)
-            //     setWhite = true
-            // } else {
-                // Otherwise, set to default color (should trigger straight away next time this is run)
-                const defaultColor = getTrackDefaultColor(t)
-                setColorIfNotAlready(t, defaultColor, trackName)
-            // }
-            // trackLastActive = new Date()
+        if (trackName === selectedTrackName || val > threshold) {
+            const defaultColor = getTrackDefaultColor(t)
+            setColorIfNotAlready(t, defaultColor, trackName)
         } else {
-            // if (calcDiff() > 1 * 1000) {
-                setColorIfNotAlready(t, colors.BG_GREY, trackName)
-            // }
+            setColorIfNotAlready(t, colors.BG_GREY, trackName)
         }
     })
 })
