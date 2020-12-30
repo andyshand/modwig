@@ -17,9 +17,39 @@ struct UIPoint {
 };
 struct MWRect {
     int x, y, w, h;
+    Napi::Object toJSObject(Napi::Env env) {
+        Napi::Object obj = Napi::Object::New(env);
+        obj.Set(Napi::String::New(env, "x"), Napi::Number::New(env, x));
+        obj.Set(Napi::String::New(env, "y"), Napi::Number::New(env, y));
+        obj.Set(Napi::String::New(env, "w"), Napi::Number::New(env, w));
+        obj.Set(Napi::String::New(env, "h"), Napi::Number::New(env, h));
+        return obj;
+    }
+    static MWRect fromJSObject(Napi::Object obj, Napi::Env env) {
+        return MWRect{
+            obj.Get("x").As<Napi::Number>(),
+            obj.Get("y").As<Napi::Number>(),
+            obj.Get("w").As<Napi::Number>(),
+            obj.Get("h").As<Napi::Number>(),
+        };
+    }
 };
 struct MWColor {
     int r, g, b;
+    Napi::Object toJSObject(Napi::Env env) {
+        Napi::Object obj = Napi::Object::New(env);
+        obj.Set(Napi::String::New(env, "r"), Napi::Number::New(env, r));
+        obj.Set(Napi::String::New(env, "g"), Napi::Number::New(env, g));
+        obj.Set(Napi::String::New(env, "b"), Napi::Number::New(env, b));
+        return obj;
+    }
+    static MWRect fromJSObject(Napi::Object obj, Napi::Env env) {
+        return MWRect{
+            obj.Get("r").As<Napi::Number>(),
+            obj.Get("g").As<Napi::Number>(),
+            obj.Get("b").As<Napi::Number>()
+        };
+    }
 };
 struct ArrangerTrack {
     UIPoint point;
@@ -135,20 +165,38 @@ struct ImageDeets {
     }
 };
 
-class BitwigUI {
+class BitwigUI : public Napi::ObjectWrap<BitwigUI> {
     public:
     MWRect rect;
+    static Napi::FunctionReference constructor;
     std::string identifier = "Bitwig Window";
+    BitwigUI* parent;
     void processEvent(JSEvent* event) {}
     void setFrame(MWRect frame) {
         this->rect = frame;
     }
+    void ensureUpToDate() {
+        // We don't bother processing children that aren't requested, so only update
+        // children components as needed.
+        // 
+        // Store an id associated with the latest screenshot. When the ids match,
+        // The UI component can be considered up to date
+    }
+    Napi::Value getRect(const Napi::CallbackInfo &info) {
+        return rect.toJSObject(info.Env());
+    }
+    BitwigUI(const Napi::CallbackInfo &info) : Napi::ObjectWrap<BitwigUI>(info) {}
+    static Napi::Object Init(Napi::Env env, Napi::Object exports) {
+        Napi::Function func = DefineClass(env, "BESRect", {
+            InstanceAccessor<&BitwigUI::getRect>("rect")
+        });
+        BitwigUI::constructor = Napi::Persistent(func);
+        BitwigUI::constructor.SuppressDestruct();
+    }
 };
 
 class BitwigDeviceView : public BitwigUI {
-    BitwigDeviceView() {
-        this->identifier = "Bitwig Device View";
-    }  
+    std::string identifier = "Bitwig Device View";
 };
 
 /**
@@ -156,30 +204,18 @@ class BitwigDeviceView : public BitwigUI {
  * timeline and ruler
  */
 class BitwigArranger : public BitwigUI {
-    BitwigArranger() {
-        this->identifier = "Bitwig Arranger";
-    }  
 };
 
 class BitwigInspector : public BitwigUI {
-    BitwigInspector() {
-        this->identifier = "Bitwig Inspector";
-    } 
 };
 
 /**
  * The scrolling portion of the arranger view
  */
 class BitwigArrangerTimeline : public BitwigUI {
-    BitwigArrangerTimeline() {
-        this->identifier = "Bitwig Arranger Timeline";
-    } 
 };
 
 class BitwigTrackHeaderView : public BitwigUI {
-    BitwigTrackHeaderView() {
-        this->identifier = "Bitwig Track Header View";
-    } 
 };
 
 class BitwigWindow : public BitwigUI {
@@ -267,7 +303,7 @@ class BitwigWindow : public BitwigUI {
     // }
 };
 
-BitwigWindow* mainWindow = new BitwigWindow();
+// BitwigWindow* mainWindow = (BitwigWindow*)BitwigWindow::Unwrap(BitwigWindow::constructor.New({}));
 
 Napi::Value InitUI(Napi::Env env, Napi::Object exports) {
     Napi::Object obj = Napi::Object::New(env);
