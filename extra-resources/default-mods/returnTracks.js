@@ -18,3 +18,17 @@ Mod.registerAction({
         Mod.runAction('openDeviceBrowser')
     }
 })
+
+Mod.registerAction({
+    title: "Add new track (opening browser)",
+    id: "add-new-track",
+    category: "arranger",
+    description: `Adds a new track, opening browser straight away`,
+    defaultSetting: {
+        keys: ["Meta", "T"]
+    },
+    action: () => {
+        Bitwig.runAction([`clear_arm`, `Create Instrument Track`])
+        Mod.runAction('openDeviceBrowser')
+    }
+})
