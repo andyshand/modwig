@@ -56,8 +56,7 @@ const TransportWrap = styled.div`
     }
 `
 
-export const TransportNavPopup = () => {
-    const { cueMarkers, position } = window.data
+export const TransportNavPopup = ({ cueMarkers, position }) => {
     const range = [0, (cueMarkers.slice(-1)[0]?.position ?? position) + (4 * 8)]
     const rangeAmount = range[1] - range[0]
     const isActiveMarker = (marker, i, arr) => {

@@ -14,6 +14,7 @@ export class EventEmitter<T> {
     }
     emit(...values: [T, ...any[]]) {
         for (const listener of Object.values(this.listenersById)) {
+            // logWithTime('Emitting to listener' + listener.toString())
             listener(...values)
         }
     }

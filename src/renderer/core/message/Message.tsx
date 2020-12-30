@@ -17,7 +17,6 @@ const MsgWrap = styled.div`
     color: white;
 `
 
-export const Message = () => {
-    const { msg } = window.data
+export const Message = ({ msg }) => {
     return <MsgWrap>{ msg }</MsgWrap>
 }
