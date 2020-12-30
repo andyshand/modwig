@@ -64,7 +64,7 @@ export const TransportNavPopup = () => {
         const next = arr[i + 1]
         return position >= marker.position && (!next || position < next.position)
     }
-    const activeMarker = cueMarkers.find(isActiveMarker)
+    const activeMarker = cueMarkers.find(isActiveMarker) || {position: 0, name: 'Start Placeholder', color: '#444'}
     const coverUpToX = activeMarker.position / rangeAmount
 
     console.log(cueMarkers, position)
