@@ -36,6 +36,8 @@ function makeWindowOpener() {
        }
    
        const debug = false
+       logWithTime(`Opening floating window with path: ${path} and options: `, options)
+       logWithTime(`Floating window info: `, floatingWindowInfo)
        if (!floatingWindowInfo || path !== floatingWindowInfo.path) {
            floatingWindowInfo?.window.close()
            floatingWindowInfo = {
@@ -68,9 +70,19 @@ function makeWindowOpener() {
    
        if (options.data) {
            floatingWindowInfo!.window.webContents.executeJavaScript(`
-               window.data = ${JSON.stringify(options.data)};
-               window.loadURL(\`${path}\`)
+                window.tryLoadURL = (tries = 0) => {
+                   window.data = ${JSON.stringify(options.data)}
+                   if (window.loadURL) {
+                       window.loadURL(\`${path}\`)
+                   } else if (tries < 10) {
+                       setTimeout(() => tryLoadURL(tries + 1), 100)
+                   } else {
+                       console.error(\`Couldn't find loadURL on window, something went wrong\`)
+                   }
+               }
+               tryLoadURL()
            `).then(() => {
+               logWithTime('Showing window')
                floatingWindowInfo!.window.setOpacity(1)
                floatingWindowInfo!.window.showInactive()
    
@@ -91,6 +103,8 @@ function makeWindowOpener() {
                     doFadeOut(1)
                 }, options.timeout)
                 }
+           }).catch(e => {
+               logWithTime(colors.red(e))
            })
        }
    }
