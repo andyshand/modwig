@@ -77,8 +77,8 @@ export class TrayService extends BESService {
                 } },
               ]),
               ...(modItems.length ? [
-                 ...modItems,
-                { type: 'separator' },
+                  { type: 'separator' },
+                  ...modItems
               ] : []) as any,
             { type: 'separator' },
               { label: 'Preferences...', click: () => openWindow({type: 'settings'}) },
@@ -152,5 +152,6 @@ export class TrayService extends BESService {
             Bitwig.isAccessibilityEnabled(true)
         })
         this.settingsService.events.settingsUpdated.listen(() => updateMenu())
+        this.modsService.events.modsReloaded.listen(() => updateMenu())
     }
 }
