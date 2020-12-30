@@ -20,6 +20,7 @@ const chokidar = require('chokidar')
 const colors = require('colors');
 
 let nextId = 0
+let modsLoading = false
 
 /**
 * Opens a floating window for a short amount of time, fading out afterwards. Meant for brief display of contextual information
@@ -154,6 +155,7 @@ export class ModsService extends BESService {
         selectedTrackChanged: makeEvent<any>(),
         browserOpen: makeEvent<boolean>(),
         projectChanged: makeEvent<number>(),
+        modsReloaded: makeEvent<void>(),
         activeEngineProjectChanged: makeEvent<string>()
     }
 
@@ -383,7 +385,7 @@ export class ModsService extends BESService {
                             event.bitwigY = bwPos.y
                         } catch (e) {
                             // Bitwig may not be open
-                            logWithTime(colors.red(e))
+                            this.log(colors.red(e))
                         }
 
                         cb(event, ...rest)
@@ -579,14 +581,14 @@ export class ModsService extends BESService {
                                 this.logForMod(mod.id, colors.red(e))
                             }
                         }
-                    })
+                    }, modsLoading)
                 },
                 setInterval: (fn, ms) => {
                     const id = setInterval(fn, ms)
-                    logWithTime('Added interval id: ' + id)
+                    this.log('Added interval id: ' + id)
                     this.onReloadMods.push(() => {
                         clearInterval(id)
-                        logWithTime('Clearing interval id: ' + id)
+                        this.log('Clearing interval id: ' + id)
                     })
                     return id
                 },
@@ -740,26 +742,26 @@ export class ModsService extends BESService {
         })
 
         const refreshFolderWatcher = async () => {
-            logWithTime('Refreshing folder watcher')
+            this.log('Refreshing folder watcher')
             if (this.folderWatcher) {
                 this.folderWatcher.close()
                 this.folderWatcher = null
             }
             const folderPaths = await this.getModsFolderPaths()
-            logWithTime('Watching ' + folderPaths)
+            this.log('Watching ' + folderPaths)
             this.folderWatcher = chokidar.watch(folderPaths, {
                 ignoreInitial : true
             }).on('all', (event, path) => {
-                logWithTime(event, path)
+                this.log(event, path)
                 this.refreshMods(path.indexOf('bitwig.js') === -1)
             });
             if (process.env.NODE_ENV === 'dev' && !this.controllerScriptFolderWatcher) {
                 const mainScript = getResourcePath('/controller-script/bes.control.js')
-                logWithTime('Watching ' + mainScript)
+                this.log('Watching ' + mainScript)
                 this.controllerScriptFolderWatcher = chokidar.watch([mainScript], {
                     ignoreInitial : true
                 }).on('all', (event, path) => {
-                    logWithTime(event, path)
+                    this.log(event, path)
                     this.refreshMods()
                 });
             }
@@ -776,7 +778,7 @@ export class ModsService extends BESService {
                     this.showMessage(`Settings changed, restarting Modwig...`)
                     this.refreshMods()
                 } else {
-                    logWithTime('Mod marked as `noReload`, not reloading')
+                    this.log('Mod marked as `noReload`, not reloading')
                     const data = {
                         [modData.id!]: value.enabled
                     }
@@ -830,7 +832,7 @@ export class ModsService extends BESService {
         try {
             await fs.access(userLibPath!)
         } catch (e) {
-            return logWithTime("Not copying controller script until user library path set")
+            return this.log("Not copying controller script until user library path set")
         }
         
         try {
@@ -892,7 +894,7 @@ export class ModsService extends BESService {
                         valid: id !== undefined
                     }
                 } catch (e) {
-                    logWithTime(colors.red(`Error with ${filePath}`, e))
+                    this.log(colors.red(`Error with ${filePath}`, e))
                 }
             }
         }
@@ -924,11 +926,12 @@ export class ModsService extends BESService {
     async refreshLocalMods() {
         const modsFolders = await this.getModsFolderPaths()
         this.activeModApiIds = {}
+        modsLoading = true
 
         try {
             const modsById = await this.gatherModsFromPaths(modsFolders, { type: 'local'})
 
-            ;(async () => {
+            // await ;(async () => {
                 for (const modId in modsById) {
                     const mod = modsById[modId]
                     this.initModAndStoreInMap(mod)
@@ -937,24 +940,27 @@ export class ModsService extends BESService {
                         const api = await this.makeApi(mod)
                         // Populate function scope with api objects
                         try { 
-                            logWithTime('Enabling local mod: ' + modId)
+                            this.log('Enabling local mod: ' + modId)
                             let setVars = ''
                             for (const key in api) {
                                 setVars += `const ${key} = api["${key}"]\n`
                             }
                             eval(setVars + mod.contents)
-                            logWithTime('Enabled local mod: ' + colors.green(modId))
+                            this.log('Enabled local mod: ' + colors.green(modId))
                         } catch (e) {
                             mod.error = e
-                            logWithTime(colors.red(e))   
+                            this.log(colors.red(e))   
                         }
                         this.activeModApiIds[api.id] = true
                     }
                 }
-            })()
+            // })()
         } catch (e) {
             console.error(e)
         }
+
+        modsLoading = false
+        this.shortcutsService.updateShortcutCache()
     }
 
     async refreshBitwigMods(noWriteFile: boolean) {
@@ -979,7 +985,7 @@ function modsImpl(api) {
             this.initModAndStoreInMap(mod)
             const isEnabled = await this.isModEnabled(mod)
             if (isEnabled || mod.noReload) {
-                logWithTime('Enabled Bitwig Mod: ' + colors.green(modId))
+                this.log('Enabled Bitwig Mod: ' + colors.green(modId))
                 defaultControllerScriptSettings[modId] = isEnabled
                 controllerScript += `
 // ${mod.path}
@@ -1007,7 +1013,7 @@ modsImpl(api)
     }
 
     async refreshMods(localOnly = false) {
-        logWithTime('Refreshing mods')
+        this.log('Refreshing mods')
         
         // Handlers to disconnect any dangling callbacks etc
         for (const func of this.onReloadMods) {
@@ -1027,5 +1033,6 @@ modsImpl(api)
         sendPacketToBrowser({
             type: 'event/mods-reloaded'
         })
+        this.events.modsReloaded.emit()
     }
 }

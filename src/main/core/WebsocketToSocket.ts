@@ -102,14 +102,14 @@ export class SocketMiddlemanService extends BESService {
     }
 
     activate() {
-        logWithTime("Activating Socket...")
+        this.log("Activating Socket...")
         const wss = new WebSocket.Server({ port: WEBSOCKET_PORT });
         const connectBitwig = () => {
-            logWithTime('Connecting to Bitwig...');
+            this.log('Connecting to Bitwig...');
             try {
                 bitwigClient = new net.Socket();
                 bitwigClient.connect(SOCKET_PORT, '127.0.0.1', () => {
-                    logWithTime('Connected to Bitwig');
+                    this.log('Connected to Bitwig');
                     this.events.connected.emit(true)
                     this.bitwigConnected = true;
                 });
@@ -118,7 +118,7 @@ export class SocketMiddlemanService extends BESService {
                     console.error(err)
                 })
                 bitwigClient.on('close', () => {
-                    logWithTime('Connection to Bitwig closed, reconnecting...');
+                    this.log('Connection to Bitwig closed, reconnecting...');
                     this.bitwigConnected = false;
                     bitwigClient = null
                     this.events.connected.emit(false)
@@ -143,14 +143,14 @@ export class SocketMiddlemanService extends BESService {
                 id,
                 send: (obj) => {
                     const toSend = JSON.stringify(obj)
-                    logWithTime(`Sending to specific websocket (${id}): `, toSend)
+                    this.log(`Sending to specific websocket (${id}): `, toSend)
                     ws.send(toSend)
                 }
             }
             activeWebsockets.push(socketData);
-            logWithTime(`Browser connected (${id})`);
+            this.log(`Browser connected (${id})`);
             ws.on('message', async messageFromBrowser => {
-                if (logInOut) logWithTime('Browser sent: ', messageFromBrowser);
+                if (logInOut) this.log('Browser sent: ', messageFromBrowser);
                 try {
                     const { parsedBefore } = await processInterceptors(messageFromBrowser, toBWInterceptors, socketData)
                     if (parsedBefore.type.split('/')[0] === 'api') {
@@ -163,7 +163,7 @@ export class SocketMiddlemanService extends BESService {
                 } 
             });
             ws.on('close', () => {
-                logWithTime(`Connection to browser lost (${id})`);
+                this.log(`Connection to browser lost (${id})`);
                 activeWebsockets = activeWebsockets.filter((info) => info.id !== id);
             });
         });
@@ -251,7 +251,6 @@ export function addAPIMethod<T>(typePath: string, handler: (packet: any) => Prom
 }
 
 interceptPacket('api/status', ({id}) => {
-    logWithTime('intercepting')
     sendPacketToBrowser({
         type: 'api/status',
         data: {
