@@ -45,7 +45,7 @@ function waitForContextUpdateThen(cb){
 }
 
 const getDeviceTitleName = device => {
-    return device.presetName().get() || device.name().get()
+    return device.presetName().get() === 'init' ? device.name().get() : device.presetName().get()
 }
 
 /**
@@ -71,11 +71,21 @@ function waitForChange(getter, cb){
 }
 
 function callCb(cb, pathInfo) {
-    maybeLog('Calling device cb ' + ourCursorDevice.name().get())
-    const parents = (pathInfo.parents.length > 0 ? (pathInfo.parents.join(' / ') + ' / ') : '')
+    const trackRelativePath =  pathInfo.parents.join(' / ')
+    // maybeLog('Calling device cb: ' + trackRelativePath)
     return cb(ourCursorDevice, {
-        trackRelativePath: parents + getDeviceTitleName(ourCursorDevice)
+        trackRelativePath
     })
+}
+
+function pop(type, pathInfo) {
+    const popped = pathInfo.parents.pop()
+    log((pathInfo.parents.join(' / ') + ' (- ' + type + ': ' + popped + ')').trim())
+}
+
+function push(item, type, pathInfo) {
+    pathInfo.parents.push(item)
+    log((pathInfo.parents.join(' / ') + ' (+ ' + type + ': ' + item + ')').trim())
 }
 
 /**
@@ -96,10 +106,11 @@ function iterateSelectedDeviceSlots(deviceCb, onComplete, pathInfo) {
         }
         
         cursorSlot.selectSlot(slot)
-        pathInfo.parents.push(slot)
-        maybeLog('Selecting slot: ' + i + ' (' + slot + ')')
+        push(slot, 'slot', pathInfo)
+        // maybeLog('Selecting slot: ' + i + ' (' + slot + ')')
 
         function nextSlotOrComplete(finished = true) {
+            pop('slot', pathInfo)
             if (!finished) {
                 // Stop! We cancelled
                 return // onComplete(finished) FIX ME
@@ -107,10 +118,9 @@ function iterateSelectedDeviceSlots(deviceCb, onComplete, pathInfo) {
             if (i < slotNames.length - 1) {
                 iterateSlotName(i + 1)
             } else {
-                maybeLog(`End of slots`)
-                pathInfo.parents.pop()
+                // maybeLog(`End of slots`)
                 if (wentDown) {
-                    maybeLog(`Navigating up`)
+                    // maybeLog(`Navigating up`)
                     // Only go up if we actually went down
                     ourCursorDevice.selectParent()
                     waitForContextUpdateThen(() => {
@@ -149,8 +159,8 @@ function iterateSelectedDeviceLayers(deviceCb, onComplete, pathInfo) {
     let wentDown = false
     function iterateNextLayer() {
 
-        maybeLog('Processing layer: ' + cursorLayer.name().get())
-        pathInfo.parents.push(cursorLayer.name().get())
+        // maybeLog('Processing layer: ' + cursorLayer.name().get())
+        push(cursorLayer.name().get(), 'layer', pathInfo)
 
         function nextLayerOrComplete(finished = true) {
             if (!finished) {
@@ -164,7 +174,7 @@ function iterateSelectedDeviceLayers(deviceCb, onComplete, pathInfo) {
                     iterateNextLayer()
                 })
             } else {
-                pathInfo.parents.pop()
+                pop('layer', pathInfo)
                 if (wentDown) {
                     ourCursorDevice.selectParent()
                     waitForContextUpdateThen(() => {
@@ -201,6 +211,8 @@ function iterateSelectedDeviceLayers(deviceCb, onComplete, pathInfo) {
  */
 function doIterateDevices(deviceCb, onComplete = () => {}, pathInfo = {parents: [], trackRelativePath: ''}) {
     // modLog('Iterating devices')
+    const deviceName = getDeviceTitleName(ourCursorDevice)
+    push(deviceName, 'device', pathInfo)
     const result = callCb(deviceCb, pathInfo)
     if (result === false) {
         return onComplete(false)
@@ -210,36 +222,36 @@ function doIterateDevices(deviceCb, onComplete = () => {}, pathInfo = {parents: 
     function iterateSlots(onComplete) {
         // modLog('Iterating slots')
         if (ourCursorDevice.hasSlots().get()) {
-            maybeLog('Has slots')
+            // maybeLog('Has slots')
             iterateSelectedDeviceSlots(deviceCb, onComplete, pathInfo)
         } else {
-            maybeLog('No slots')
+            // maybeLog('No slots')
             onComplete()
         }
     }
     function iterateLayers(onComplete) {
         // modLog('Iterating layers')
         if (ourCursorDevice.hasLayers().get()) {
-            maybeLog('Has layers')
+            // maybeLog('Has layers')
             iterateSelectedDeviceLayers(deviceCb, onComplete, pathInfo)
         } else {
-            maybeLog('No layers')
+            // maybeLog('No layers')
             onComplete()
         }
     }
 
-    pathInfo.parents.push(getDeviceTitleName(ourCursorDevice))
     iterateSlots(() => {
         iterateLayers(() => {
-            pathInfo.parents.pop()
+            log('Finished iterating slots/layers for ' + deviceName)
+            pop('device', pathInfo)
             if (ourCursorDevice.hasNext().get()) {
-                maybeLog('Device has next')
+                // maybeLog('Device has next')
                 ourCursorDevice.selectNext() 
                 waitForChange(() => ourCursorDevice.position().get(), () => {
                     doIterateDevices(deviceCb, onComplete, pathInfo)
                 })
             } else {
-                maybeLog('Device does not have next')
+                // maybeLog('Device does not have next')
                 onComplete()
             }            
         })
