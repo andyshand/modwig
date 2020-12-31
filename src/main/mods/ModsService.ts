@@ -576,6 +576,11 @@ export class ModsService extends BESService {
                 runAction: (actionId, ...args) => {
                     return this.shortcutsService.runAction(actionId, ...args)
                 },
+                runActions: (...actionIds: string[]) => {
+                    for (const action of actionIds) {
+                        api.Mod.runAction(action)
+                    }
+                },
                 registerAction: (action) => {
                     action.category = action.category || mod.category
                     this.shortcutsService.registerAction({
@@ -589,6 +594,28 @@ export class ModsService extends BESService {
                             }
                         }
                     }, modsLoading)
+                },
+                _registerShortcut: (keys: string[], runner: Function) => {
+                    this.shortcutsService.registerAction({
+                        id: mod.id + '/' + keys.join('+'),
+                        mod: mod.id,
+                        defaultSetting: {
+                            keys
+                        },
+                        isTemp: true,
+                        action: async (...args) => {
+                            try {
+                                await (async () => runner(...args))()
+                            } catch (e) {
+                                this.logForMod(mod.id, colors.red(e))
+                            }
+                        }
+                    }, modsLoading)
+                },
+                registerShortcutMap: (shortcutMap) => {
+                    for (const keys in shortcutMap) {
+                        api.Mod._registerShortcut(keys.split(' '), shortcutMap[keys])
+                    }
                 },
                 setInterval: (fn, ms) => {
                     const id = setInterval(fn, ms)
