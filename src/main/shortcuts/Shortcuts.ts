@@ -19,7 +19,17 @@ const MODS_MESSAGE = `Modulators are currently inaccessible from the controller 
 const MODS_MESSAGE_2 = `Modulators are currently inaccessible from the controller API.`
 const PROXY_MESSAGE = key => `Proxy key for the "${key}" key for convenient remapping.`
 
-interface ActionSpec {
+export interface TempActionSpec {
+    defaultSetting: {
+        keys: String[],
+        doubleTap?: boolean
+    },
+    isTemp: true
+    id: string
+    title?: string
+    action: Function
+}
+export interface ActionSpec {
     title: string
     id: string
     category: string
@@ -38,17 +48,19 @@ interface ActionSpec {
     }
     mod?: string
 }   
+type AnyActionSpec = ActionSpec | TempActionSpec
 
 export class ShortcutsService extends BESService {
     browserIsOpen
     browserText = ''
     actions = this.getActions()
-    shortcutCache: {[key: string]: {runner: Function, action?: ActionSpec}[]} = {}
+    tempActions: {[id: string]: TempActionSpec} = {}
+    shortcutCache: {[key: string]: {runner: Function, action?: AnyActionSpec}[]} = {}
     settingsService = getService<SettingsService>('SettingsService')
     searchWindow: BrowserWindow
     extraShortcuts: any[]
     events = {
-        actionTriggered: makeEvent<ActionSpec>(),
+        actionTriggered: makeEvent<AnyActionSpec>(),
     }
     uiScale: number = 1 // Cached from setting
 
@@ -130,6 +142,24 @@ export class ShortcutsService extends BESService {
                     action: this.actions[key]
                 })
             }
+        }        
+
+        for (const tempActionId in this.tempActions) {
+            const action = this.tempActions[tempActionId]
+            const code = this.makeShortcutValueCode(action.defaultSetting)
+            const runner = (context) => {
+                this.log('Running temp shortcut code: ' + code + ' with action id: ' + colors.yellow(tempActionId))
+                try {
+                    // console.log(`Action data is: `, this.actions[key])
+                    action.action(context)
+                } catch (e) {
+                    this.log(colors.red(e))
+                }
+            }
+            this.shortcutCache[code] = (this.shortcutCache[code] || []).concat({
+                runner,
+                action
+            })
         }        
         // this.log(this.shortcutCache)
     }
@@ -736,11 +766,22 @@ export class ShortcutsService extends BESService {
     async runAction(id, ...args) {
         const action = this.actions[id]
         if (action) {
+            this.log('Running action: ' + id)
             return action.action(...args)
         }
     }
 
-    async registerAction(action: ActionSpec, skipUpdate = false) {
+    async registerAction(action: ActionSpec | TempActionSpec, skipUpdate = false) {
+        if ('isTemp' in action) {
+            this.log(`Registering temporary action: ${colors.magenta(action.id)}`)
+            this.tempActions[action.id] = action
+            if (!skipUpdate) {
+                this.log('Not skipping')
+                await this.updateShortcutCache()
+            }
+            return
+        }
+
         const value = action.defaultSetting || {keys: []}
         if (process.env.NODE_ENV !== 'dev') {
             delete value.keys
