@@ -11,7 +11,11 @@ globalController.mapCueMarkers((marker, i) => {
 })
 
 packetManager.listen('transport/nudge', (packet) => {
-    const newPosition = Math.round(transport.playStartPosition().get() + packet.data)
+    let newPosition = Math.round(transport.playStartPosition().get() + packet.data)
+    if (Math.abs(packet.data) === 4) {
+        // Round to nearest bar
+        newPosition = Math.round(newPosition / 4) * 4
+    }
     const positionToString = pos => {
         return (Math.floor(pos / 4) + 1) + '.' + ((pos % 4) + 1)
     }
