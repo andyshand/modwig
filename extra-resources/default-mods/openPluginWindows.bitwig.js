@@ -6,6 +6,7 @@
  */
 
 const deviceBank = deviceController.cursorTrack.createDeviceBank(1)
+deviceController.cursorTrack.isGroup().markInterested()
 const maybeLog = (msg) => {
     log(msg)
 }
@@ -326,7 +327,15 @@ packetManager.listen('open-plugin-windows/toggle-bypass', (packet) => {
         // Reuse same cursor device from last search
         return withCursorDevice(ourCursorDevice)
     }
-    const skipAfter = deviceController.cursorTrack.name().get() + ' / '
+    const trackNameSkip = () => {
+        let trackName = deviceController.cursorTrack.name().get()
+        if (deviceController.cursorTrack.isGroup().get()) {
+            // Group tracks devices are on an inner track (?) with "Master appended". Plugin windows will have this name
+            return trackName + ' / ' + trackName + ' Master / '
+        }
+        return trackName + ' / '
+    }
+    const skipAfter = trackNameSkip()
     const pathWithoutTrack = devicePath.substr(devicePath.indexOf(skipAfter) + skipAfter.length)
     let found = false
     iterateDevices((d, {trackRelativePath}) => {
