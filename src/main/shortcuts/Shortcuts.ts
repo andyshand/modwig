@@ -568,6 +568,7 @@ export class ShortcutsService extends BESService {
                     description: `Confirms the current choice in the popup browser. If there is a search query and no selected item, the first result will be confirmed.`,
                     action: () => {
                         if (this.browserIsOpen) {
+                            this.log(`Browser text is: ${this.browserText}`)
                             sendPacketToBitwig({
                                 type: this.browserText.length > 0 ? 'browser/select-and-confirm' : 'browser/confirm'
                             })
@@ -817,6 +818,7 @@ export class ShortcutsService extends BESService {
             this.browserIsOpen = isOpen
             if (isOpen) {
                 this.browserText = ''
+                this.log('Resetting browser text')
             }
         })
         addAPIMethod('api/shortcuts/category', async ({ category } = {}) => {
@@ -949,7 +951,7 @@ export class ShortcutsService extends BESService {
             }
 
             if (Bitwig.isActiveApplication() && !this.enteringValue) {
-                if (this.browserIsOpen && /[a-z]{1}/.test(lowerKey) && noMods) {
+                if (this.browserIsOpen && /^[a-z0-9]{1}$/.test(lowerKey) && noMods) {
                     // Typing in browser
                     this.browserText += lowerKey
                 }
