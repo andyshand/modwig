@@ -9,7 +9,7 @@ let textSoFar = ''
 let cursor = 0
 let selectAll = false
 
-Bitwig.on('browserOpen', (isOpen, prev) => {
+Bitwig.on('browserOpen', ({isOpen}, prev) => {
     if (!prev && isOpen)  {
         textSoFar = ''
         cursor = 0

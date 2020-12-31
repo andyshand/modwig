@@ -812,14 +812,18 @@ class BrowserController extends Controller {
                 col.reset()
             }
         }
+        pb.title().markInterested()
         pb.exists().markInterested()
         pb.exists().addValueObserver(exists => {
-            log('Browser open: ' + exists)
+            const title = pb.title().get() || ''
+            log('Browser open (' + title + ') exists:' + exists)
             this.isOpen = exists
+
             packetManager.send({
                 type: "browser/state", 
                 data: {
-                    isOpen: exists
+                    isOpen: exists,
+                    title
                 }
             })
         })

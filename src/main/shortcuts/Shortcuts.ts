@@ -6,14 +6,13 @@ import { BrowserWindow } from "electron"
 import { url } from "../core/Url"
 import { SettingsService } from "../core/SettingsService"
 import { ModsService } from "../mods/ModsService"
-import { returnMouseAfter } from "../../connector/shared/EventUtils"
+import { returnMouseAfter, whenActiveListener } from "../../connector/shared/EventUtils"
 const colors = require('colors')
 
 const { Keyboard, Mouse, MainWindow, Bitwig } = require('bindings')('bes')
 
 let lastKeyPressed = new Date()
 let lastKey = ''
-let enteringValue = false
 
 const MODS_MESSAGE = `Modulators are currently inaccessible from the controller API. This shortcut is also limited to a single device at any time.`
 const MODS_MESSAGE_2 = `Modulators are currently inaccessible from the controller API.`
@@ -52,6 +51,7 @@ type AnyActionSpec = ActionSpec | TempActionSpec
 
 export class ShortcutsService extends BESService {
     browserIsOpen
+    enteringValue = false
     browserText = ''
     actions = this.getActions()
     tempActions: {[id: string]: TempActionSpec} = {}
@@ -374,7 +374,7 @@ export class ShortcutsService extends BESService {
                         keys: ['D']
                     },
                     action: () => {
-                        if (!this.browserIsOpen && !enteringValue) {
+                        if (!this.browserIsOpen && !this.enteringValue) {
                             sendPacketToBitwig({
                                 type: 'action',
                                 data: [
@@ -673,7 +673,7 @@ export class ShortcutsService extends BESService {
                     },
                     description: 'Focuses the automation value field in the inspector for quickly setting value of selected automation.',
                     action: () => {
-                        if (!this.browserIsOpen && !enteringValue) {
+                        if (!this.browserIsOpen && !this.enteringValue) {
                             this.runAction('focusArranger')
                             returnMouseAfter(() => {
                                 Mouse.click(0, this.bwToScreen({
@@ -682,7 +682,7 @@ export class ShortcutsService extends BESService {
                                     Meta: true
                                 }))
                             })
-                            enteringValue = true
+                            this.enteringValue = true
                         }
                     }
                 },
@@ -692,7 +692,7 @@ export class ShortcutsService extends BESService {
                     },
                     description: 'Focuses the automation position field in the inspector for quickly setting position of selected automation.',
                     action: () => {
-                        if (!this.browserIsOpen && !enteringValue) {
+                        if (!this.browserIsOpen && !this.enteringValue) {
                             this.runAction('focusArranger')
                             returnMouseAfter(() => {
                                 Mouse.click(0, this.bwToScreen({
@@ -701,7 +701,7 @@ export class ShortcutsService extends BESService {
                                     Meta: true
                                 }))
                             })
-                            enteringValue = true
+                            this.enteringValue = true
                         }
                     }
                 },
@@ -877,7 +877,7 @@ export class ShortcutsService extends BESService {
                 runner({
                     keyState: state,
                     setEnteringValue: (yesOrNo) => {
-                        enteringValue = yesOrNo
+                        this.enteringValue = yesOrNo
                     }
                 })
                 
@@ -941,14 +941,14 @@ export class ShortcutsService extends BESService {
             const noMods = !(Meta || Control || Alt)
 
             // Keep track of whether an action itself declares that we are entering a value (e.g entering automation)
-            let enteringBefore = enteringValue
+            let enteringBefore = this.enteringValue
 
-            if (enteringValue && (Meta || Control || Alt)) {
+            if (this.enteringValue && (Meta || Control || Alt)) {
                 // Assume a shortcut must have been pressed, must no longer be entering value?
-                enteringValue = false
+                this.enteringValue = false
             }
 
-            if (Bitwig.isActiveApplication() && !enteringValue) {
+            if (Bitwig.isActiveApplication() && !this.enteringValue) {
                 if (this.browserIsOpen && /[a-z]{1}/.test(lowerKey) && noMods) {
                     // Typing in browser
                     this.browserText += lowerKey
@@ -986,9 +986,9 @@ export class ShortcutsService extends BESService {
 
             // Prevent shortcuts from triggering when renaming something
             if (Bitwig.isActiveApplication() && lowerKey === 'r' && Meta && !Shift && !Alt) {
-                enteringValue = true
-            } else if ((enteringBefore === enteringValue) && (lowerKey === 'Enter' || lowerKey === 'Escape' || lowerKey === "NumpadEnter")) {
-                enteringValue = false
+                this.enteringValue = true
+            } else if ((enteringBefore === this.enteringValue) && (lowerKey === 'Enter' || lowerKey === 'Escape' || lowerKey === "NumpadEnter")) {
+                this.enteringValue = false
             }
         })
     }
