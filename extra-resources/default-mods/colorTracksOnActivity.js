@@ -56,6 +56,7 @@ Mouse.on('mouseup', async e => {
             type: 'color-tracks-on-activity/threshold',
             data: 10
         })
+        unpause()
     }
 })
 
@@ -72,5 +73,6 @@ Mod.registerAction({
             type: 'color-tracks-on-activity/threshold',
             data: -10
         })
+        unpause()
     }
 })

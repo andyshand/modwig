@@ -71,11 +71,12 @@ function playWithEvent(event) {
             // Pass modifiers 
             Bitwig.doubleClick(0, {...event, ...timelineClickPosition})
         } else {
+            const pluginPositions = Bitwig.getPluginWindowsPosition()
             Mod.runAction(`move-plugin-windows-offscreen`, { forceState: 'bottomright' })
             setTimeout(() => {
                 Bitwig.doubleClick(0, {...event, ...timelineClickPosition})
                 Mouse.setPosition(mousePosBefore.x, mousePosBefore.y)
-                Mod.runAction(`move-plugin-windows-offscreen`, { forceState: 'topright' })
+                Bitwig.setPluginWindowsPosition(pluginPositions)
             }, 100)
         }
         Keyboard.keyUp('1')
@@ -86,7 +87,7 @@ function playWithEvent(event) {
 }
 
 Mouse.on('mousedown', event => {
-    playButtonDown = Bitwig.isActiveApplication() && !Bitwig.isBrowserOpen && event.button === clickButton
+    playButtonDown = Bitwig.isActiveApplication() && event.button === clickButton
     if (playButtonDown && clickButton !== 1) {
         // If click button isn't middle click, we can trigger play straight away as these buttons have no extra function in Bitwig
         return playWithEvent(event)

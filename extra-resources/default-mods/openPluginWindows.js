@@ -17,6 +17,52 @@ Mod.registerAction({
     }
 })
 
+const getFocusedPluginWindow = () => {
+    const pluginWindows = Bitwig.getPluginWindowsPosition()
+    return Object.values(pluginWindows).find(w => w.focused)
+}
+const toggleBypassFocusedPluginWindow = async () => {
+    const focused = getFocusedPluginWindow()
+    if (!focused) {
+        return Bitwig.showMessage('No focused plugin window')
+    }
+    Bitwig.sendPacket({
+        type: 'open-plugin-windows/toggle-bypass',
+        data: {
+            devicePath: focused.id
+        }
+    })
+}
+
+Mod.registerAction({
+    title: "Toggle Bypass Focused Plugin Window",
+    id: "toggle-bypass-focused-plugin-window",
+    description: `Finds the focused plugin window in the device change and toggles its bypassed state.`,
+    defaultSetting: {
+        keys: ["0"]
+    },
+    action: toggleBypassFocusedPluginWindow
+})
+
+Mouse.on('mouseup', event => {
+    if (event.button === 3) { 
+        const intersection = event.intersectsPluginWindows()
+        if (intersection) {
+            if (!intersection.focused) {
+                const position = {
+                    x: intersection.x + intersection.w - 10,
+                    y: intersection.y + 5
+                }
+                Mouse.click(0, position)
+                Mouse.setPosition(event.x, event.y)
+                toggleBypassFocusedPluginWindow()
+            } else {
+                toggleBypassFocusedPluginWindow()
+            }
+        }
+    }
+})
+
 async function restoreOpenedPluginsForTrack(track) {
     const { positions } = await Db.getTrackData(track, { 
         modId: 'move-plugin-windows'
