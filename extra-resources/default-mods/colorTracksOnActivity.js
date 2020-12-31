@@ -30,7 +30,7 @@ Keyboard.on('keydown', async e => {
     }
 })
 
-Bitwig.on('browserOpen', (isOpen) => {
+Bitwig.on('browserOpen', ({isOpen}) => {
     log('got browserOpen event')
     if (isOpen)  {
         pause()

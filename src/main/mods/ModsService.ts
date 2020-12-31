@@ -21,6 +21,29 @@ const colors = require('colors');
 
 let nextId = 0
 let modsLoading = false
+function intersectsPluginWindows(event) {
+    if ('_intersectsPluginWindows' in event) {
+        return event._intersectsPluginWindows
+    }
+    const pluginLocations = Bitwig.getPluginWindowsPosition()
+    for (const key in pluginLocations) {
+        const {x, y, w, h, ...rest} = pluginLocations[key]
+        if (event.x >= x && event.x < x + w && event.y >= y && event.y < y + h) {
+            let out = {
+                id: key,
+                x,
+                y,
+                w,
+                h,
+                ...rest
+            }
+            event._intersectsPluginWindows = true
+            return out
+        }
+    }
+    event._intersectsPluginWindows = false
+    return false
+}
 
 export function showMessage(msg, { timeout } = { timeout: 5000 }) {
     openCanvasWindow(`/canvas`, {
@@ -319,23 +342,6 @@ export class ModsService extends BESService {
             }
         }
 
-        function intersectsPluginWindows(event) {
-            const pluginLocations = Bitwig.getPluginWindowsPosition()
-            for (const key in pluginLocations) {
-                const {x, y, w, h, ...rest} = pluginLocations[key]
-                if (event.x >= x && event.x < x + w && event.y >= y && event.y < y + h) {
-                    return {
-                        id: key,
-                        x,
-                        y,
-                        w,
-                        h,
-                        ...rest
-                    }
-                }
-            }
-            return false
-        }
         const MouseEvent = {
             intersectsPluginWindows() {
                 return intersectsPluginWindows(this)
@@ -373,7 +379,7 @@ export class ModsService extends BESService {
                 },
                 type: (str) => {
                     String(str).split('').forEach(char => {
-                        Keyboard.keyPress(char)
+                        Keyboard.keyPress(char === ' ' ? 'Space' : char)
                     })
                 }
             },
@@ -477,10 +483,10 @@ export class ModsService extends BESService {
                         ...(this.shortcutsService.bwToScreen(event))
                     })
                 },
-                scaleXY: this.shortcutsService.scaleXY,
-                unScaleXY: this.shortcutsService.unScaleXY,
-                bwToScreen: this.shortcutsService.bwToScreen,
-                screenToBw: this.shortcutsService.screenToBw,
+                scaleXY: (args) => this.shortcutsService.scaleXY(args),
+                unScaleXY: (args) => this.shortcutsService.unScaleXY(args),
+                bwToScreen: (args) => this.shortcutsService.bwToScreen(args),
+                screenToBw: (args) => this.shortcutsService.screenToBw(args),
                 click: (button, positionAndStuff, ...rest) => {
                     return api.Mouse.click(button, this.shortcutsService.bwToScreen(positionAndStuff), ...rest)
                 },
@@ -573,6 +579,9 @@ export class ModsService extends BESService {
             },
             Mod: {
                 _openFloatingWindow: openFloatingWindow,
+                setEnteringValue: val => {
+                    this.shortcutsService.enteringValue = val
+                },
                 runAction: (actionId, ...args) => {
                     return this.shortcutsService.runAction(actionId, ...args)
                 },
@@ -738,11 +747,11 @@ export class ModsService extends BESService {
         interceptPacket('cue-markers', undefined, async ({ data: cueMarkers }) => {
             this.cueMarkers = cueMarkers
         })
-        interceptPacket('browser/state', undefined, ({ data: {isOpen} }) => {
-            this.log('received browser state packet: ' + isOpen)
+        interceptPacket('browser/state', undefined, ({ data }) => {
+            this.log('received browser state packet: ' + data.isOpen)
             const previous = this.browserIsOpen
-            this.browserIsOpen = isOpen
-            this.events.browserOpen.emit(isOpen, previous)
+            this.browserIsOpen = data.isOpen
+            this.events.browserOpen.emit(data, previous)
         })
 
         // API endpoint to set the current log for specific websocket
@@ -833,6 +842,13 @@ export class ModsService extends BESService {
 
         this.refreshMods()
         refreshFolderWatcher()
+
+        Keyboard.on('click', event => {
+            if (Bitwig.isActiveApplication() && event.Meta && !event.Shift && !event.Alt && !event.Control && !intersectsPluginWindows(event)) {
+                // Assume they are clicking to enter a value by keyboard
+                this.shortcutsService.enteringValue = true
+            }
+        })
     }
 
     async registerEnableDisableShortcut(mod: ModInfo) {
