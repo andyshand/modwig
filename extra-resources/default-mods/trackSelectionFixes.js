@@ -5,13 +5,13 @@
  * @category global
  */
 
-Mouse.on('click', whenActiveListener(event => {
-    if (event.button === 3 && !event.Shift && !event.Meta) {
-        Mouse.returnAfter(() => {
-            Mouse.click(0, { 
-                x: MainWindow.getFrame().x + 186, 
-                y: event.y 
-            })
-        })
-    }
-}))
+// Mouse.on('click', whenActiveListener(event => {
+//     if (event.button === 3 && !event.Shift && !event.Meta) {
+//         Mouse.returnAfter(() => {
+//             Mouse.click(0, { 
+//                 x: MainWindow.getFrame().x + 186, 
+//                 y: event.y 
+//             })
+//         })
+//     }
+// }))

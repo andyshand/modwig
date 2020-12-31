@@ -152,12 +152,17 @@ Napi::Value GetPluginWindowsPosition(const Napi::CallbackInfo &info) {
                 CGPoint positionPoint;
                 CGSize sizePoint;
                 CFStringRef titleRef;
+                CFBooleanRef isFocused;
                 AXUIElementCopyAttributeValue(itemRef, kAXPositionAttribute, (CFTypeRef *)&position);
                 AXValueGetValue((AXValueRef)position, (AXValueType)kAXValueCGPointType, &positionPoint);
                 AXUIElementCopyAttributeValue(itemRef, kAXSizeAttribute, (CFTypeRef *)&size);
                 AXValueGetValue((AXValueRef)size, (AXValueType)kAXValueCGSizeType, &sizePoint);
                 AXUIElementCopyAttributeValue(itemRef, kAXTitleAttribute, (CFTypeRef *) &titleRef);
+                AXUIElementCopyAttributeValue(itemRef, kAXFocusedAttribute, (CFTypeRef*) &isFocused);
                 auto windowTitle = CFStringToString((CFStringRef)titleRef);
+                if (outObj.Has(windowTitle)) {
+                    windowTitle = windowTitle + " (duplicate)";
+                }
                 
                 auto obj = Napi::Object::New(env);
                 obj.Set(Napi::String::New(env, "x"), Napi::Number::New(env, positionPoint.x));
@@ -165,6 +170,7 @@ Napi::Value GetPluginWindowsPosition(const Napi::CallbackInfo &info) {
                 obj.Set(Napi::String::New(env, "w"), Napi::Number::New(env, sizePoint.width));
                 obj.Set(Napi::String::New(env, "h"), Napi::Number::New(env, sizePoint.height));
                 obj.Set(Napi::String::New(env, "id"), Napi::String::New(env, windowTitle));
+                obj.Set(Napi::String::New(env, "focused"), Napi::Boolean::New(env, isFocused == kCFBooleanTrue));
                 outObj.Set(Napi::String::New(env, windowTitle), obj);
             }
             CFRelease(windowArray);

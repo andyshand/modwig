@@ -192,6 +192,7 @@ class PacketManager {
                     }
                 } catch(e) {
                     log(e)
+                    showMessage(e)
                 }            
             })
         });
@@ -899,7 +900,7 @@ class BackForwardController extends Controller {
     historyIndex = -1
     ignoreSelectionChangesOnce = false
     
-    constructor(deps) {
+    constructor(deps: Deps) {
         super(deps)
         const { packetManager, globalController } = deps
         globalController.selectedTrackChanged.listen(this.onSelectedTrackChanged)
@@ -909,7 +910,7 @@ class BackForwardController extends Controller {
                 this.historyIndex--
                 const name = this.trackHistory[this.historyIndex].name
                 globalController.selectTrackWithName(name)
-                host.showPopupNotification(name)
+                deps.showMessage(name)
             }
         })
         packetManager.listen('tracknavigation/forward', () => {
@@ -918,7 +919,7 @@ class BackForwardController extends Controller {
                 this.historyIndex++
                 const name = this.trackHistory[this.historyIndex].name
                 globalController.selectTrackWithName(name)
-                host.showPopupNotification(name)
+                deps.showMessage(name)
             }
         })
     }
