@@ -335,8 +335,16 @@ packetManager.listen('open-plugin-windows/toggle-bypass', (packet) => {
         }
         return trackName + ' / '
     }
-    const skipAfter = trackNameSkip()
-    const pathWithoutTrack = devicePath.substr(devicePath.indexOf(skipAfter) + skipAfter.length)
+    let skipAfter = trackNameSkip()
+    let index = devicePath.indexOf(skipAfter)
+    if (index !== 0) {
+        // Unless starts with track, (possible) we should search for a match that starts and ends with slashes,
+        // to avoid partial matches of devices/tracks with the same name
+        skipAfter = '/ ' + skipAfter
+        index = devicePath.indexOf(skipAfter)
+        // showMessage(skipAfter + ' ' + index)
+    }
+    const pathWithoutTrack = devicePath.substr(index + skipAfter.length)
     let found = false
     iterateDevices((d, {trackRelativePath}) => {
         if (!found && trackRelativePath === pathWithoutTrack) {
