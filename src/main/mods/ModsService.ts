@@ -377,9 +377,9 @@ export class ModsService extends BESService {
                     }
                     wrappedOnForReloadDisconnect(Keyboard)(eventName, wrappedCb)
                 },
-                type: (str) => {
+                type: (str, opts?) => {
                     String(str).split('').forEach(char => {
-                        Keyboard.keyPress(char === ' ' ? 'Space' : char)
+                        Keyboard.keyPress(char === ' ' ? 'Space' : char, opts)
                     })
                 }
             },
@@ -844,7 +844,8 @@ export class ModsService extends BESService {
         refreshFolderWatcher()
 
         Keyboard.on('click', event => {
-            if (Bitwig.isActiveApplication() && event.Meta && !event.Shift && !event.Alt && !event.Control && !intersectsPluginWindows(event)) {
+            // FIXME for scaling
+            if (Bitwig.isActiveApplication() && event.y > 1000 && event.Meta && !event.Shift && !event.Alt && !event.Control && !intersectsPluginWindows(event)) {
                 // Assume they are clicking to enter a value by keyboard
                 this.shortcutsService.enteringValue = true
             }

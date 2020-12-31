@@ -954,6 +954,7 @@ export class ShortcutsService extends BESService {
                 if (this.browserIsOpen && /^[a-z0-9]{1}$/.test(lowerKey) && noMods) {
                     // Typing in browser
                     this.browserText += lowerKey
+                    this.log('Browser text: ' + this.browserText)
                 }
 
                 let keys = getEventKeysArray(event)
