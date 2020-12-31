@@ -19,6 +19,7 @@ Bitwig.on('browserOpen', ({isOpen}, prev) => {
 
 let common = [
     'polysynth',
+    'replacer',
     'phase-4',
     'fm-4',
     'audio receiver',

@@ -41,7 +41,7 @@ Mouse.on('click', async event => {
 
         const type = getToType()
         Keyboard.type(type)
-        await wait(100)
+        await wait(300)
         Keyboard.keyPress('ArrowDown')
 
         if (type === 'macro') {
@@ -65,8 +65,10 @@ Mouse.on('click', async event => {
             Mod.setEnteringValue(true)
         } else {
             // Not sure why but this doesn't work at all...
-            // await wait(1000)
-            // Mouse.click(0, {x: event.x, y: event.y})
+            await wait(100)
+            if (type === 'lfo' || type === 'audio sidechain' || type === 'ahdsr') {
+                Mouse.click(0, {x: event.x, y: event.y + 35})
+            }
         }
     }
 })
