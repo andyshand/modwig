@@ -142,6 +142,7 @@ std::map<int,std::string> macKeycodeMap = {
 std::map<std::string, int> macKeycodeMapReverse;
 
 forward_list<CallbackInfo*> callbacks; 
+int lastMouseDownButton = 0;
 
 void processCallback(Napi::Env env, Napi::Function jsCallback, JSEvent* value) {
     Napi::Object obj = Napi::Object::New(env);
@@ -234,6 +235,9 @@ CGEventRef eventtap_callback(CGEventTapProxy proxy, CGEventType type, CGEventRef
         CGPoint point = CGEventGetLocation(event);
         jsEvent->x = (int) point.x;
         jsEvent->y = (int) point.y;
+
+        
+
         if (type == kCGEventMouseMoved || type == kCGEventOtherMouseDragged) {
             // Mouse movement doesn't have a button (multiple buttons could theoretically be down)
             jsEvent->button = -1;
@@ -249,7 +253,15 @@ CGEventRef eventtap_callback(CGEventTapProxy proxy, CGEventType type, CGEventRef
             }
         }
         int button = jsEvent->button;
-
+        int howManyClicks = CGEventGetIntegerValueField(event, kCGMouseEventClickState);
+        if (howManyClicks > 1 && button != lastMouseDownButton)  {
+            // Skip double clicks from different mouse buttons (this shouldn't happen but it does?)
+            CGEventSetIntegerValueField(event, kCGMouseEventClickState, 1);
+            // delete jsEvent;
+            // return NULL;
+        }
+        lastMouseDownButton = button;
+    
         auto callback = []( Napi::Env env, Napi::Function jsCallback, JSEvent* value ) {
             processCallback(env, jsCallback, value);
             delete value;   

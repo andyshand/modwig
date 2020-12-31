@@ -86,8 +86,27 @@ function playWithEvent(event) {
     })
 }
 
+let timeSelecting = false
 Mouse.on('mousedown', event => {
-    playButtonDown = Bitwig.isActiveApplication() && event.button === clickButton
+    const isActive = Bitwig.isActiveApplication()
+
+    if (event.button === 3 && isActive && !event.intersectsPluginWindows()) {
+        // Button 3 click time select. Still have to click, but is like pressing 2
+        timeSelecting = true
+        const doIt = () => {
+            Mouse.up(3)
+            Keyboard.keyDown("2")
+        }
+        if (Bitwig.isPluginWindowActive) {
+            Bitwig.makeMainWindowActive()    
+            setTimeout(doIt, 100)
+        } else {
+            doIt()
+        }   
+        return
+    }
+
+    playButtonDown = isActive && event.button === clickButton
     if (playButtonDown && clickButton !== 1) {
         // If click button isn't middle click, we can trigger play straight away as these buttons have no extra function in Bitwig
         return playWithEvent(event)
@@ -99,10 +118,16 @@ Mouse.on('mousedown', event => {
     startPos = makePos(event)
     downTime = new Date()
 
-    draggingBorderLine = !playButtonDown && Bitwig.isActiveApplication() && Math.abs(event.y - editorBorderLineY) < 10
+    draggingBorderLine = !playButtonDown && isActive && Math.abs(event.y - editorBorderLineY) < 10
 })
 
 Mouse.on('mouseup', event => {
+    if (timeSelecting && event.button === 3) {
+        Keyboard.keyUp("2")
+        timeSelecting = false
+        return
+    }
+
     if (draggingBorderLine || shiftEDown) {
         // Mouse up from dragging border line or manually setting it with 'e' key
         editorBorderLineY = event.y

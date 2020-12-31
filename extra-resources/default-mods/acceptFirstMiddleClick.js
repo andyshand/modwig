@@ -6,7 +6,7 @@
  */
 
 Mouse.on('mousedown', event => {
-    if(Bitwig.isPluginWindowActive && event.button === 1) {
+    if(Bitwig.isPluginWindowActive && event.button === 1 && !event.intersectsPluginWindows()) {
         // Pretend middle mouse has gone up
         Mouse.up(1)
 

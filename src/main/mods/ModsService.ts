@@ -1059,6 +1059,8 @@ modsImpl(api)
                 console.error('Error when running onReloadMod', e)
             }
         }
+
+        this.shortcutsService.tempActions = {}
         this.onReloadMods = []
         this.latestModsMap = {}
         
