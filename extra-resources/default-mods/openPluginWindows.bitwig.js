@@ -163,6 +163,7 @@ function iterateSelectedDeviceLayers(deviceCb, onComplete, pathInfo) {
         push(cursorLayer.name().get(), 'layer', pathInfo)
 
         function nextLayerOrComplete(finished = true) {
+            pop('layer', pathInfo)
             if (!finished) {
                 // Stop! We cancelled
                 return // onComplete(finished) FIX ME
@@ -174,7 +175,6 @@ function iterateSelectedDeviceLayers(deviceCb, onComplete, pathInfo) {
                     iterateNextLayer()
                 })
             } else {
-                pop('layer', pathInfo)
                 if (wentDown) {
                     ourCursorDevice.selectParent()
                     waitForContextUpdateThen(() => {
