@@ -52,6 +52,8 @@ type AnyActionSpec = ActionSpec | TempActionSpec
 export class ShortcutsService extends BESService {
     browserIsOpen
     enteringValue = false
+    spotlightOpen = false
+    tabSwitcherOpen = false
     browserText = ''
     actions = this.getActions()
     tempActions: {[id: string]: TempActionSpec} = {}
@@ -931,7 +933,7 @@ export class ShortcutsService extends BESService {
                 keys.push('Alt')
             }
             return keys.reverse()
-        }
+        }   
 
         Keyboard.on('keydown', event => {
             let { lowerKey, nativeKeyCode, Meta, Shift, Control, Alt, Fn } = event
@@ -939,6 +941,16 @@ export class ShortcutsService extends BESService {
                 // FN defaults to true when using function keys (makes sense I guess?), but also Clear???
                 Fn = false
             }
+
+            if (this.spotlightOpen) {
+                if (lowerKey === 'Escape' || lowerKey.indexOf('Enter') >= 0) {
+                    this.log('Spotlight is closed')
+                    this.spotlightOpen = false
+                } else {
+                    return
+                }
+            }
+
             // this.log(event, Bitwig.isActiveApplication())
             const noMods = !(Meta || Control || Alt)
 
@@ -948,6 +960,12 @@ export class ShortcutsService extends BESService {
             if (this.enteringValue && (Meta || Control || Alt)) {
                 // Assume a shortcut must have been pressed, must no longer be entering value?
                 this.enteringValue = false
+            }
+
+            if (lowerKey === 'Space' && Meta && !Shift && !Control && !Alt) {
+                this.log('Spotlight is open')
+                this.spotlightOpen = true
+                return
             }
 
             if (Bitwig.isActiveApplication() && !this.enteringValue) {

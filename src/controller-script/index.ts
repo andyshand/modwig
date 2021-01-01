@@ -133,7 +133,7 @@ class PacketManager {
                 deps.globalController.sendProject()
             }
             this.activeConnection.setDisconnectCallback(() => {
-                log("Disconnected from Node");
+                host.showPopupNotification("Modwig disconnected");
                 this.activeConnection = null
             })
             this.activeConnection.setReceiveCallback(data => {
