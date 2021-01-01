@@ -819,6 +819,7 @@ export class ShortcutsService extends BESService {
         interceptPacket('browser/state', undefined, ({ data: {isOpen} }) => {
             this.browserIsOpen = isOpen
             if (isOpen) {
+                this.enteringValue = false
                 this.browserText = ''
                 this.log('Resetting browser text')
             }
