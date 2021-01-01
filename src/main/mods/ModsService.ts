@@ -846,7 +846,7 @@ export class ModsService extends BESService {
 
         Keyboard.on('click', event => {
             // FIXME for scaling
-            if (Bitwig.isActiveApplication() && event.y > 1000 && event.Meta && !event.Shift && !event.Alt && !event.Control && !intersectsPluginWindows(event)) {
+            if (Bitwig.isActiveApplication() && event.y > 1000 && event.Meta && !event.Shift && !event.Alt && !event.Control && !intersectsPluginWindows(event) && !this.browserIsOpen) {
                 // Assume they are clicking to enter a value by keyboard
                 this.shortcutsService.enteringValue = true
             }

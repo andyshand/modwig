@@ -15,6 +15,26 @@ const NotificatinosWrap = styled.div`
     display: flex;
     flex-direction: column;
 `
+const Static = styled.div`
+@keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            transform: translateY(0%);
+        }
+    }
+    animation: slideIn .3s linear 1;
+    animation-fill-mode: forwards;
+    position: absolute;
+    color: #CCC;
+    font-size: 1em;
+    bottom: .95rem;
+    right: 15rem;
+    display: flex;
+    align-items: center;
+`
 const Notification = styled.div`
      @keyframes slideIn {
         from {
@@ -84,6 +104,9 @@ export class Canvas extends ModwigComponent<any> {
         return <Wrap>
             <canvas ref={this.canvasRef} />
             {this.renderNotifications()}
+            <Static>
+                <div style={{marginRight: '.4rem', marginTop: '.3rem', width: '.5rem', height: '.5rem', borderRadius: '1000px', background: 'rgb(230,89,13)'}}/> modwig active
+            </Static>
         </Wrap>
     }
 }
