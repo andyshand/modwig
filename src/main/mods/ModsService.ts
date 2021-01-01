@@ -185,6 +185,7 @@ export class ModsService extends BESService {
     controllerScriptFolderWatcher?: any
     latestModsMap: { [name: string]: Partial<ModInfo> } = {}
     onReloadMods: Function[] = []
+    refreshCount = 0
     shortcutsService = getService<ShortcutsService>("ShortcutsService")
     suckitService = getService<SocketMiddlemanService>("SocketMiddlemanService")
     activeEngineProject: string | null = null
@@ -1083,7 +1084,12 @@ modsImpl(api)
         
         await this.refreshLocalMods()
         await this.refreshBitwigMods(localOnly)
-        showMessage(`Reloaded ${localOnly ? 'local' : 'all'} mods`)
+        if (this.refreshCount === 0) {
+            showMessage(`${Object.keys(this.latestModsMap).length} Mods loaded`)
+        } else {
+            showMessage(`Reloaded ${localOnly ? 'local' : 'all'} mods (${Object.keys(this.latestModsMap).length} loaded)`)
+        }
+        this.refreshCount++
 
         sendPacketToBrowser({
             type: 'event/mods-reloaded'
