@@ -13,5 +13,15 @@ Mod.registerShortcutMap({
             await wait(250)
             Keyboard.keyPress('Enter', { modwigListeners: true })
         }
+    },
+    'Alt 1': async () => {
+        if (!Bitwig.isBrowserOpen) {
+            Bitwig.runAction(['Loop Selected Region', 'Jump to Playback Start Time'])
+        }
+    },
+    'Alt Shift 1': async () => {
+        if (!Bitwig.isBrowserOpen) {
+            Bitwig.runAction(['Loop Selected Region', 'Jump to Playback Start Time', 'Play'])
+        }
     }
 })

@@ -16,6 +16,7 @@ import { debounce } from '../../connector/shared/engine/Debounce'
 import _ from 'underscore'
 import { BrowserWindow, clipboard } from "electron"
 import { url } from "../core/Url"
+import { normalizeBitwigAction } from "./actionMap"
 const chokidar = require('chokidar')
 const colors = require('colors');
 
@@ -483,7 +484,11 @@ export class ModsService extends BESService {
                     return sendPacketToBitwigPromise(packet)
                 },
                 runAction: action => {
-                    return sendPacketToBitwigPromise({type: 'action', data: action})
+                    let actions = action
+                    if (!Array.isArray(actions)) {
+                        actions = [action]
+                    }
+                    return sendPacketToBitwigPromise({type: 'action', data: actions.map(normalizeBitwigAction)})
                 },
                 showMessage: showMessage,
                 intersectsPluginWindows: event => {
@@ -855,7 +860,7 @@ export class ModsService extends BESService {
         this.refreshMods()
         refreshFolderWatcher()
 
-        Keyboard.on('click', event => {
+        Keyboard.on('mouseup', event => {
             // FIXME for scaling
             if (Bitwig.isActiveApplication() && event.y > 1000 && event.Meta && !event.Shift && !event.Alt && !event.Control && !intersectsPluginWindows(event) && !this.browserIsOpen) {
                 // Assume they are clicking to enter a value by keyboard

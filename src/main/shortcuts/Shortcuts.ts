@@ -70,6 +70,7 @@ export class ShortcutsService extends BESService {
     setEnteringValue(value) {
         if (this.enteringValue !== value) {
             this.enteringValue = value
+            this.log('Entering value: ' + value)
             this.events.enteringValue.emit(value)
         }
     }
