@@ -62,6 +62,7 @@ const sets = [
             'tom',
             'clap',
             'rim',
+            'shaker',
             'click',
             'tamb',
             '505',
