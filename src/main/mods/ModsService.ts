@@ -62,6 +62,14 @@ export function showMessage(msg, { timeout } = { timeout: 5000 }) {
     })
 }
 
+export function updateCanvas(state) {
+    openCanvasWindow(`/canvas`, {
+        data: state,
+        width: 2560,
+        height: 1440
+    })
+}
+
 /**
 * Opens a floating window for a short amount of time, fading out afterwards. Meant for brief display of contextual information
 */
@@ -752,6 +760,9 @@ export class ModsService extends BESService {
             this.log('received browser state packet: ' + data.isOpen)
             const previous = this.browserIsOpen
             this.browserIsOpen = data.isOpen
+            updateCanvas({
+                browserIsOpen: data.isOpen
+            })
             this.events.browserOpen.emit(data, previous)
         })
 
@@ -848,8 +859,14 @@ export class ModsService extends BESService {
             // FIXME for scaling
             if (Bitwig.isActiveApplication() && event.y > 1000 && event.Meta && !event.Shift && !event.Alt && !event.Control && !intersectsPluginWindows(event) && !this.browserIsOpen) {
                 // Assume they are clicking to enter a value by keyboard
-                this.shortcutsService.enteringValue = true
+                this.shortcutsService.setEnteringValue(true)
             }
+        })
+
+        this.shortcutsService.events.enteringValue.listen(enteringValue => {
+            updateCanvas({
+                enteringValue
+            })
         })
     }
 

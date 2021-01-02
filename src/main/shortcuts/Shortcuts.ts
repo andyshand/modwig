@@ -63,8 +63,16 @@ export class ShortcutsService extends BESService {
     extraShortcuts: any[]
     events = {
         actionTriggered: makeEvent<AnyActionSpec>(),
+        enteringValue: makeEvent<boolean>()
     }
     uiScale: number = 1 // Cached from setting
+
+    setEnteringValue(value) {
+        if (this.enteringValue !== value) {
+            this.enteringValue = value
+            this.events.enteringValue.emit(value)
+        }
+    }
 
     repeatActionWithRange(name, startIncl, endIncl, genTakesI) {
         let out = {}
@@ -685,7 +693,7 @@ export class ShortcutsService extends BESService {
                                     Meta: true
                                 }))
                             })
-                            this.enteringValue = true
+                            this.setEnteringValue(true)
                         }
                     }
                 },
@@ -704,7 +712,7 @@ export class ShortcutsService extends BESService {
                                     Meta: true
                                 }))
                             })
-                            this.enteringValue = true
+                            this.setEnteringValue(true)
                         }
                     }
                 },
@@ -818,8 +826,9 @@ export class ShortcutsService extends BESService {
     setupPacketListeners() {
         interceptPacket('browser/state', undefined, ({ data: {isOpen} }) => {
             this.browserIsOpen = isOpen
+            this.log('Browser is open: ' + this.browserIsOpen)
             if (isOpen) {
-                this.enteringValue = false
+                this.setEnteringValue(false)
                 this.browserText = ''
                 this.log('Resetting browser text')
             }
@@ -882,7 +891,7 @@ export class ShortcutsService extends BESService {
                 runner({
                     keyState: state,
                     setEnteringValue: (yesOrNo) => {
-                        this.enteringValue = yesOrNo
+                        this.setEnteringValue(yesOrNo)
                     }
                 })
                 
@@ -936,6 +945,10 @@ export class ShortcutsService extends BESService {
             return keys.reverse()
         }   
 
+        Keyboard.on('mouseup', event => {
+            this.setEnteringValue(false)
+        })
+
         Keyboard.on('keydown', event => {
             let { lowerKey, nativeKeyCode, Meta, Shift, Control, Alt, Fn } = event
             if (/F[0-9]+/.test(lowerKey) || lowerKey === 'Clear' || lowerKey.indexOf('Arrow') === 0) {
@@ -960,7 +973,7 @@ export class ShortcutsService extends BESService {
 
             if (this.enteringValue && (Meta || Control || Alt)) {
                 // Assume a shortcut must have been pressed, must no longer be entering value?
-                this.enteringValue = false
+                this.setEnteringValue(false)
             }
 
             if (lowerKey === 'Space' && Meta && !Shift && !Control && !Alt) {
@@ -1008,9 +1021,9 @@ export class ShortcutsService extends BESService {
 
             // Prevent shortcuts from triggering when renaming something
             if (Bitwig.isActiveApplication() && lowerKey === 'r' && Meta && !Shift && !Alt) {
-                this.enteringValue = true
+                this.setEnteringValue(true)
             } else if ((enteringBefore === this.enteringValue) && (lowerKey === 'Enter' || lowerKey === 'Escape' || lowerKey === "NumpadEnter")) {
-                this.enteringValue = false
+                this.setEnteringValue(false)
             }
         })
     }

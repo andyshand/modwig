@@ -34,6 +34,11 @@ const Static = styled.div`
     right: 15rem;
     display: flex;
     align-items: center;
+    > * {
+        display: flex;
+        align-items: center;
+        margin-left: 1rem;
+    }
 `
 const Notification = styled.div`
      @keyframes slideIn {
@@ -68,12 +73,15 @@ const notifTimeoutCheckFreqMS = 500
 export class Canvas extends ModwigComponent<any> {
     canvasRef = React.createRef<HTMLCanvasElement>()
     state = {
-        notifications: []
+        notifications: [],
+        browserIsOpen: false,
+        enteringValue: false
     }
     componentWillReceiveProps(nextProps) {
-        const { notifications } = nextProps
+        const notifications = nextProps.notifications || []
         this.setState({
-            notifications: this.state.notifications.concat(notifications)
+            ...nextProps,
+            notifications: this.state.notifications.concat(notifications),
         })
         
         const timeoutUntilAllDone = () => {
@@ -105,7 +113,11 @@ export class Canvas extends ModwigComponent<any> {
             <canvas ref={this.canvasRef} />
             {this.renderNotifications()}
             <Static>
-                <div style={{marginRight: '.4rem', marginTop: '.3rem', width: '.5rem', height: '.5rem', borderRadius: '1000px', background: 'rgb(230,89,13)'}}/> modwig active
+                {this.state.browserIsOpen ? <div>Browser Open</div> : null}
+                {this.state.enteringValue ? <div>Entering Value</div> : null}
+                <div><div style={{
+                    marginRight: '.4rem', marginTop: '.3rem', width: '.5rem', height: '.5rem', borderRadius: '1000px', background: 'rgb(230,89,13)'
+                }}/> modwig active</div>
             </Static>
         </Wrap>
     }
