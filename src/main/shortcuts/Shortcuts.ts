@@ -663,6 +663,7 @@ export class ShortcutsService extends BESService {
                     defaultSetting: {
                         keys: ['T']
                     },
+                    contexts: ['-browser'],
                     action: () => {
                         sendPacketToBitwig({type: 'action', data: 'focus_track_header_area'})
                         Bitwig.makeMainWindowActive()

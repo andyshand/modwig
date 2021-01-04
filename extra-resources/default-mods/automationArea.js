@@ -11,6 +11,7 @@ Mod.registerAction({
     title: "Hide All Automation",
     id: "hide-all-automation.automation-area.modwig",
     category: "arranger",
+    contexts: ['-browser'],
     description: `Hides automation for all tracks in the arranger.`,
     defaultSetting: {
         keys: ["Meta", "Shift", "A"]
@@ -45,6 +46,7 @@ Mod.registerAction({
     title: "Show Automation for Current Track (Default)",
     id: "show-current-automation-default.automation-area.modwig",
     category: "arranger",
+    contexts: ['-browser'],
     description: `Shows automation for the current track in the arranger (default Bitwig behaviour).`,
     defaultSetting: {
         keys: ["A"],
@@ -60,6 +62,7 @@ Mod.registerAction({
     title: "Toggle Automation for Current Track",
     id: "show-current-automation.automation-area.modwig",
     category: "arranger",
+    contexts: ['-browser'],
     description: `Toggle automation for current track.`,
     defaultSetting: {
         keys: ["A"]
@@ -71,6 +74,7 @@ Mod.registerAction({
     title: "Toggle All Automation for Current Track",
     id: "show-all-current-automation.automation-area.modwig",
     category: "arranger",
+    contexts: ['-browser'],
     description: `Toggle all automation for current track.`,
     defaultSetting: {
         keys: ["Shift", "A"]
@@ -100,6 +104,7 @@ for (let i = 0; i < 100; i+= 10) {
         id: `set-automation-${i}%`,
         description: `Requires inspector panel to be open`,
         category: 'arranger',
+        contexts: ['-browser'],
         defaultSetting: {
             keys: ["Shift", `Numpad${String(i)[0]}`]
         },
@@ -127,6 +132,7 @@ for (const dir of ['left', 'right']) {
     Mod.registerAction({
         title: `Copy automation value ${dir}`,
         id: `copy-automation-${dir}`,
+        contexts: ['-browser'],
         description: `Copies the value of the currently selected automation point to its ${dir}`,
         category: 'arranger',
         defaultSetting: {
@@ -180,6 +186,7 @@ Mod.registerAction({
     id: `snap-automation-nearest-bar`,
     description: `Rounds the position of the selected automation point to the nearest bar`,
     category: 'arranger',
+    contexts: ['-browser'],
     defaultSetting: {
         keys: ["Control", 'Numpad5']
     },
@@ -223,6 +230,7 @@ Mod.registerAction({
     id: `copy-automation-value`,
     description: `Copies the value of the currently selected automation`,
     category: 'arranger',
+    contexts: ['-browser'],
     defaultSetting: {
         keys: ["Meta", "Shift", "C"]
     },
@@ -240,6 +248,7 @@ Mod.registerAction({
     id: `paste-automation-value`,
     description: `Pastes the value of the currently selected automation`,
     category: 'arranger',
+    contexts: ['-browser'],
     defaultSetting: {
         keys: ["Meta", "Shift", "V"]
     },
