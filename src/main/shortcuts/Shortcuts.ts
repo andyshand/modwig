@@ -205,13 +205,12 @@ export class ShortcutsService extends BESService {
                 },
                 toggleRecord: {            
                     description: `This "Toggle Record" shortcut can optionally pass through VSTs, whereas the built-in shortcut cannot.`,
+                    contexts: ['-browser'],
                     action: () => {
-                        if (!this.browserIsOpen) {
-                            sendPacketToBitwig({
-                                type: 'action',
-                                data: 'Toggle Record'
-                            })
-                        }
+                        sendPacketToBitwig({
+                            type: 'action',
+                            data: 'Toggle Record'
+                        })
                     }                
                 },
                 goBack: {
@@ -391,16 +390,15 @@ export class ShortcutsService extends BESService {
                     defaultSetting: {
                         keys: ['D']
                     },
+                    contexts: ['-browser'],
                     action: () => {
-                        if (!this.browserIsOpen && !this.enteringValue) {
-                            sendPacketToBitwig({
-                                type: 'action',
-                                data: [
-                                    `focus_or_toggle_detail_editor`,
-                                    `focus_or_toggle_device_panel`
-                                ]
-                            })
-                        }
+                        sendPacketToBitwig({
+                            type: 'action',
+                            data: [
+                                `focus_or_toggle_detail_editor`,
+                                `focus_or_toggle_device_panel`
+                            ]
+                        })
                     }
                 },
                 selectFirstDevice: {
@@ -551,32 +549,29 @@ export class ShortcutsService extends BESService {
                         keys: ['B']
                     },
                     description: `Ensures the device panel is focused so the browser is more likely to open when you want it to.`,
+                    contexts: ['-browser'],
                     action: () => {
-                        if (!this.browserIsOpen) {
-                            sendPacketToBitwig({
-                                type: 'action',
-                                data: [
-                                    `focus_or_toggle_detail_editor`,
-                                    `focus_or_toggle_device_panel`,
-                                    `show_insert_popup_browser`,
-                                    `Select All`
-                                ]
-                            })
-                        }
+                        sendPacketToBitwig({
+                            type: 'action',
+                            data: [
+                                `focus_or_toggle_detail_editor`,
+                                `focus_or_toggle_device_panel`,
+                                `show_insert_popup_browser`,
+                                `Select All`
+                            ]
+                        })
                     }
                 },
-
                 clearBrowserFilters: {
                     defaultSetting: {
                         keys: ['Alt', '§']
                     },
                     description: `Resets all the filters in the currently open popup browser.`,
+                    contexts: ['browser'],
                     action: () => {
-                        if (this.browserIsOpen) {
-                            sendPacketToBitwig({
-                                type: 'browser/filters/clear'
-                            })
-                        }
+                        sendPacketToBitwig({
+                            type: 'browser/filters/clear'
+                        })
                     }
                 },
                 confirmBrowser: {
@@ -584,37 +579,34 @@ export class ShortcutsService extends BESService {
                         keys: ['Enter']
                     },
                     description: `Confirms the current choice in the popup browser. If there is a search query and no selected item, the first result will be confirmed.`,
+                    contexts: ['browser'],
                     action: () => {
-                        if (this.browserIsOpen) {
-                            this.log(`Browser text is: ${this.browserText}`)
-                            sendPacketToBitwig({
-                                type: this.browserText.length > 0 ? 'browser/select-and-confirm' : 'browser/confirm'
-                            })
-                        }
+                        this.log(`Browser text is: ${this.browserText}`)
+                        sendPacketToBitwig({
+                            type: this.browserText.length > 0 ? 'browser/select-and-confirm' : 'browser/confirm'
+                        })
                     }
                 },
                 previousBrowserTab: {
                     defaultSetting: {
                         keys: ['Control', 'ArrowLeft']
                     },
+                    contexts: ['browser'],
                     action: () => {
-                        if (this.browserIsOpen) {
-                            sendPacketToBitwig({
-                                type: 'browser/tabs/previous'
-                            })
-                        }
+                        sendPacketToBitwig({
+                            type: 'browser/tabs/previous'
+                        })
                     }
                 },
                 nextBrowserTab: {
                     defaultSetting: {
                         keys: ['Control', 'ArrowRight']
                     },
+                    contexts: ['browser'],
                     action: () => {
-                        if (this.browserIsOpen) {
-                            sendPacketToBitwig({
-                                type: 'browser/tabs/next'
-                            })
-                        }
+                        sendPacketToBitwig({
+                            type: 'browser/tabs/next'
+                        })
                     }
                 },
                 ...this.repeatActionWithRange('selectBrowserTab', 1, 6, i => {
@@ -655,15 +647,14 @@ export class ShortcutsService extends BESService {
                         defaultSetting: {
                             keys: ["Meta", String(i)]
                         },
+                        contexts: ['-browser'],
                         action: () => {
-                            if (!this.browserIsOpen) {
-                                sendPacketToBitwig({
-                                    type: 'action',
-                                    data: [
-                                        `launch_arranger_cue_marker${i}`
-                                    ]
-                                })
-                            }
+                            sendPacketToBitwig({
+                                type: 'action',
+                                data: [
+                                    `launch_arranger_cue_marker${i}`
+                                ]
+                            })
                         }
                     }
                 }),
@@ -689,38 +680,36 @@ export class ShortcutsService extends BESService {
                     defaultSetting: {
                         keys: ['NumpadEnter']
                     },
+                    contexts: ['-browser'],
                     description: 'Focuses the automation value field in the inspector for quickly setting value of selected automation.',
                     action: () => {
-                        if (!this.browserIsOpen && !this.enteringValue) {
-                            this.runAction('focusArranger')
-                            returnMouseAfter(() => {
-                                Mouse.click(0, this.bwToScreen({
-                                    x: 140,
-                                    y: 140,
-                                    Meta: true
-                                }))
-                            })
-                            this.setEnteringValue(true)
-                        }
+                        this.runAction('focusArranger')
+                        returnMouseAfter(() => {
+                            Mouse.click(0, this.bwToScreen({
+                                x: 140,
+                                y: 140,
+                                Meta: true
+                            }))
+                        })
+                        this.setEnteringValue(true)
                     }
                 },
                 setAutomationPosition: {
                     defaultSetting: {
                         keys: ['Control', 'NumpadEnter']
                     },
+                    contexts: ['-browser'],
                     description: 'Focuses the automation position field in the inspector for quickly setting position of selected automation.',
                     action: () => {
-                        if (!this.browserIsOpen && !this.enteringValue) {
-                            this.runAction('focusArranger')
-                            returnMouseAfter(() => {
-                                Mouse.click(0, this.bwToScreen({
-                                    x: 140,
-                                    y: 120,
-                                    Meta: true
-                                }))
-                            })
-                            this.setEnteringValue(true)
-                        }
+                        this.runAction('focusArranger')
+                        returnMouseAfter(() => {
+                            Mouse.click(0, this.bwToScreen({
+                                x: 140,
+                                y: 120,
+                                Meta: true
+                            }))
+                        })
+                        this.setEnteringValue(true)
                     }
                 },
                 locatePlayhead: {

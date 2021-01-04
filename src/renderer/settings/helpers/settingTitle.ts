@@ -29,9 +29,7 @@ export const shortcutToTextDescription = (setting) => {
       return ''
   }
   const mac = process.platform === 'darwin'
-  return (value.keys || []).sort((a, b) => {
-    return b - a
-  }).map(key => {
+  return (value.keys || []).map(key => {
       if (key === 'Meta' && mac) {
           return '⌘'
       } else if (key === 'Control') {
@@ -50,5 +48,7 @@ export const shortcutToTextDescription = (setting) => {
         'Space': '⎵',
         'Enter': '↵'
       }[key] || key
+  }).sort((a, b) => {
+    return b - a
   }).join('')
 }
