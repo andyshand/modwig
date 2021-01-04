@@ -287,8 +287,13 @@ class GlobalController extends Controller {
                 data: this.createTrackInfo(track)
             }
         })
-        packetManager.listen('track/select', ({ data: { name, allowExitGroup, enter }}) => {
-            this.selectTrackWithName(name, true, allowExitGroup, enter)
+        packetManager.listen('track/select', ({ data: { name, allowExitGroup, enter, scroll }}) => {
+            this.selectTrackWithName(
+                name, 
+                scroll !== undefined ? true : scroll, 
+                allowExitGroup, 
+                enter
+            )
         })
         packetManager.listen('track/selected/scroll', () => {
             this.cursorTrack.makeVisibleInArranger()
@@ -651,6 +656,15 @@ class DeviceController extends Controller {
 
         this.layerBank.channelCount().markInterested()
         this.drumPadBank.channelCount().markInterested()
+
+        this.cursorDevice.name().addValueObserver(() => {
+            packetManager.send({
+                type: 'device',
+                data: {
+                    name: this.cursorDevice.name().get()
+                }
+            })
+        })
 
         for (let i = 0; i < LAYER_BANK_SIZE; i++) {
             const layer = this.layerBank.getChannel(i)

@@ -71,12 +71,12 @@ function waitForChange(getter, cb){
     // setTimeout(check, checkInterval)
 }
 
-function callCb(cb, pathInfo) {
+function callCb(cb, pathInfo, callbackDone) {
     const trackRelativePath =  pathInfo.parents.join(' / ')
     // maybeLog('Calling device cb: ' + trackRelativePath)
     return cb(ourCursorDevice, {
         trackRelativePath
-    })
+    }, callbackDone)
 }
 
 function pop(type, pathInfo) {
@@ -214,49 +214,53 @@ function doIterateDevices(deviceCb, onComplete = () => {}, pathInfo = {parents: 
     // modLog('Iterating devices')
     const deviceName = getDeviceTitleName(ourCursorDevice)
     push(deviceName, 'device', pathInfo)
-    const result = callCb(deviceCb, pathInfo)
-    if (result === false) {
-        return onComplete(false)
-        // Stop searching! We can reuse the cursor device in the future
-    }
 
-    function iterateSlots(onComplete) {
-        // modLog('Iterating slots')
-        if (ourCursorDevice.hasSlots().get()) {
-            // maybeLog('Has slots')
-            iterateSelectedDeviceSlots(deviceCb, onComplete, pathInfo)
-        } else {
-            // maybeLog('No slots')
-            onComplete()
+    function callbackDone(result) {
+        if (result === false) {
+            return onComplete(false)
+            // Stop searching! We can reuse the cursor device in the future
         }
-    }
-    function iterateLayers(onComplete) {
-        // modLog('Iterating layers')
-        if (ourCursorDevice.hasLayers().get()) {
-            // maybeLog('Has layers')
-            iterateSelectedDeviceLayers(deviceCb, onComplete, pathInfo)
-        } else {
-            // maybeLog('No layers')
-            onComplete()
-        }
-    }
-
-    iterateSlots(() => {
-        iterateLayers(() => {
-            log('Finished iterating slots/layers for ' + deviceName)
-            pop('device', pathInfo)
-            if (ourCursorDevice.hasNext().get()) {
-                // maybeLog('Device has next')
-                ourCursorDevice.selectNext() 
-                waitForChange(() => ourCursorDevice.position().get(), () => {
-                    doIterateDevices(deviceCb, onComplete, pathInfo)
-                })
+    
+        function iterateSlots(onComplete) {
+            // modLog('Iterating slots')
+            if (ourCursorDevice.hasSlots().get()) {
+                // maybeLog('Has slots')
+                iterateSelectedDeviceSlots(deviceCb, onComplete, pathInfo)
             } else {
-                // maybeLog('Device does not have next')
+                // maybeLog('No slots')
                 onComplete()
-            }            
+            }
+        }
+        function iterateLayers(onComplete) {
+            // modLog('Iterating layers')
+            if (ourCursorDevice.hasLayers().get()) {
+                // maybeLog('Has layers')
+                iterateSelectedDeviceLayers(deviceCb, onComplete, pathInfo)
+            } else {
+                // maybeLog('No layers')
+                onComplete()
+            }
+        }
+    
+        iterateSlots(() => {
+            iterateLayers(() => {
+                log('Finished iterating slots/layers for ' + deviceName)
+                pop('device', pathInfo)
+                if (ourCursorDevice.hasNext().get()) {
+                    // maybeLog('Device has next')
+                    ourCursorDevice.selectNext() 
+                    waitForChange(() => ourCursorDevice.position().get(), () => {
+                        doIterateDevices(deviceCb, onComplete, pathInfo)
+                    })
+                } else {
+                    // maybeLog('Device does not have next')
+                    onComplete()
+                }            
+            })
         })
-    })
+    }
+
+    callCb(deviceCb, pathInfo, callbackDone)    
 }
 
 function iterateDevices(deviceCb, onComplete = () => {}) {
@@ -297,15 +301,15 @@ packetManager.listen('open-plugin-windows/open-with-preset-name', (packet) => {
     const presetNames = packet.data.presetNames
     ourCursorDevice.selectFirstInChannel(deviceController.cursorTrack)
 
-
     showMessage(`Reopening plugins: ${Object.keys(presetNames).join(', ')}`)
-    iterateDevices(d => {
+    iterateDevices((d, _, done) => {
         maybeLog('Device: ' + d.name().get())
         maybeLog(`Found preset: ${d.presetName().get()}`)
         if (d.presetName().get() in presetNames || d.name().get() in presetNames) {
             maybeLog(`Opening`)
             d.isWindowOpen().set(true)
         }
+        done()
     })
 })
 
@@ -346,16 +350,54 @@ packetManager.listen('open-plugin-windows/toggle-bypass', (packet) => {
     }
     const pathWithoutTrack = devicePath.substr(index + skipAfter.length)
     let found = false
-    iterateDevices((d, {trackRelativePath}) => {
+    iterateDevices((d, {trackRelativePath}, done) => {
         if (!found && trackRelativePath === pathWithoutTrack) {
             // This is our guy!
             withCursorDevice(d)
             found = true
-            return false
+            return done(false)
         }
+        done()
     }, () => {
         if (!found) {
             showMessage('Device with path "' + pathWithoutTrack + '" not found')
         }
     })
+})
+
+packetManager.listen('open-plugin-windows/toggle-devices-active', (packet) => {
+    const deviceNames = packet.data.deviceNames
+    const active = packet.data.active
+   
+    const toggled = []
+    runAction([
+        'focus_or_toggle_detail_editor',
+        'focus_or_toggle_device_panel'
+    ])
+    iterateDevices((d, _, done) => {
+        let deviceName = d.name().get()
+        if (deviceNames.indexOf(deviceName) >= 0) {
+            d.selectInEditor()
+            if (active) {
+                runAction(['Activate'])
+            } else {
+                runAction(['Deactivate'])
+            }
+            toggled.push(deviceName)
+            done()
+        } else {
+            done()
+        }
+    }, () => {
+        // Notify client on completion, ready for next search
+        packetManager.send({
+            id: packet.id,
+            data: {
+                toggled
+            }
+        })
+    })
+
+    // Disable automatic response, ours is async
+    return false
 })

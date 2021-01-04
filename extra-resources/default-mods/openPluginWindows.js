@@ -5,6 +5,8 @@
  * @category global
  */
 
+let lowLatencyModeOn = false
+
 Mod.registerAction({
     title: "Restore Open Plugin Windows",
     id: "restore-open-plugin-windows",
@@ -42,6 +44,93 @@ Mod.registerAction({
         keys: ["0"]
     },
     action: toggleBypassFocusedPluginWindow
+})
+
+Mod.registerAction({
+    title: 'Toggle low latency mode',
+    id: 'toggle-low-latency-mode',
+    description: 'Disables or enables all devices in the latency list',
+    defaultSetting: {
+        keys: ["F6"]
+    },
+    action: async () => {
+        const listsByTrackName = (await Db.getCurrentProjectData() || {})
+        const initiallySelectedTrack = Bitwig.currentTrack
+        lowLatencyModeOn = !lowLatencyModeOn
+        Bitwig.showMessage(`Low latency mode: ${lowLatencyModeOn ? 'On' : 'Off'}`)
+
+        for (const track in listsByTrackName) {
+            log(`Processing track: ${track}`)
+            await Bitwig.sendPacketPromise({
+                type: 'track/select',
+                data: {
+                    name: track,
+                    scroll: false,
+                    allowExitGroup: false,
+                    enter: false
+                }
+            })
+            const { data: { toggled }} = await Bitwig.sendPacketPromise({
+                type: 'open-plugin-windows/toggle-devices-active',
+                data: {
+                    active: !lowLatencyModeOn,
+                    deviceNames: listsByTrackName[track]
+                }
+            })
+            if (toggled.length) {
+                Bitwig.showMessage(`${lowLatencyModeOn ? `Deactivated` : `Activated`} ${toggled.join(', ')}`)
+            }
+        }
+        await Bitwig.sendPacket({
+            type: 'track/select',
+            data: {
+                name: initiallySelectedTrack,
+                scroll: false,
+                allowExitGroup: false,
+                enter: false
+            }
+        })
+    }
+})
+
+Mod.registerAction({
+    title: "Toggle device in latency list",
+    id: "toggle-device-in-latency-list",
+    description: `Adds or removes the currently selected device from the latency list`,
+    defaultSetting: {
+        keys: ["F5"]
+    },
+    action: async () => {
+        const listsByTrackName = (await Db.getCurrentProjectData() || {})
+        const track = Bitwig.currentTrack
+        const device = Bitwig.currentDevice
+        if (!(track && device)) {
+            return Bitwig.showMessage('No active device or track')
+        }
+
+        const deviceName = device.name
+        const list = (listsByTrackName[track] || [])
+        if (list.indexOf(deviceName) >= 0) {
+            if (list.length === 1) {
+                delete listsByTrackName[track]
+                await Db.setCurrentProjectData(listsByTrackName)
+            } else {
+                await Db.setCurrentProjectData({
+                    ...listsByTrackName,
+                    [track]: list.filter(name => name !== deviceName)
+                })
+            }
+            Bitwig.showMessage(`${track}/${deviceName} removed from latency list`)
+        } else {
+            await Db.setCurrentProjectData({
+                ...listsByTrackName,
+                [track]: list.concat(deviceName)
+            })
+            Bitwig.showMessage(`${track}/${deviceName} added to latency list`)
+        }
+        const newList = (await (Db.getCurrentProjectData()) || {})[track] || []
+        // Bitwig.showMessage(`Latency list for ${track}: ${JSON.stringify(newList)}`)
+    }
 })
 
 Mouse.on('mouseup', event => {

@@ -86,8 +86,8 @@ function makeWindowOpener() {
        }
    
        const debug = false
-       logWithTime(`Opening floating window with path: ${path} and options: `, options)
-       logWithTime(`Floating window info: `, floatingWindowInfo)
+    //    logWithTime(`Opening floating window with path: ${path} and options: `, options)
+    //    logWithTime(`Floating window info: `, floatingWindowInfo)
        if (!floatingWindowInfo || path !== floatingWindowInfo.path) {
            floatingWindowInfo?.window.close()
            floatingWindowInfo = {
@@ -184,10 +184,15 @@ interface CueMarker {
     color: string
 }
 
+interface Device {
+    name: string
+}
+
 export class ModsService extends BESService {
     currProject: string | null = null
     currTrack: string | null = null
     cueMarkers: CueMarker[] = []
+    currDevice: Device | null = null
     browserIsOpen = false
     settingsService = getService<SettingsService>('SettingsService')
     folderWatcher?: any
@@ -476,6 +481,9 @@ export class ModsService extends BESService {
                 get currentTrack() {
                     return that.currTrack
                 },
+                get currentDevice() {
+                    return that.currDevice
+                },
                 get cueMarkers() {
                     return that.cueMarkers
                 },
@@ -548,6 +556,7 @@ export class ModsService extends BESService {
                     const projectName = this.simplifiedProjectName
                     const projectId = await getProjectIdForName(projectName, true)
                     const project = await projects.findOne(projectId)
+                    this.logForMod(mod.id, `Setting project data: `, data)
                     await projects.update(projectId, {
                         data: {
                             ...project.data,
@@ -779,6 +788,9 @@ export class ModsService extends BESService {
         })
         interceptPacket('tracks', undefined, async ({ data: tracks }) => {
             this.tracks = tracks
+        })
+        interceptPacket('device', undefined, async ({ data: device }) => {
+            this.currDevice = device
         })
         interceptPacket('cue-markers', undefined, async ({ data: cueMarkers }) => {
             this.cueMarkers = cueMarkers

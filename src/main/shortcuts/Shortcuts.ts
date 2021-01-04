@@ -60,6 +60,7 @@ export class ShortcutsService extends BESService {
     browserIsOpen
     enteringValue = false
     spotlightOpen = false
+    commanderOpen = false
     tabSwitcherOpen = false
     browserText = ''
     actions = this.getActions()
@@ -1001,6 +1002,16 @@ export class ShortcutsService extends BESService {
                 shortcutCodeWhileMouseDown = ''
             }
 
+            if (this.commanderOpen) {
+                if (lowerKey === 'Escape' || lowerKey.indexOf('Enter') >= 0) {
+                    this.log('Commander is closed')
+                    this.commanderOpen = false
+                    return // Don't process the enter/escape event internally
+                } else {
+                    return
+                }
+            }
+
             if (this.spotlightOpen) {
                 if (lowerKey === 'Escape' || lowerKey.indexOf('Enter') >= 0) {
                     this.log('Spotlight is closed')
@@ -1025,6 +1036,11 @@ export class ShortcutsService extends BESService {
             if (lowerKey === 'Space' && Meta && !Shift && !Control && !Alt) {
                 this.log('Spotlight is open')
                 this.spotlightOpen = true
+                return
+            }
+            if (lowerKey === 'Enter' && Control && !Shift && !Meta && !Alt) {
+                this.log('Commander is open')
+                this.commanderOpen = true
                 return
             }
 
