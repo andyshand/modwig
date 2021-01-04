@@ -5,8 +5,6 @@
  * @category global
  */
 
-let lowLatencyModeOn = false
-
 Mod.registerAction({
     title: "Restore Open Plugin Windows",
     id: "restore-open-plugin-windows",
@@ -54,12 +52,12 @@ Mod.registerAction({
         keys: ["F6"]
     },
     action: async () => {
-        const listsByTrackName = (await Db.getCurrentProjectData() || {})
+        let { tracks, lowLatencyMode } = (await Db.getCurrentProjectData() || {})
         const initiallySelectedTrack = Bitwig.currentTrack
-        lowLatencyModeOn = !lowLatencyModeOn
-        Bitwig.showMessage(`Low latency mode: ${lowLatencyModeOn ? 'On' : 'Off'}`)
+        lowLatencyMode = !lowLatencyMode
+        Bitwig.showMessage(`Low latency mode: ${lowLatencyMode ? 'On' : 'Off'}`)
 
-        for (const track in listsByTrackName) {
+        for (const track in tracks) {
             log(`Processing track: ${track}`)
             await Bitwig.sendPacketPromise({
                 type: 'track/select',
@@ -73,14 +71,15 @@ Mod.registerAction({
             const { data: { toggled }} = await Bitwig.sendPacketPromise({
                 type: 'open-plugin-windows/toggle-devices-active',
                 data: {
-                    active: !lowLatencyModeOn,
-                    deviceNames: listsByTrackName[track]
+                    active: !lowLatencyMode,
+                    deviceNames: tracks[track]
                 }
             })
             if (toggled.length) {
-                Bitwig.showMessage(`${lowLatencyModeOn ? `Deactivated` : `Activated`} ${toggled.join(', ')}`)
+                Bitwig.showMessage(`${lowLatencyMode ? `Deactivated` : `Activated`} ${toggled.join(', ')}`)
             }
         }
+        Db.setCurrentProjectData({ tracks, lowLatencyMode })
         await Bitwig.sendPacket({
             type: 'track/select',
             data: {
@@ -101,7 +100,10 @@ Mod.registerAction({
         keys: ["F5"]
     },
     action: async () => {
-        const listsByTrackName = (await Db.getCurrentProjectData() || {})
+        let { tracks: listsByTrackName, ...rest } = (await Db.getCurrentProjectData() || {})
+        if (!listsByTrackName) {
+            listsByTrackName = {}
+        }
         const track = Bitwig.currentTrack
         const device = Bitwig.currentDevice
         if (!(track && device)) {
@@ -113,22 +115,28 @@ Mod.registerAction({
         if (list.indexOf(deviceName) >= 0) {
             if (list.length === 1) {
                 delete listsByTrackName[track]
-                await Db.setCurrentProjectData(listsByTrackName)
+                await Db.setCurrentProjectData({...rest, tracks: listsByTrackName})
             } else {
                 await Db.setCurrentProjectData({
-                    ...listsByTrackName,
-                    [track]: list.filter(name => name !== deviceName)
+                    ...rest, 
+                    tracks: {
+                        ...listsByTrackName,
+                        [track]: list.filter(name => name !== deviceName)
+                    }
                 })
             }
             Bitwig.showMessage(`${track}/${deviceName} removed from latency list`)
         } else {
             await Db.setCurrentProjectData({
-                ...listsByTrackName,
-                [track]: list.concat(deviceName)
+                ...rest,
+                tracks: {
+                    ...listsByTrackName,
+                    [track]: list.concat(deviceName)
+                }
             })
             Bitwig.showMessage(`${track}/${deviceName} added to latency list`)
         }
-        const newList = (await (Db.getCurrentProjectData()) || {})[track] || []
+        // const newList = (await (Db.getCurrentProjectData()) || {}).tracks[track] || []
         // Bitwig.showMessage(`Latency list for ${track}: ${JSON.stringify(newList)}`)
     }
 })
