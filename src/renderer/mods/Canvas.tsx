@@ -1,6 +1,7 @@
 import React from 'react'
 import { styled } from 'linaria/react'
 import { ModwigComponent } from '../core/ModwigComponent'
+import { shortcutToTextDescription } from '../settings/helpers/settingTitle'
 const Wrap = styled.div`
     position: fixed;
     top: 0;
@@ -60,12 +61,13 @@ const Notification = styled.div`
     align-items: center; */
     text-align: left;
     width: 20em;
-    font-size: 1.2rem;
-    padding: 1em;
-    margin-top: 1em;
-    border-radius: .3em;
+    font-size: .8rem;
+    font-family: 'Menlo', 'monospace';
+    padding: .4em .8em;
+    /* margin-top: 1em; */
+    /* border-radius: .3em; */
     /* justify-content: center; */
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.7);
     color: white;
 
 `
@@ -99,11 +101,24 @@ export class Canvas extends ModwigComponent<any> {
     componentDidMount() {
         
     }
+    renderNotification(notif) {
+        if (!notif.type) {
+            return notif.content
+        } else if (notif.type) {
+            return {
+                actionTriggered: (notif) => {
+                    // return <div>{JSON.stringify(notif.data)}</div>
+                    return <div>{shortcutToTextDescription({value: notif.data.state})} {notif.data.title}</div>
+                }
+            }[notif.type](notif)
+        }
+    }
+
     renderNotifications() {
         return <NotificatinosWrap>
             {this.state.notifications.map(notif => {
                 return <Notification key={notif.id}>
-                    {notif.content}
+                    {this.renderNotification(notif)}
                 </Notification>
             })}
         </NotificatinosWrap>
