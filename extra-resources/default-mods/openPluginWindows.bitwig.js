@@ -272,7 +272,7 @@ function iterateDevices(deviceCb, onComplete = () => {}) {
     //     }, 1000)
     // }
     
-    iterating = true
+    // iterating = true
     ourCursorDevice.selectFirstInChannel(deviceController.cursorTrack)
     waitForContextUpdateThen(() => {
         doIterateDevices(deviceCb, () => {
@@ -297,10 +297,23 @@ packetManager.listen('open-plugin-windows/open-all', (packet) => {
     }
 })
 
+function iteratingGuardShouldCancel() {
+    if (iterating) {
+        host.showPopupNotification(`Currently iterating, skipping for now to prevent invalid states`)
+        return true
+    }
+    return false
+}
+
 packetManager.listen('open-plugin-windows/open-with-preset-name', (packet) => {
+    if (iteratingGuardShouldCancel()) {
+        return
+    }
+
     const presetNames = packet.data.presetNames
     ourCursorDevice.selectFirstInChannel(deviceController.cursorTrack)
 
+    iterating = true
     showMessage(`Reopening plugins: ${Object.keys(presetNames).join(', ')}`)
     iterateDevices((d, _, done) => {
         maybeLog('Device: ' + d.name().get())
@@ -310,6 +323,8 @@ packetManager.listen('open-plugin-windows/open-with-preset-name', (packet) => {
             d.isWindowOpen().set(true)
         }
         done()
+    }, () => {
+        iterating = false
     })
 })
 
@@ -320,6 +335,10 @@ deviceController.cursorTrack.name().addValueObserver(() => {
 })
 
 packetManager.listen('open-plugin-windows/toggle-bypass', (packet) => {
+    if (iteratingGuardShouldCancel()) {
+        return
+    }
+
     const devicePath = packet.data.devicePath
     const withCursorDevice = d => {
         const newState = !d.isEnabled().get()
@@ -350,11 +369,14 @@ packetManager.listen('open-plugin-windows/toggle-bypass', (packet) => {
     }
     const pathWithoutTrack = devicePath.substr(index + skipAfter.length)
     let found = false
+
+    iterating = true
     iterateDevices((d, {trackRelativePath}, done) => {
         if (!found && trackRelativePath === pathWithoutTrack) {
             // This is our guy!
             withCursorDevice(d)
             found = true
+            iterating = false
             return done(false)
         }
         done()
@@ -362,29 +384,38 @@ packetManager.listen('open-plugin-windows/toggle-bypass', (packet) => {
         if (!found) {
             showMessage('Device with path "' + pathWithoutTrack + '" not found')
         }
+        iterating = false
     })
 })
 
 packetManager.listen('open-plugin-windows/toggle-devices-active', (packet) => {
+    if (iteratingGuardShouldCancel()) {
+        return
+    }
+
     const deviceNames = packet.data.deviceNames
     const active = packet.data.active
    
     const toggled = []
+
+    iterating = true
     runAction([
         'focus_or_toggle_detail_editor',
         'focus_or_toggle_device_panel'
     ])
     iterateDevices((d, _, done) => {
         let deviceName = d.name().get()
-        d.selectInEditor() // If we don't do this the GUI and API views seem to go out of sync? Is weird
         if (deviceNames.indexOf(deviceName) >= 0) {
             toggled.push(deviceName)
+            d.selectInEditor() // If we don't do this the GUI and API views seem to go out of sync? Is weird
             if (active) {
                 runAction(['Activate'])
             } else {
                 runAction(['Deactivate'])
             }
-            done()
+            setTimeout(() => {
+                done()
+            }, 250)
         } else {
             done()
         }
@@ -396,6 +427,7 @@ packetManager.listen('open-plugin-windows/toggle-devices-active', (packet) => {
                 toggled
             }
         })
+        iterating = false
     })
 
     // Disable automatic response, ours is async
