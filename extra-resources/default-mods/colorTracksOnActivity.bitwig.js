@@ -7,6 +7,10 @@
  */
 
 let threshold = 40
+let isRecording = false
+transport.isArrangerRecordEnabled().addValueObserver(value => {
+    isRecording = value
+})
 
 const colors = {
     ORANGE: [1, 0.5137255191802979, 0.24313725531101227],
@@ -62,6 +66,8 @@ const sets = [
             'tom',
             'clap',
             'rim',
+            'conga',
+            'bongo',
             'shaker',
             'click',
             'tamb',
@@ -175,7 +181,7 @@ tracks.forEach((t, i) => {
     })
 
     t.addVuMeterObserver(128, -1, true, val => {
-        if (!Mod.enabled || paused) {
+        if (!Mod.enabled || paused || isRecording) {
             return
         }
         

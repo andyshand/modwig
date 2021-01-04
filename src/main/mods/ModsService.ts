@@ -262,11 +262,15 @@ export class ModsService extends BESService {
         const db = await getDb()
         const projectTracks = db.getRepository(ProjectTrack)
         const projects = db.getRepository(Project)
+        const that = this
         
         const defaultData = { }
         async function loadDataForTrack(name: string, project: string) {
             const existingProject = await projects.findOne({ where: { name: project } })
-            if (!existingProject) return defaultData
+            if (!existingProject) {
+                that.log(`No project exists for ${project} (track name: ${name}), returning default data`)
+                return defaultData
+            }
             const saved = await projectTracks.findOne({
                 where: {
                     project_id: existingProject.id,
@@ -279,16 +283,18 @@ export class ModsService extends BESService {
         async function getProjectIdForName(project: string, create: boolean = false) : Promise<string | null> {
             const existingProject = await projects.findOne({ where: { name: project } })
             if (!existingProject && create) {
-                return (await projects.save(projects.create({ name: project }))).id
+                const newProjectId = (await projects.save(projects.create({ name: project, data: {} }))).id
+                that.log(`Created new project with id ${newProjectId}`)
+                return newProjectId
             } else {
                 return existingProject?.id ?? null
             }
         }
         async function createOrUpdateTrack(track: string, project: string, data: any) {
-            const projectId = await getProjectIdForName(project)
+            const projectId = await getProjectIdForName(project, true)
             const existingTrack = await projectTracks.findOne({ where: { name: track, project_id: projectId } })
             if (existingTrack) {
-                logWithTime(`updating track (${existingTrack.name} (id: ${existingTrack.id})) with data: `, data)
+                logWithTime(`Updating track (${existingTrack.name} (id: ${existingTrack.id})) with data: `, data)
                 await projectTracks.update(existingTrack.id, { data: {...existingTrack.data, ...data} });
             } else {
                 const newTrack = projectTracks.create({
@@ -366,7 +372,6 @@ export class ModsService extends BESService {
             }
             return obj
         }
-        const that = this
         const thisApiId = nextId++
         const api = {
             id: thisApiId,
