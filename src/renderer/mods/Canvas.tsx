@@ -63,9 +63,9 @@ const Notification = styled.div`
     align-items: center; */
     text-align: left;
     width: 20em;
-    font-size: .8rem;
+    font-size: .9rem;
     font-family: 'Menlo', 'monospace';
-    /* margin-top: 1em; */
+    margin-top: .2em;
     /* border-radius: .3em; */
     /* justify-content: center; */
     background: rgba(0, 0, 0, 0.7);
