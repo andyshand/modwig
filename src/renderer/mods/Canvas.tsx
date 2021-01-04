@@ -2,6 +2,8 @@ import React from 'react'
 import { styled } from 'linaria/react'
 import { ModwigComponent } from '../core/ModwigComponent'
 import { shortcutToTextDescription } from '../settings/helpers/settingTitle'
+import { faBolt, faInfo } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 const Wrap = styled.div`
     position: fixed;
     top: 0;
@@ -63,15 +65,46 @@ const Notification = styled.div`
     width: 20em;
     font-size: .8rem;
     font-family: 'Menlo', 'monospace';
-    padding: .4em .8em;
     /* margin-top: 1em; */
     /* border-radius: .3em; */
     /* justify-content: center; */
     background: rgba(0, 0, 0, 0.7);
     color: white;
-
 `
 const notifTimeoutCheckFreqMS = 500
+
+const IconNotifWrap = styled.div`
+    display: flex;
+    align-items: center;
+    > * {
+    }
+    >:nth-child(1) {
+        padding: .4em .8em;
+        font-size: .8em;
+        border-right: 1px solid #777;
+    }
+    >:nth-child(2) {
+        padding: .4em .8em;
+    }
+`
+const IconNotification = ({notification: notif, children}) => {
+    const iconMap = {
+        actionTriggered: {
+            icon: faBolt,
+            color: '#d9c955'
+        }
+    }
+    const notifInfo = iconMap[notif.type] || {
+        icon: faInfo,
+        color: 'white'
+    }
+    const icon = <FontAwesomeIcon icon={notifInfo.icon} /> || <div>□</div>
+    return <IconNotifWrap>
+        <div style={{color: notifInfo.color}}>{icon}</div>
+        <div>{children}</div>
+    </IconNotifWrap>
+}
+
 export class Canvas extends ModwigComponent<any> {
     canvasRef = React.createRef<HTMLCanvasElement>()
     state = {
@@ -103,12 +136,13 @@ export class Canvas extends ModwigComponent<any> {
     }
     renderNotification(notif) {
         if (!notif.type) {
-            return notif.content
+            return <IconNotification notification={notif}>{notif.content}</IconNotification>
         } else if (notif.type) {
             return {
                 actionTriggered: (notif) => {
-                    // return <div>{JSON.stringify(notif.data)}</div>
-                    return <div>{shortcutToTextDescription({value: notif.data.state})} {notif.data.title}</div>
+                    return <IconNotification notification={notif}>
+                        {shortcutToTextDescription({value: notif.data.state})} {notif.data.title}
+                    </IconNotification>
                 }
             }[notif.type](notif)
         }

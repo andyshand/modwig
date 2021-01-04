@@ -181,10 +181,14 @@ tracks.forEach((t, i) => {
     })
 
     t.addVuMeterObserver(128, -1, true, val => {
-        if (!Mod.enabled || paused || isRecording) {
+        if (!Mod.enabled) {
+            const defaultColor = getTrackDefaultColor(t)
+            setColorIfNotAlready(t, defaultColor, trackName)
             return
         }
-        
+        if (paused || isRecording) {
+            return
+        }        
         if (trackName === selectedTrackName || val > threshold) {
             const defaultColor = getTrackDefaultColor(t)
             setColorIfNotAlready(t, defaultColor, trackName)
