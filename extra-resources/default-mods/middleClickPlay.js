@@ -16,7 +16,7 @@ let editorBorderLineY = 9999
 let draggingBorderLine = false
 let shiftEDown = false
 
-let numDown = null
+let numDownBefore = null
 
 Keyboard.on('keydown', event => {
     const { lowerKey, Shift } = event
@@ -25,7 +25,7 @@ Keyboard.on('keydown', event => {
     // restore tools after middle click + 1 timeline
     let num = parseInt(lowerKey, 10)
     if (num > 1 && num <= 5) {
-        numDown = num
+        numDownBefore = num
     }
 })
 
@@ -38,52 +38,57 @@ Keyboard.on('keyup', event => {
         editorIsProbablyOpen = true
     }
     let num = parseInt(lowerKey, 10)
-    if (num === numDown) {
-        numDown = null
+    if (num === numDownBefore) {
+        numDownBefore = null
     }
 })
 
 function playWithEvent(event) {
     const mousePosBefore = Mouse.getPosition()
-    Mouse.returnAfter(() => {
-        if (numDown) {
-            Keyboard.keyUp(String(numDown))
-        }
+    if (numDownBefore) {
+        Keyboard.keyUp(String(numDownBefore))
+    }
+    
+    const timelineClickPosition = {x: event.bitwigX, y: 91}
+    
+    // Modifiers move start position back further to left to allow run-up
+    // to start position. Left-er modifiers = left-er position :D
+    // let backFurther = 0
+    // if (event.Meta) {
+    //     backFurther = 100
+    // } else if (event.Alt) {
+    //     backFurther = 200
+    // } else if (event.Control) {
+    //     backFurther = 400
+    // }
+
+    // Make sure the position doesn't cross over into track header 
+    // timelineClickPosition.x = Math.max(480, timelineClickPosition.x);
+
+    const doTheClick = () => {
+        Keyboard.keyDown('2')
+        Mouse.click(0, event)
+        Keyboard.keyUp('2')
         Keyboard.keyDown('1')
-        const timelineClickPosition = {x: event.bitwigX, y: 91}
-        
-        // Modifiers move start position back further to left to allow run-up
-        // to start position. Left-er modifiers = left-er position :D
-        // let backFurther = 0
-        // if (event.Meta) {
-        //     backFurther = 100
-        // } else if (event.Alt) {
-        //     backFurther = 200
-        // } else if (event.Control) {
-        //     backFurther = 400
-        // }
-
-        // Make sure the position doesn't cross over into track header 
-        // timelineClickPosition.x = Math.max(480, timelineClickPosition.x);
-
-        if (!Bitwig.intersectsPluginWindows(timelineClickPosition)) {
-            log(`Double-clicking time ruler at ${timelineClickPosition.x}, ${timelineClickPosition.y}`)
-            // Pass modifiers 
-            Bitwig.doubleClick(0, {...event, ...timelineClickPosition})
-        } else {
-            const pluginPositions = Bitwig.getPluginWindowsPosition()
-            Mod.runAction(`move-plugin-windows-offscreen`, { forceState: 'bottomright' })
-            setTimeout(() => {
-                Bitwig.doubleClick(0, {...event, ...timelineClickPosition})
-                Mouse.setPosition(mousePosBefore.x, mousePosBefore.y)
-                Bitwig.setPluginWindowsPosition(pluginPositions)
-            }, 100)
-        }
+        Bitwig.doubleClick(0, {...event, ...timelineClickPosition})
+        Mouse.setPosition(mousePosBefore.x, mousePosBefore.y)
         Keyboard.keyUp('1')
-        if (numDown) {
-            Keyboard.keyDown(String(numDown))
+        if (numDownBefore) {
+            Keyboard.keyDown(String(numDownBefore))
         }
-    })
+    }
+    if (!Bitwig.intersectsPluginWindows(timelineClickPosition)) {
+        log(`Double-clicking time ruler at ${timelineClickPosition.x}, ${timelineClickPosition.y}`)
+        // Pass modifiers 
+        doTheClick()
+    } else {
+        const pluginPositions = Bitwig.getPluginWindowsPosition()
+        Mod.runAction(`move-plugin-windows-offscreen`, { forceState: 'bottomright' })
+        setTimeout(() => {
+            doTheClick()
+            Bitwig.setPluginWindowsPosition(pluginPositions)
+        }, 100)
+    }
 }
 
 let timeSelecting = false
