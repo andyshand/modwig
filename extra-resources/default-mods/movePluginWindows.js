@@ -9,6 +9,7 @@ Mod.registerAction({
     title: "Move Plugin Windows Offscreen",
     id: "move-plugin-windows-offscreen",
     description: `Moves plugin windows offscreen, remembering their location for later restoration.`,
+    contexts: ['-browser'],
     defaultSetting: {
         keys: ["Escape"]
     },
@@ -43,6 +44,7 @@ Mod.registerAction({
     title: "Restore Plugin Windows Onscreen",
     id: "restore-plugin-windows-onscreen",
     description: `Restores the position of plugin windows previously moved offscreen.`,
+    contexts: ['-browser'],
     defaultSetting: {
         keys: ["F1"]
     },
@@ -62,6 +64,7 @@ Mod.registerAction({
 Mod.registerAction({
     title: "Tile Plugin Windows",
     id: "tile-plugin-windows",
+    contexts: ['-browser'],
     description: `Tile plugin windows in the center of the arranger.`,
     defaultSetting: {
         keys: ["F2"]

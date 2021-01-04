@@ -740,6 +740,23 @@ export class ModsService extends BESService {
         }) as any
     }
 
+    showNotification(notification) {
+        openCanvasWindow(`/canvas`, {
+            data: {
+                notifications: [
+                    {
+                        id: nextId++,
+                        timeout: new Date().getTime() + 3000,
+                        date: new Date().getTime(),
+                        ...notification,
+                    }   
+                ]
+            },
+            width: 2560,
+            height: 1440
+        })
+    }
+
     async activate() {
         interceptPacket('message', undefined, async ({ data: { msg } }) => {
             showMessage(msg)
@@ -878,6 +895,16 @@ export class ModsService extends BESService {
                 enteringValue
             })
         })
+
+        this.shortcutsService.events.actionTriggered.listen(((action, context) => {
+            this.showNotification({
+                type: 'actionTriggered',
+                data: {
+                    title: action.title || action.id,
+                    ...context
+                }
+            })
+        }) as any)
     }
 
     async registerEnableDisableShortcut(mod: ModInfo) {

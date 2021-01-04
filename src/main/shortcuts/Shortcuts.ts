@@ -18,7 +18,14 @@ const MODS_MESSAGE = `Modulators are currently inaccessible from the controller 
 const MODS_MESSAGE_2 = `Modulators are currently inaccessible from the controller API.`
 const PROXY_MESSAGE = key => `Proxy key for the "${key}" key for convenient remapping.`
 
-export interface TempActionSpec {
+export interface BaseActionSpec {
+    /**
+     * A list of valid contexts this action should/shouldn't run in
+     * e.g. ['-browser'] to never run while popup browser is open
+     */
+    contexts?: string[]
+}
+export interface TempActionSpec extends BaseActionSpec {
     defaultSetting: {
         keys: String[],
         doubleTap?: boolean
@@ -28,7 +35,7 @@ export interface TempActionSpec {
     title?: string
     action: Function
 }
-export interface ActionSpec {
+export interface ActionSpec extends BaseActionSpec  {
     title: string
     id: string
     category: string
@@ -615,13 +622,12 @@ export class ShortcutsService extends BESService {
                         defaultSetting: {
                             keys: ["Meta", String(i)]
                         },
+                        contexts: ['browser'],
                         action: () => {
-                            if (this.browserIsOpen) {
-                                sendPacketToBitwig({
-                                    type: 'browser/tabs/set',
-                                    data: i - 1
-                                })
-                            }
+                            sendPacketToBitwig({
+                                type: 'browser/tabs/set',
+                                data: i - 1
+                            })
                         },
                     }
                 }),
@@ -883,12 +889,30 @@ export class ShortcutsService extends BESService {
         this.settingsService.events.settingsUpdated.listen(() => this.updateShortcutCache())
     }
 
+    isCurrentContextRunnable(contexts) {
+        for (const context of contexts) {
+            // this.log(`Context is: ${context} and browser is open: ${this.browserIsOpen}`)
+            if (context === '-browser' && this.browserIsOpen)  {
+                return false
+            } else if (context === 'browser' && !this.browserIsOpen) {
+                return false
+            }
+        }
+        return true
+    }
+
     maybeRunActionForState(state) {
         const code = this.makeShortcutValueCode(state)
         let ran = false
         this.log(`State code is ${code}`)
         if (code in this.shortcutCache) {
             for (const { runner, action } of this.shortcutCache[code]) {
+                // this.log(action)
+                if (action && 'contexts' in action && !this.isCurrentContextRunnable(action.contexts)) {
+                    this.log(`Skipping action ${action} due to context mismatch`)
+                    continue
+                }
+
                 runner({
                     keyState: state,
                     setEnteringValue: (yesOrNo) => {
@@ -900,7 +924,9 @@ export class ShortcutsService extends BESService {
                 // The shortcut to disable/enable a mod is one of these such pseudo actions
                 // that doesn't fully fulfil the ActionSpec
                 if (action) {
-                    this.events.actionTriggered.emit(action)
+                    this.events.actionTriggered.emit(action, {
+                        state
+                    })
                 }
                 ran = true
             }
@@ -946,8 +972,15 @@ export class ShortcutsService extends BESService {
             return keys.reverse()
         }   
 
+
+        let mouseIsDownMightBeDragging = false
+        let shortcutCodeWhileMouseDown = ''
         Keyboard.on('mouseup', event => {
             this.setEnteringValue(false)
+            mouseIsDownMightBeDragging = false
+        })
+        Keyboard.on('mousedown', event => {
+            mouseIsDownMightBeDragging = true
         })
 
         Keyboard.on('keydown', event => {
@@ -955,6 +988,28 @@ export class ShortcutsService extends BESService {
             if (/F[0-9]+/.test(lowerKey) || lowerKey === 'Clear' || lowerKey.indexOf('Arrow') === 0) {
                 // FN defaults to true when using function keys (makes sense I guess?), but also Clear???
                 Fn = false
+            }
+
+            let keys = getEventKeysArray(event)
+            let partialState = {
+                keys,
+                fn: Fn
+            }
+
+            // Don't process shortcuts when dragging (this was to stop shift + 2 being picked up as a shortcut when dragging to make
+            // an off-grid time selection)
+            if (mouseIsDownMightBeDragging) {
+                // Also store code pressed while dragging so that upon release the shortcut doesn't get triggered until next keypress
+                // (as keydown events will continue to come in as key repeats)
+                shortcutCodeWhileMouseDown = this.makeShortcutValueCode(partialState)
+                return
+            }
+
+            if (this.makeShortcutValueCode(partialState) === shortcutCodeWhileMouseDown){
+                return
+            } else {
+                // It's ok, dragging has stopped and we can process other keyboard shortcuts
+                shortcutCodeWhileMouseDown = ''
             }
 
             if (this.spotlightOpen) {
@@ -991,7 +1046,6 @@ export class ShortcutsService extends BESService {
                     this.log('Browser text: ' + this.browserText)
                 }
 
-                let keys = getEventKeysArray(event)
                 const asJSON = JSON.stringify(keys)
                 this.log(asJSON)
 
@@ -1001,9 +1055,8 @@ export class ShortcutsService extends BESService {
                     lastKey = ''
                     lastKeyPressed = new Date(0)
                     ranDouble = this.maybeRunActionForState({
-                        keys,
-                        doubleTap: true,
-                        fn: Fn
+                        ...partialState,
+                        doubleTap: true
                     })
                 } 
                 if (!ranDouble) {
@@ -1013,9 +1066,8 @@ export class ShortcutsService extends BESService {
                     // Uncomment to debug error messages that crash NAPI
                     // setTimeout(() => {
                         this.maybeRunActionForState({
-                            keys,
-                            doubleTap: false,
-                            fn: Fn
+                            ...partialState,
+                            doubleTap: false
                         })
                     // }, 100)
                 }
