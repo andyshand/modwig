@@ -961,6 +961,7 @@ export class ShortcutsService extends BESService {
                 if (lowerKey === 'Escape' || lowerKey.indexOf('Enter') >= 0) {
                     this.log('Spotlight is closed')
                     this.spotlightOpen = false
+                    return // Don't process the enter/escape event internally
                 } else {
                     return
                 }

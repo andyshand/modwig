@@ -16,7 +16,7 @@ Mod.registerShortcutMap({
     },
     'Alt 1': async () => {
         if (!Bitwig.isBrowserOpen) {
-            Bitwig.runAction(['Loop Selected Region', 'Jump to Playback Start Time'])
+            Bitwig.runAction(['Loop Selected Region'])
         }
     },
     'Alt Shift 1': async () => {

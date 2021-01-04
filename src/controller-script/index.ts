@@ -10,6 +10,29 @@ load('es5-shim.min.js')
 load('json3.min.js')
 load('Object2.js')
 
+class EventEmitter<T> {
+    nextId = 0
+    listenersById: {[id: number]: (...values: [T, ...any[]]) => void} = {}
+    listen(cb: (data: T) => void) {
+        let nowId = this.nextId++
+        this.listenersById[nowId] = cb
+        return nowId
+    }
+    stopListening(id: number) {
+        delete this.listenersById[id] 
+    }
+    emit(...values: [T, ...any[]]) {
+        for (const listener of Object.values(this.listenersById)) {
+            // logWithTime('Emitting to listener' + listener.toString())
+            listener(...values)
+        }
+    }
+}
+
+function makeEvent<T>() : EventEmitter<T> {
+    return new EventEmitter()
+}
+
 const toUTF8Array = str => {
     var utf8 = [];
     for (var i=0; i < str.length; i++) {
@@ -70,20 +93,6 @@ class PacketError {
     constructor(public readonly code: number, public readonly message?: string) {}
 }
 
-class EventEmitter<T> {
-    nextId = 0
-    listenersById: {[id: number]: (data: T) => void} = {}
-    listen(cb: (data: T) => void) {
-        let nowId = this.nextId++
-        this.listenersById[nowId] = cb
-    }
-    emit(value: T) {
-        for (const listener of Object2.values(this.listenersById)) {
-            listener(value)
-        }
-    }
-}
-
 function setTimeout2(fn, wait, name = 'Unnamed') : any {
     host.scheduleTask(() => {
         log(`Running scheduled task: ${name}`)
@@ -122,6 +131,10 @@ class PacketManager {
     connection: any
     activeConnection: any
     listenersByType: {[type: string]: ((packet: Packet) => void)[]} = {}
+    events = {
+        connected: makeEvent<void>(),
+        disconnected: makeEvent<void>()
+    }
     constructor(deps: Deps) {
         const { app, globalController, showMessage } = deps
         this.connection = connection
@@ -129,10 +142,9 @@ class PacketManager {
         this.connection.setClientConnectCallback(connection => {
             log("Connected to Node");
             this.activeConnection = connection
-            if (deps.globalController) {
-                deps.globalController.sendProject()
-            }
+            this.events.connected.emit()
             this.activeConnection.setDisconnectCallback(() => {
+                this.events.disconnected.emit()
                 host.showPopupNotification("Modwig disconnected");
                 this.activeConnection = null
             })
@@ -287,6 +299,11 @@ class GlobalController extends Controller {
         packetManager.listen('application/undo', () => this.deps.app.undo())
         packetManager.listen('application/redo', () => this.deps.app.redo())
 
+        packetManager.events.connected.listen(() => {
+            this.sendAllTracksAndProject()
+            this.sendAllCueMarkers()
+        })
+
         this.cursorTrack.name().markInterested();
         this.cursorTrack.name().addValueObserver(value => {
             this.lastSelectedTrack = value
@@ -313,7 +330,7 @@ class GlobalController extends Controller {
                     return
                 }
                 // Clear the name cache, could now be wrong
-                this.sendAllTracks()
+                this.sendAllTracksAndProject()
             })
 
             t.addIsSelectedInEditorObserver(selected => {
@@ -423,7 +440,7 @@ class GlobalController extends Controller {
         this.sendAllCueMarkers()
     }
 
-    sendAllTracks() {
+    sendAllTracksAndProject() {
         const tracks = this.mapTracks((t, i, isFX) => {
             const name = t.name().get()
             if (name.length === 0) return null
