@@ -376,14 +376,14 @@ packetManager.listen('open-plugin-windows/toggle-devices-active', (packet) => {
     ])
     iterateDevices((d, _, done) => {
         let deviceName = d.name().get()
+        d.selectInEditor() // If we don't do this the GUI and API views seem to go out of sync? Is weird
         if (deviceNames.indexOf(deviceName) >= 0) {
-            d.selectInEditor()
+            toggled.push(deviceName)
             if (active) {
                 runAction(['Activate'])
             } else {
                 runAction(['Deactivate'])
             }
-            toggled.push(deviceName)
             done()
         } else {
             done()
