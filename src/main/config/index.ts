@@ -11,8 +11,8 @@ export const sqliteBackupPath = isRenderer ? '' : path.join(basePath, 'backups')
 export const storagePath = isRenderer ? '' : path.join(basePath, 'files')
 
 const createFolders = async () => {
-    if (newUser) {
-        // await (fs.rmdir as any)(basePath, { recursive: true })
+    if (newUser && process.env.NEW_USER_CLEAN) {
+        await (fs.rmdir as any)(basePath, { recursive: true })
     }
 
     await createDirIfNotExist(app.getPath('appData'))
