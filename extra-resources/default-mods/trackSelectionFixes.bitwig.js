@@ -9,7 +9,7 @@
      const masterIndex = name.indexOf('Master')
      if (masterIndex > 0) {
          const actualName = name.slice(0, masterIndex).trim()
-         globalController.selectTrackWithName(actualName)
+         globalController.selectTrackWithName(actualName, false)
          log('Forwarding selection to: ' + actualName)
      }
  })
