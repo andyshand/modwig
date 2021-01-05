@@ -5,10 +5,29 @@
  * @category arranger
  */
 
-UI.Arranger.TrackHeaderView.SelectedTrack.on('click', async event => {
-    const ui = event.currentTarget
-    const { x } = Bitwig.scaleXY({ x: 2, y: 0 }) // 2 pixels scaled
-    Mouse.returnAfter(() => {
-        Mouse.click(0, {x: event.x - x, y: ui.y + (ui.h / 2) })  
+ Mouse.on('mouseup', event => {
+    if (!Bitwig.isActiveApplication() || event.intersectsPluginWindows()) {
+        return
+    }
+    const selectedTrack = UI.MainWindow.getArrangerTracks()
+    if (!selectedTrack || !(event.y >= selectedTrack.y && event.y < selectedTrack.y + selectedTrack.h)) {
+        // Mouse.returnAfter(() => {
+        //     Mouse.click(0, {
+        //         x: (selectedTrack.x + selectedTrack.w) - Bitwig.scaleXY({x: 2, y: 0}).x,
+        //         y: selectedTrack.y + Bitwig.scaleXY({x: 0, y: 10}).y,
+        //     })
+        // })
+    }
+    showNotification({
+        content: `Color at ${event.x}, ${event.y} is: ${JSON.stringify(UI.MainWindow.pixelColorAt(event))}`,
+        timeout: 1000 * 20
     })
-})
+ })
+
+// UI.Arranger.TrackHeaderView.SelectedTrack.on('click', async event => {
+//     const ui = event.currentTarget
+//     const { x } = Bitwig.scaleXY({ x: 2, y: 0 }) // 2 pixels scaled
+//     Mouse.returnAfter(() => {
+//         Mouse.click(0, {x: event.x - x, y: ui.y + (ui.h / 2) })  
+//     })
+// })

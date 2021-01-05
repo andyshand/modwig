@@ -15,6 +15,7 @@ public:
         });
         // Napi::FunctionReference *constructor = new Napi::FunctionReference();
         BESColor::constructor = Napi::Persistent(func);
+        BESColor::constructor.SuppressDestruct();
         exports.Set("BESColor", func);
         // env.SetInstanceData<Napi::FunctionReference>(BESColor::constructor);
         return exports;

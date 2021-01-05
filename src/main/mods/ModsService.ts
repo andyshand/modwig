@@ -53,7 +53,7 @@ export function showMessage(msg, { timeout } = { timeout: 5000 }) {
                 {
                     content: msg,
                     id: nextId++,
-                    timeout: new Date().getTime() + timeout,
+                    timeout,
                     date: new Date().getTime()
                 }   
             ]
@@ -163,7 +163,8 @@ function makeWindowOpener() {
 const openFloatingWindow = makeWindowOpener()
 const openCanvasWindow = makeWindowOpener()
 
-const { Keyboard, Mouse, MainWindow, Bitwig } = require('bindings')('bes')
+const { Keyboard, Mouse, MainWindow, Bitwig, UI } = require('bindings')('bes')
+const UIMainWindow = new UI.BitwigWindow({})
 
 interface ModInfo {
     name: string
@@ -460,6 +461,9 @@ export class ModsService extends BESService {
                 lockY: Keyboard.lockY,
                 returnAfter: returnMouseAfter            
             },
+            UI: addNotAlreadyIn({
+                MainWindow: UIMainWindow
+            }, UI),
             Bitwig: addNotAlreadyIn({
                 closeFloatingWindows: Bitwig.closeFloatingWindows,
                 get isAccessibilityOpen() {
@@ -683,7 +687,8 @@ export class ModsService extends BESService {
             wait: ms => new Promise(res => {
                 setTimeout(res, ms)
             }),
-            debounce
+            debounce,
+            showNotification: (notif) => this.showNotification(notif)
         }
         const wrapFunctionsWithTryCatch = (value, key?: string) => {
             if (typeof value === 'object') {
@@ -755,7 +760,7 @@ export class ModsService extends BESService {
                 notifications: [
                     {
                         id: nextId++,
-                        timeout: new Date().getTime() + 3000,
+                        timeout: 3000,
                         date: new Date().getTime(),
                         ...notification,
                     }   

@@ -113,10 +113,15 @@ export class Canvas extends ModwigComponent<any> {
         enteringValue: false
     }
     componentWillReceiveProps(nextProps) {
-        const notifications = nextProps.notifications || []
+        const newNotifications = (nextProps.notifications || []).map(notif => {
+            return {
+                ...notif,
+                timeout: new Date().getTime() + notif.timeout
+            }
+        })
         this.setState({
             ...nextProps,
-            notifications: this.state.notifications.concat(notifications),
+            notifications: this.state.notifications.concat(newNotifications),
         })
         
         const timeoutUntilAllDone = () => {

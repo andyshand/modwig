@@ -2,6 +2,7 @@
 #include <napi.h>
 #include <functional>
 #include <string>
+#include <CoreGraphics/CoreGraphics.h>
 
 struct JSEvent {
     UInt16 nativeKeyCode;
