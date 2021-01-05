@@ -225,10 +225,7 @@ export const SettingShortcut = ({setting}) => {
         ...(setting.type === 'mod' ? [
             optionProps('showInMenu', 'Show in Menu'),
         ] : []),
-        optionProps('doubleTap', 'Double-tap'),
-        ...(value.keys.findIndex(k => /F[0-9]+/.test(k)) === -1 ? [
-            optionProps('fn', 'Fn')
-        ] : []),
+        optionProps('doubleTap', 'Double-tap')
     ]
 
     return <ShortcutWrap >

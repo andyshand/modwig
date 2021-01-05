@@ -7,6 +7,7 @@
     "watch": "tsc -w --p tsconfig.server.json",
     "start": "npm run buildc:dev && NODE_ENV=dev nodemon -V --watch ./dist . --exec 'npm run electron'",
     "start:quiet": "npm run buildc:dev && QUIET_START=true NODE_ENV=dev nodemon -V --watch ./dist . --exec 'npm run electron'",
+    "start:new_user": "NODE_ENV=dev nodemon -V --watch ./dist . --exec 'npm run electron'",
     "start:eco": "npm run buildc:dev && QUIET_START=true NODE_ENV=dev npm run electron",
     "dev": "webpack-dev-server",
     "build:mac": "PLATFORM=darwin ARCH=x64 node ./scripts/package.js && open ../modwig",

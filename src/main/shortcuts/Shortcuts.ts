@@ -792,9 +792,10 @@ export class ShortcutsService extends BESService {
         }
 
         const value = action.defaultSetting || {keys: []}
-        if (process.env.NODE_ENV !== 'dev') {
-            delete value.keys
+        if (!process.env.SEED_SHORTCUTS) {
+            value.keys = []
         }
+
         await this.settingsService.insertSettingIfNotExist({
             key: action.id,
             mod: action.mod || undefined,

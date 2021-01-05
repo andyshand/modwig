@@ -54,6 +54,7 @@ const StepWrap = styled.div`
     justify-content: center;
     height: 100%;
     width: 100%;
+    background: #222;
     top: 0;
     bottom: 0;
     position: fixed;
@@ -229,7 +230,6 @@ export class Setup extends React.Component {
     }
     step3() {
         const relaunch = () => {
-            sendPromise({type: `api/setup/finish`})
             app.relaunch({ args: process.argv.slice(1).concat(['--preferences']) })
             app.exit(0)
         }
@@ -279,6 +279,9 @@ export class Setup extends React.Component {
                     [nextI]: true
                 }
             })
+            if (nextI === this.getStepCount() - 1) {
+                sendPromise({type: `api/setup/finish`})
+            }
         }
     }
     setStep = (i) => {

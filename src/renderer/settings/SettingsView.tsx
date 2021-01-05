@@ -147,7 +147,7 @@ const SidebarSetting = styled.div`
         margin-right: .5rem;
     }
     >:nth-child(2) {
-        color: ${(props: any) => ((!props.valid || props.error) ? 'red' : (props.focused ? '#CCC' : props.enabled ? '' : '#4c4c4c'))};
+        color: ${(props: any) => ((props.valid === false || props.error) ? 'red' : (props.focused ? '#CCC' : props.enabled ? '' : '#4c4c4c'))};
         text-overflow: ellipsis;
         overflow: hidden;    
     }
@@ -461,7 +461,7 @@ export class SettingsView extends ModwigComponent<Props> {
                         })}
                     </div>
                 </ModRow> 
-                {/* <ModLogs mod={chosenMod} /> */}
+                <ModLogs mod={chosenMod} />
             </ModAndLogs> : null}
         </NavSplit>
     }

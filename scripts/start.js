@@ -1,14 +1,14 @@
 
 const { spawn } = require('child_process')
 
-let process
+let proc
 
 async function restart() {
     try {
-        if (process) {
-            process.kill()
+        if (proc) {
+            proc.kill()
         }
-        process = spawn(`npm`, [`run`, `start:quiet`], {
+        proc = spawn(`npm`, [`run`, process.env.NEW_USER ? `start:new_user` : `start:quiet`], {
             // stdio: ['inherit', 'inherit', 'inherit'] 
         })
         function onOutput(data) {
@@ -19,9 +19,9 @@ async function restart() {
                 restart()
             }
         }
-        process.stdout.on('data', onOutput);
-        process.stderr.on('data', onOutput);
-        process.on('close', restart);
+        proc.stdout.on('data', onOutput);
+        proc.stderr.on('data', onOutput);
+        proc.on('close', restart);
     } catch (e) {
         console.error(e)
     }
