@@ -29,10 +29,13 @@ struct MWColor {
     int r, g, b;
     Napi::Object toJSObject(Napi::Env env);
     static MWColor fromJSObject(Napi::Object obj, Napi::Env env);
+    bool isWithinRange(MWColor b, int amount = 5);
 };
 struct ArrangerTrack {
-    UIPoint point;
-    bool selected, expanded, automationOpen;
+    MWRect rect;
+    bool selected, automationOpen;
+    Napi::Object toJSObject(Napi::Env env);
+    static ArrangerTrack fromJSObject(Napi::Object obj, Napi::Env env);
 };
 struct ImageDeets {
     CFDataRef imageData;

@@ -913,6 +913,10 @@ export class ModsService extends BESService {
             })
         })
 
+        this.settingsService.onSettingValueChange('uiScale', val => {
+            UI.updateUILayout({scale: parseInt(val, 10) / 100})
+        })
+
         this.shortcutsService.events.actionTriggered.listen(((action, context) => {
             this.showNotification({
                 type: 'actionTriggered',

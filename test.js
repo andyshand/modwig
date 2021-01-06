@@ -1,8 +1,10 @@
 const { UI } = require('bindings')('bes')
 
+UI.updateUILayout({
+    scale: 1.25
+})
+
 const window = new UI.BitwigWindow({})
-window.getArrangerTracks()
-window.getArrangerTracks()
-window.getArrangerTracks()
-window.getArrangerTracks()
-window.getArrangerTracks()
+setInterval(() => {
+    console.log(window.getArrangerTracks())
+}, 1000)
