@@ -142,7 +142,11 @@ class PacketManager {
         this.connection.setClientConnectCallback(connection => {
             log("Connected to Node");
             this.activeConnection = connection
-            this.events.connected.emit()
+            setTimeout(() => {
+                // A little delay to allow initial events to come through once all listeners are set up
+                // on either end. Really need a better way of handling this, but it works for now
+                this.events.connected.emit()
+            }, 500)
             this.activeConnection.setDisconnectCallback(() => {
                 this.events.disconnected.emit()
                 host.showPopupNotification("Modwig disconnected");
@@ -932,6 +936,7 @@ class UIController extends Controller {
         packetManager.events.connected.listen(() => {
             this.sendUIUpdate()
         })
+        this.sendUIUpdate()
    }
    sendUIUpdate() {
         this.deps.packetManager.send({

@@ -11,7 +11,9 @@
 // action does not affect the surrounding tracks
 let downEvent
 Mouse.on('mousedown', e => {
-    downEvent = e
+    if (e.button === 0) {
+        downEvent = e
+    }
     // showNotification({
     //     content: `Color at ${downEvent.x}, ${downEvent.y} is: ${JSON.stringify(UI.MainWindow.pixelColorAt(downEvent))}`,
     //     timeout: 1000 * 20

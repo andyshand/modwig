@@ -442,7 +442,7 @@ Napi::Value keyPresser(const Napi::CallbackInfo &info, bool down) {
         if (obj.Has("Fn")) {
             flags |= kCGEventFlagMaskSecondaryFn;
         }
-        modwigListeners = obj.Has("modwigListeners");
+        modwigListeners = obj.Has("modwigListeners") && obj.Get("modwigListeners").As<Napi::Boolean>();
     }
     CGEventRef keyevent = CGEventCreateKeyboardEvent(getCGEventSource(modwigListeners), keyCode, down);
     CGEventSetFlags(keyevent, flags);

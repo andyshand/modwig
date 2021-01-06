@@ -80,7 +80,8 @@ void mouseUpDown(const Napi::CallbackInfo &info, bool down, bool doubleClick = f
     CGPoint pos = BESPoint::Unwrap(GetMousePosition(info).As<Napi::Object>())->asCGPoint();
     CGEventFlags flags = (CGEventFlags)0;
     // std::cout << "Button is " << button;
-
+    bool modwigListeners = false;
+    
     if (info[1].IsObject()) {
         // We got options
         Napi::Object options = info[1].As<Napi::Object>();
@@ -103,6 +104,7 @@ void mouseUpDown(const Napi::CallbackInfo &info, bool down, bool doubleClick = f
         if (options.Has("y")) {
             pos.y = (CGFloat)options.Get("y").As<Napi::Number>().DoubleValue();
         }
+        modwigListeners = options.Has("modwigListeners") && options.Get("modwigListeners").As<Napi::Boolean>();
     }
 
     // Swapped from Javascript paradigm
@@ -117,7 +119,7 @@ void mouseUpDown(const Napi::CallbackInfo &info, bool down, bool doubleClick = f
     }
 
 	CGEventRef event = CGEventCreateMouseEvent(
-        getCGEventSource(),
+        getCGEventSource(modwigListeners),
         cgEventType(button, down),
         pos,
         button

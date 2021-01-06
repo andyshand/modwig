@@ -67,7 +67,10 @@ function playWithEvent(event) {
 
     const doTheClick = () => {
         Keyboard.keyDown('2')
-        Mouse.click(0, event)
+        Mouse.click(0, {
+            ...event,
+            modwigListeners: true // Means we can still run our track selection logic
+        })
         Keyboard.keyUp('2')
         Keyboard.keyDown('1')
         Bitwig.doubleClick(0, {...event, ...timelineClickPosition})
