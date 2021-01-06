@@ -343,6 +343,11 @@ Napi::Value BitwigWindow::GetArrangerTracks(const Napi::CallbackInfo &info) {
     auto frame = that->lastBWFrame.frame;
     auto inspectorOpen = screenshot->colorAt(frame.fromBottomLeft(scale(20), scale(17))).r == panelOpenIcon.r;
 
+    if (screenshot->colorAt(frame.fromBottomLeft(scale(2), scale(2))).r == 35) {
+        std::cout << "Settings or popup open";
+        return env.Null();
+    }
+
     auto arrangerStartX = inspectorOpen ? 170 : 4;
     auto arrangerStartY = BITWIG_HEADER_HEIGHT;
     auto arrangerTrackStartY = 42;

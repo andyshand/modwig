@@ -299,7 +299,12 @@ Mod.registerAction({
         Mouse.avoidingPluginWindows(clickAt, () => {
             Mouse.returnAfter(() => {
                 Mouse.click(0, clickAt)
-                showAutomationImpl(false, { onlyShow: true })
+                if (!selected.automationOpen) {
+                    showAutomationImpl(false)
+                    Db.setCurrentTrackData({
+                        automationShown: true
+                    })
+                }
             })
         })
     }

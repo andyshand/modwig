@@ -12,6 +12,10 @@
 let downEvent
 Mouse.on('mousedown', e => {
     downEvent = e
+    // showNotification({
+    //     content: `Color at ${downEvent.x}, ${downEvent.y} is: ${JSON.stringify(UI.MainWindow.pixelColorAt(downEvent))}`,
+    //     timeout: 1000 * 20
+    // })
 })
 
 let shouldAnnounceSelectedTrack = false
@@ -69,8 +73,5 @@ Mouse.on('mouseup', upEvent => {
         // showMessage(`Inside: ${JSON.stringify(inside)}`)
     }, 150)
 
-    // showNotification({
-    //     content: `Color at ${downEvent.x}, ${downEvent.y} is: ${JSON.stringify(UI.MainWindow.pixelColorAt(event))}`,
-    //     timeout: 1000 * 20
-    // })
+    
 })
