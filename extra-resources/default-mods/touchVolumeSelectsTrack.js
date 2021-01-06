@@ -67,7 +67,7 @@ Mouse.on('mouseup', upEvent => {
         }
         // showMessage(`Selected: ${JSON.stringify(selected)}`)
         // showMessage(`Inside: ${JSON.stringify(inside)}`)
-    }, 100)
+    }, 150)
 
     // showNotification({
     //     content: `Color at ${downEvent.x}, ${downEvent.y} is: ${JSON.stringify(UI.MainWindow.pixelColorAt(event))}`,
