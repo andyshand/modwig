@@ -84,3 +84,15 @@ packetManager.listen('jump-to-playback-start-time', () => {
         transport.play()
     }
 })
+
+packetManager.listen('jump-to-playback-start-time-pre-roll', () => {
+    const initialPos = transport.playStartPosition().get()
+    transport.playStartPosition().set(initialPos - 4)
+    runAction('jump_to_playback_start_time')
+    if (!transport.isPlaying().get()) {
+        transport.play()
+    }
+    setTimeout(() => {
+        transport.playStartPosition().set(initialPos)
+    }, 100)
+})

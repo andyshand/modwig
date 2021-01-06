@@ -25,3 +25,13 @@ Mod.registerAction({
     },
     action: () => Bitwig.sendPacket({type: 'jump-to-playback-start-time'})
 })
+
+Mod.registerAction({
+    title: "Jump to Playback Start Time (Pre-roll)",
+    id: "jump-to-playback-start-time-pre-roll",
+    category: "arranger",
+    defaultSetting: {
+        keys: ["Control", "Shift", "Space"]
+    },
+    action: () => Bitwig.sendPacket({type: 'jump-to-playback-start-time-pre-roll'})
+})
