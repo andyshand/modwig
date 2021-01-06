@@ -460,9 +460,9 @@ export class ModsService extends BESService {
                 lockX: Keyboard.lockX,
                 lockY: Keyboard.lockY,
                 returnAfter: returnMouseAfter  ,
-                avoidingPluginWindows: (point, cb) => {
+                avoidingPluginWindows: async (point, cb) => {
                     if (!intersectsPluginWindows(point)) {
-                        return cb()
+                        return Promise.resolve(cb())
                     }
                     const pluginPositions = Bitwig.getPluginWindowsPosition()
                     const displayDimensions = MainWindow.getMainScreen()
@@ -475,13 +475,16 @@ export class ModsService extends BESService {
                         }
                     }
                     Bitwig.setPluginWindowsPosition(tempPositions)
-                    setTimeout(async () => {
-                        const result = cb()
-                        if (result && result.then) {
-                            await result
-                        }
-                        Bitwig.setPluginWindowsPosition(pluginPositions)
-                    }, 100)
+                    return new Promise<void>(res => {
+                        setTimeout(async () => {
+                            const result = cb()
+                            if (result && result.then) {
+                                await result
+                            }
+                            Bitwig.setPluginWindowsPosition(pluginPositions)
+                            res()
+                        }, 100)
+                    })
                 }          
             },
             UI: addNotAlreadyIn({

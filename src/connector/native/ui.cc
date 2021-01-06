@@ -450,10 +450,16 @@ Napi::Value BitwigWindow::GetArrangerTracks(const Napi::CallbackInfo &info) {
         auto end = XYPoint{xSearchPX, y + minimumTrackHeightPX};
         if (track.automationOpen || screenshot->colorAt(end).r != trackDivider.r) {
             // Track height has been increased or automation is open
+
+            // If this is the first track, it could have been cut off, meaning the minimum height has no real meaning.
+            // It could be 5 pixels high, only showing the bottom 5 pixels for example. Otherwise, any track after the first
+            // should be showing full height (unless it's the last??? hmmm....)
+            auto ySearchOffsetPX = trackI == 0 ? scale(2) : minimumTrackHeightPX;
+            
             end = screenshot->seekUntilColor(
                 XYPoint{
                     xSearchPX, 
-                    y + minimumTrackHeightPX + (track.automationOpen ? scale(AUTOMATION_LANE_MINIMUM_HEIGHT) : 0)
+                    y + ySearchOffsetPX + (track.automationOpen ? scale(AUTOMATION_LANE_MINIMUM_HEIGHT) : 0)
                 },
                 [](MWColor color) {
                     return color.r == trackDivider.r;

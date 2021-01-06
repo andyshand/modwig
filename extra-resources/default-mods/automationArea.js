@@ -295,9 +295,9 @@ Mod.registerAction({
             x: (selected.rect.x + selected.rect.w) - Bitwig.scaleXY({ x: 25, y: 0 }).x,
             y: selected.rect.y + Bitwig.scaleXY({ x: 0, y: 15 }).y,
         }
-        // log('Click at: ', clickAt)
-        Mouse.avoidingPluginWindows(clickAt, () => {
-            Mouse.returnAfter(() => {
+        Mouse.returnAfter(async () => {
+            return Mouse.avoidingPluginWindows(clickAt, async () => {
+                // log('Clicking at: ', clickAt)
                 Mouse.click(0, clickAt)
                 if (!selected.automationOpen) {
                     showAutomationImpl(false)
@@ -305,6 +305,9 @@ Mod.registerAction({
                         automationShown: true
                     })
                 }
+                // For whatever reason the click here happens after returning the mouse,
+                // so we need to wait a little. So many timeouts :(
+                return wait(100)
             })
         })
     }

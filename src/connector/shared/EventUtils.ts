@@ -1,8 +1,14 @@
+import { logWithTime } from "../../main/core/Log";
+
 const { Keyboard, Mouse, Bitwig } = require('bindings')('bes')
 
-export function returnMouseAfter(cb: Function)  {
+export async function returnMouseAfter(cb: Function)  {
     const { x, y } = Mouse.getPosition();
-    cb()
+    const result = cb()
+    if (result && result.then) {
+        await result
+    }
+    // logWithTime(`Returning mouse to ${x}, ${y}`)
     Mouse.setPosition(x, y)
 }
 
