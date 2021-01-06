@@ -33,7 +33,7 @@ struct MWColor {
 };
 struct ArrangerTrack {
     MWRect rect;
-    bool selected, automationOpen;
+    bool selected, automationOpen, isLargeTrackHeight;
     Napi::Object toJSObject(Napi::Env env);
     static ArrangerTrack fromJSObject(Napi::Object obj, Napi::Env env);
 };

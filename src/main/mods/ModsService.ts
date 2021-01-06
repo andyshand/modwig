@@ -459,7 +459,30 @@ export class ModsService extends BESService {
                 },
                 lockX: Keyboard.lockX,
                 lockY: Keyboard.lockY,
-                returnAfter: returnMouseAfter            
+                returnAfter: returnMouseAfter  ,
+                avoidingPluginWindows: (point, cb) => {
+                    if (!intersectsPluginWindows(point)) {
+                        return cb()
+                    }
+                    const pluginPositions = Bitwig.getPluginWindowsPosition()
+                    const displayDimensions = MainWindow.getMainScreen()
+                    let tempPositions = {}
+                    for (const key in pluginPositions) {
+                        tempPositions[key] = {
+                            ...pluginPositions[key],
+                            x: displayDimensions.w - 1,
+                            y: displayDimensions.h - 1,
+                        }
+                    }
+                    Bitwig.setPluginWindowsPosition(tempPositions)
+                    setTimeout(async () => {
+                        const result = cb()
+                        if (result.then) {
+                            await result
+                        }
+                        Bitwig.setPluginWindowsPosition(pluginPositions)
+                    }, 100)
+                }          
             },
             UI: addNotAlreadyIn({
                 MainWindow: UIMainWindow
@@ -913,10 +936,7 @@ export class ModsService extends BESService {
             })
         })
 
-        this.settingsService.onSettingValueChange('uiScale', val => {
-            UI.updateUILayout({scale: parseInt(val, 10) / 100})
-        })
-
+        
         this.shortcutsService.events.actionTriggered.listen(((action, context) => {
             this.showNotification({
                 type: 'actionTriggered',
@@ -926,6 +946,16 @@ export class ModsService extends BESService {
                 }
             })
         }) as any)
+
+        // Could do with moving the following handlers into a separate "UIService"
+        this.settingsService.onSettingValueChange('uiScale', val => {
+            UI.updateUILayout({scale: parseInt(val, 10) / 100})
+        })
+
+        interceptPacket('ui', undefined, (packet) => {
+            this.log('Updating UI from packet: ', packet)
+            UI.updateUILayout(packet.data)
+        })
     }
 
     async registerEnableDisableShortcut(mod: ModInfo) {

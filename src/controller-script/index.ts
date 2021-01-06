@@ -918,6 +918,31 @@ class BrowserController extends Controller {
     }
 }
 
+class UIController extends Controller {
+    hasDoubleRowTrackHeight
+    constructor(deps) {
+        super(deps)
+        const { packetManager, globalController, arranger } = deps
+        arranger.hasDoubleRowTrackHeight().markInterested()
+        arranger.hasDoubleRowTrackHeight().addValueObserver(yes => {
+            this.hasDoubleRowTrackHeight = yes
+            this.sendUIUpdate()
+        })
+        this.hasDoubleRowTrackHeight = arranger.hasDoubleRowTrackHeight().get()
+        packetManager.events.connected.listen(() => {
+            this.sendUIUpdate()
+        })
+   }
+   sendUIUpdate() {
+        this.deps.packetManager.send({
+            type: 'ui',
+            data: {
+                isLargeTrackHeight: this.hasDoubleRowTrackHeight
+            }
+        })
+   }
+}
+
 class SettingsController extends Controller {
     constructor(deps) {
         super(deps)
@@ -1054,6 +1079,7 @@ function init() {
     
     new TrackSearchController(deps)    
     new BackForwardController(deps)    
+    new UIController(deps)
     deps.browserController = new BrowserController(deps)    
     new BugFixController(deps)    
     deps.deviceController = new DeviceController(deps)    

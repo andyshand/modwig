@@ -118,6 +118,7 @@ Napi::Object ArrangerTrack::toJSObject(Napi::Env env) {
     obj.Set("rect", rect.toJSObject(env));
     obj.Set("selected", selected);
     obj.Set("automationOpen", automationOpen);
+    obj.Set("isLargeTrackHeight", isLargeTrackHeight);
     return obj;
 }
 ArrangerTrack ArrangerTrack::fromJSObject(Napi::Object obj, Napi::Env env) {
@@ -414,11 +415,6 @@ Napi::Value BitwigWindow::GetArrangerTracks(const Napi::CallbackInfo &info) {
         arrangerViewHeightPX = arrangerYBottomBorder.y - scale(arrangerStartY);        
     }
     
-    auto largeTrackHeightPoint = XYPoint{
-        scale(arrangerStartX + 37),
-        scale(arrangerStartY - 12) + arrangerViewHeightPX
-    };
-    isLargeTrackHeight = screenshot->colorAt(largeTrackHeightPoint).isWithinRange(panelOpenIcon);
     auto minimumTrackHeight = isLargeTrackHeight ? 45 : 25;
     auto tracksStartYPX = scale(arrangerStartY + ARRANGER_HEADER_HEIGHT);
     auto minimumTrackHeightPX = scale(minimumTrackHeight);
@@ -434,7 +430,9 @@ Napi::Value BitwigWindow::GetArrangerTracks(const Napi::CallbackInfo &info) {
             // Can't possibly be first track because no possible scroll position would allow for this (I don't think?)
             break;
         }
-        ArrangerTrack track = ArrangerTrack{};
+        ArrangerTrack track = ArrangerTrack{
+            .isLargeTrackHeight = isLargeTrackHeight
+        };
         track.selected = trackBGColor.r == trackSelectedColorActive.r || trackBGColor.r == trackSelectedColorInactive.r;
 
         auto trackEndXPX = scale(arrangerStartX) + trackWidthPX;
@@ -587,6 +585,9 @@ Napi::Value updateUILayout(const Napi::CallbackInfo &info) {
     auto obj = info[0].As<Napi::Object>();
     if (obj.Has("scale")) {
         uiScale = obj.Get("scale").As<Napi::Number>();
+    }
+    if (obj.Has("isLargeTrackHeight")) {
+        isLargeTrackHeight = obj.Get("isLargeTrackHeight").As<Napi::Boolean>();
     }
     if (obj.Has("layout")) {
         // TODO

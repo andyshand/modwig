@@ -25,9 +25,12 @@ Mod.registerAction({
     }
 })
 
-async function showAutomationImpl(all) {
+async function showAutomationImpl(all, { onlyShow } = { onlyShow: false }) {
     const track = Bitwig.currentTrack
     let { automationShown } = await Db.getTrackData(track)
+    if (onlyShow && automationShown) {
+        return
+    }
     if (exclusiveAutomation && !automationShown) {
         Db.setExistingTracksData({
             automationShown: false
@@ -258,5 +261,46 @@ Mod.registerAction({
         Keyboard.keyPress('NumpadEnter')
         setEnteringValue(false)
         Mod.runAction('focusArranger')
+    }
+})
+
+
+Mod.registerAction({
+    title: `Show track volume automation`,
+    id: `show-track-volume-automation`,
+    description: `Selects the track volume and opens automation if it isn't open already`,
+    category: 'arranger',
+    contexts: ['-browser'],
+    defaultSetting: {
+        keys: ["V"]
+    },
+    action: async () => {
+        const tracks = UI.MainWindow.getArrangerTracks()
+        if (tracks === null || tracks.length === 0) {
+            return log('No tracks found, spoopy...')
+        }
+
+        const selected = tracks.find(t => t.selected)
+        if (!selected) {
+            return showMessage(`Couldn't find selected track`)
+        }
+
+        // log (selected)
+        const clickAt = selected.isLargeTrackHeight ? {
+            // Level meter is halfway across near the bottom
+            x: selected.rect.x + (selected.rect.w / 2), 
+            y: selected.rect.y + Bitwig.scaleXY({ x: 0, y: 33 }).y,
+        } : {
+            // Level meter is on the right hand edge from top to bottom
+            x: (selected.rect.x + selected.rect.w) - Bitwig.scaleXY({ x: 25, y: 0 }).x,
+            y: selected.rect.y + Bitwig.scaleXY({ x: 0, y: 15 }).y,
+        }
+        // log('Click at: ', clickAt)
+        Mouse.avoidingPluginWindows(clickAt, () => {
+            Mouse.returnAfter(() => {
+                Mouse.click(0, clickAt)
+                showAutomationImpl(false, { onlyShow: true })
+            })
+        })
     }
 })
