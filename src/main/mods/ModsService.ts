@@ -477,7 +477,7 @@ export class ModsService extends BESService {
                     Bitwig.setPluginWindowsPosition(tempPositions)
                     setTimeout(async () => {
                         const result = cb()
-                        if (result.then) {
+                        if (result && result.then) {
                             await result
                         }
                         Bitwig.setPluginWindowsPosition(pluginPositions)
