@@ -1,7 +1,7 @@
 /**
- * @name Accept Middle-Click When Inactive
+ * @name Accept Inactive Events 
  * @id accept-middle-click
- * @description Only necessary on Mac. Allow middle-click dragging when Bitwig's main window is not currently active, e.g. when a plugin window has focus.
+ * @description Only necessary on Mac. Allow middle-click dragging when Bitwig's main window is not currently active, e.g. when a plugin window has focus. Also lets number keys trigger focus, allowing tools work when VST windows are focused.
  * @category global
  */
 
@@ -14,5 +14,20 @@ Mouse.on('mousedown', event => {
         
         // Go back to our "real" state
         Mouse.down(1)
+    }
+})
+
+const testSet = new Set(['1', '2', '3', '4', '5'])
+Keyboard.on('keydown', event => {
+    if(testSet.has(event.lowerKey) && Bitwig.isPluginWindowActive) {
+        // Pretend key has gone up
+        Bitwig.makeMainWindowActive()     
+        Keyboard.keyUp(event.lowerKey)
+
+        // Bitwig needs some time to start receiving key events it seems. May need to tweak amount
+        setTimeout(() => {
+            // Go back to our "real" state
+            Keyboard.keyDown(event.lowerKey)
+        }, 150) 
     }
 })
