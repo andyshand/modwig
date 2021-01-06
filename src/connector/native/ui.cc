@@ -3,6 +3,7 @@
 #include "keyboard.h"
 #include "string.h"
 #include <iostream>
+#include <vector>
 #include <CoreGraphics/CoreGraphics.h>
 #include <ApplicationServices/ApplicationServices.h>
 #include <functional>
@@ -333,18 +334,10 @@ Napi::Value BitwigWindow::GetTrackInsetAtPoint(const Napi::CallbackInfo &info) {
 
 Napi::Value BitwigWindow::GetArrangerTracks(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
-    // bool selectedOnly = false;
-    auto outArrayLike = Napi::Object::New(env);
-
-    // if (info[0].IsObject()) {
-    //     auto options = info[0].As<Napi::Object>();
-    //     if (options.Has("selectedOnly")) {
-    //         stopAtSelected = options.Get("selectedOnly").As<Napi::Boolean>();
-    //     }
-    // }
     BitwigWindow* that = (BitwigWindow*)this;
 
     auto screenshot = that->updateScreenshot();
+    auto tracks = std::vector<ArrangerTrack>();
 
     auto frame = that->lastBWFrame.frame;
     auto inspectorOpen = screenshot->colorAt(frame.fromBottomLeft(scale(20), scale(17))).r == panelOpenIcon.r;
@@ -477,13 +470,18 @@ Napi::Value BitwigWindow::GetArrangerTracks(const Napi::CallbackInfo &info) {
             trackWidthPX,
             end.y - y
         };
-        outArrayLike.Set(trackI, track.toJSObject(env));
+        tracks.push_back(track);
         trackI++;
         y = end.y;
     };
 
-    return outArrayLike;
+    auto array = Napi::Array::New(env, tracks.size());
+    for(unsigned long i = 0; i < tracks.size(); i++) {
+        array[i] = tracks[i].toJSObject(env);
+    }
+    return array;
 };
+
 BitwigWindow::BitwigWindow(const Napi::CallbackInfo &info) : Napi::ObjectWrap<BitwigWindow>(info) {
     // Napi::Env env = info.Env();
     this->latestImageDeets = nullptr;

@@ -1,33 +1,76 @@
 /**
- * @name Touch Volume Selects Track
+ * @name Track Selection When In Bounds
  * @id touch-volume-selects-track
- * @description Touching the volume on a track selects the track right after. Assumes the inspector is open and tracks are at minimum possible width. You must have a track called "top level only" at the top level of your project (it can be deactivated) for this to work.
+ * @description Clicking anything inside the bounds of a deselected track will select the track, including track level meter, automation button, editing automation etc
  * @category arranger
  */
 
- Mouse.on('mouseup', event => {
-    if (!Bitwig.isActiveApplication() || event.intersectsPluginWindows()) {
+// We use the down event to check for location because it's possible to drag outside
+// of the bounds of a track but still only affect the track the intial down event hit.
+// e.g. Drawing automation with pencil. The mouseup may land outside of the track, but the
+// action does not affect the surrounding tracks
+let downEvent
+Mouse.on('mousedown', e => {
+    downEvent = e
+})
+
+let shouldAnnounceSelectedTrack = false
+Bitwig.on('selectedTrackChanged', async (curr, prev) => {
+    if (shouldAnnounceSelectedTrack) {
+        showMessage(`Selected "${curr}"`)
+        shouldAnnounceSelectedTrack = false
+    }
+})
+
+Mouse.on('mouseup', upEvent => {
+    if (!Bitwig.isActiveApplication()
+        || Bitwig.isBrowserOpen
+        || downEvent.intersectsPluginWindows()
+        || upEvent.intersectsPluginWindows()
+        || downEvent.button !== 0) {
         return
     }
-    const selectedTrack = UI.MainWindow.getArrangerTracks()
-    if (!selectedTrack || !(event.y >= selectedTrack.y && event.y < selectedTrack.y + selectedTrack.h)) {
-        // Mouse.returnAfter(() => {
-        //     Mouse.click(0, {
-        //         x: (selectedTrack.x + selectedTrack.w) - Bitwig.scaleXY({x: 2, y: 0}).x,
-        //         y: selectedTrack.y + Bitwig.scaleXY({x: 0, y: 10}).y,
-        //     })
-        // })
-    }
-    showNotification({
-        content: `Color at ${event.x}, ${event.y} is: ${JSON.stringify(UI.MainWindow.pixelColorAt(event))}`,
-        timeout: 1000 * 20
-    })
- })
 
-// UI.Arranger.TrackHeaderView.SelectedTrack.on('click', async event => {
-//     const ui = event.currentTarget
-//     const { x } = Bitwig.scaleXY({ x: 2, y: 0 }) // 2 pixels scaled
-//     Mouse.returnAfter(() => {
-//         Mouse.click(0, {x: event.x - x, y: ui.y + (ui.h / 2) })  
-//     })
-// })
+    // Wait for bitwig UI to update first, may select the track by itself
+    setTimeout(() => {
+        try {
+            const tracks = UI.MainWindow.getArrangerTracks()
+            if (tracks === null || tracks.length === 0) {
+                return log('No tracks found, spoopy...')
+            }
+            // log(tracks)
+            const tracksStartX = tracks[0].rect.x
+            if (downEvent.x < tracksStartX) {
+                return log('Clicked outside arranger view X')
+            }
+
+            const selectedI = tracks.findIndex(t => t.selected)
+            const insideI = tracks.findIndex(t => downEvent.y >= t.rect.y && downEvent.y < t.rect.y + t.rect.h)
+
+            if (insideI >= 0 && selectedI !== insideI) {
+                const insideT = tracks[insideI]
+                // showMessage(JSON.stringify(insideT))
+                Mouse.returnAfter(() => {
+                    // We have no way of knowing which track we actually clicked (by name)
+                    // via the UI analysis only, so we just announce when the selected track changes
+                    shouldAnnounceSelectedTrack = true
+                    const clickAt = {
+                        x: (insideT.rect.x + insideT.rect.w) - Bitwig.scaleXY({ x: 5, y: 0 }).x,
+                        y: insideT.rect.y + Bitwig.scaleXY({ x: 0, y: 15 }).y,
+                    }
+                    // log('Click at: ', clickAt)
+                    Mouse.click(0, clickAt)
+                })
+            }
+        } catch (e) {
+            log(e)
+        }
+        // showMessage(`Selected: ${JSON.stringify(selected)}`)
+        // showMessage(`Inside: ${JSON.stringify(inside)}`)
+    }, 100)
+
+    // showNotification({
+    //     content: `Color at ${downEvent.x}, ${downEvent.y} is: ${JSON.stringify(UI.MainWindow.pixelColorAt(event))}`,
+    //     timeout: 1000 * 20
+    // })
+})
