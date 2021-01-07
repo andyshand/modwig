@@ -1,8 +1,8 @@
-# Modwig 
+# Modwig (In Early Development, Experimental!) 
 
 Modwig adds helpful keyboard shortcuts and extra features to Bitwig Studio. 
 
-![Upcoming v0.0.3](https://github.com/andyshand/modwig/raw/master/github/screenshots/screenshot.png)
+![Preferences](https://github.com/andyshand/modwig/raw/master/github/screenshots/screenshot.png)
 
 ### Extra Configurable Shortcuts
 
