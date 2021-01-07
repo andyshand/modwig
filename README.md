@@ -1,4 +1,4 @@
-# Modwig (In Early Development, Experimental!) 
+# Modwig (In Early Development)
 
 Modwig adds helpful keyboard shortcuts and extra features to Bitwig Studio. 
 
@@ -33,10 +33,4 @@ Combine all available actions and shortcuts into your own macros using simple Ja
 
 # Setup
 
-Disclaimer: please note modwig is currently Mac only and in early development. Although far from production ready, I am using it successfully every day without many issues, only occassionally restarting. YMMV of course!
-
-1. Download the latest version of the app from the [releases tab](https://github.com/andyshand/modwig/releases) and copy it to your Applications folder.
-
-2. Open Modwig and follow the guided setup process. The app is unsigned, so you may get a warning from macOS and go to your "Security & Privacy" settings and click "Open Anyway".
-
-A general overview of Modwig's functionality can be found [in the wiki](https://github.com/andyshand/modwig/wiki/Overview).
+Please note Modwig is currently quite unstable and should probably only be used if you're a developer and can afford to troubleshoot issues. See https://github.com/andyshand/modwig/blob/master/CONTRIBUTING.md for developer setup instructions, or ask questions at the [discord](https://discord.com/invite/6Wetp3ZsKv).
