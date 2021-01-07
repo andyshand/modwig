@@ -33,7 +33,7 @@ Mouse.on('mouseup', upEvent => {
         || Bitwig.isBrowserOpen
         || downEvent.intersectsPluginWindows()
         || upEvent.intersectsPluginWindows()
-        || downEvent.button !== 0) {
+        || upEvent.button !== 0) {
         return
     }
 
@@ -64,6 +64,7 @@ Mouse.on('mouseup', upEvent => {
                         x: (insideT.rect.x + insideT.rect.w) - Bitwig.scaleXY({ x: 5, y: 0 }).x,
                         y: insideT.rect.y + Bitwig.scaleXY({ x: 0, y: 15 }).y,
                     }
+                    this.log('About to select track by clicking at: ', clickAt)
                     // log('Click at: ', clickAt)
                     Mouse.click(0, clickAt)
                 })

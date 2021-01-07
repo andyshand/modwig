@@ -17,6 +17,7 @@ let draggingBorderLine = false
 let shiftEDown = false
 
 let numDownBefore = null
+const normalClickToo = false
 
 Keyboard.on('keydown', event => {
     const { lowerKey, Shift } = event
@@ -66,12 +67,14 @@ function playWithEvent(event) {
     // timelineClickPosition.x = Math.max(480, timelineClickPosition.x);
 
     const doTheClick = () => {
-        Keyboard.keyDown('2')
-        Mouse.click(0, {
-            ...event,
-            modwigListeners: true // Means we can still run our track selection logic
-        })
-        Keyboard.keyUp('2')
+        if (normalClickToo) {
+            Keyboard.keyDown('2')
+            Mouse.click(0, {
+                ...event,
+                modwigListeners: true // Means we can still run our track selection logic
+            })
+            Keyboard.keyUp('2')
+        }
         Keyboard.keyDown('1')
         Bitwig.doubleClick(0, {...event, ...timelineClickPosition})
         Mouse.setPosition(mousePosBefore.x, mousePosBefore.y)

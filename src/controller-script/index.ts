@@ -1053,14 +1053,14 @@ function init() {
     transport.playStartPosition().markInterested()
     
     let isPlaying = false
-    transport.isPlaying().addValueObserver(yesOrNo => {
-        if (yesOrNo) {
-            isPlaying = true
-        } else if (isPlaying) {
-            isPlaying = false
-            transport.getPosition().set(transport.playStartPosition().get())
-        }
-    })
+    // transport.isPlaying().addValueObserver(yesOrNo => {
+    //     if (yesOrNo) {
+    //         isPlaying = true
+    //     } else if (isPlaying) {
+    //         isPlaying = false
+    //         transport.getPosition().set(transport.playStartPosition().get())
+    //     }
+    // })
     
     let deps: Deps = {
         app,

@@ -312,3 +312,22 @@ Mod.registerAction({
         })
     }
 })
+
+let down3 = false
+Keyboard.on('keyup', e => {
+    if (e.lowerKey === '3') {
+        down3 = false
+    }
+})
+Keyboard.on('keydown', e => {
+    if (e.lowerKey === '3') {
+        down3 = true
+    }
+})
+
+// Always restore automation control when 3 is pressed and mousedown (drawing automation)
+Mouse.on('mouseup', event => {
+    if (event.button === 0 && down3)  {
+        Bitwig.sendPacket({type: 'action', data: 'restore_automation_control'})
+    }
+})
