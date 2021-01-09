@@ -9,10 +9,6 @@
 #include <vector>
 using namespace std::string_literals;
 
-AXUIElementRef cachedBitwigRef;
-AXUIElementRef cachedPluginHostRef;
-pid_t pluginHostPID = -1;
-pid_t bitwigPID = -1;
 struct AppData {
     AXUIElementRef ref;
     pid_t pid;
@@ -47,10 +43,12 @@ AXUIElementRef findAXUIElementByName(std::string name) {
             return NULL;
         }
         auto ref = AXUIElementCreateApplication(pid);
-        appDataByProcessName[name] = AppData({
-            ref,
-            pid
-        });
+        if (ref != NULL) {
+            appDataByProcessName[name] = AppData({
+                ref,
+                pid
+            });
+        }
         return ref;
     } else {
         auto data = appDataByProcessName[name];
@@ -64,17 +62,7 @@ AXUIElementRef findAXUIElementByName(std::string name) {
 }
 
 AXUIElementRef GetBitwigAXUIElement() {
-    if (bitwigPID == -1 || !pidIsAlive(bitwigPID)) {
-        if (cachedPluginHostRef != NULL) {
-            CFRelease(cachedBitwigRef);
-            cachedBitwigRef = NULL;
-        }
-        bitwigPID = GetPID("Bitwig Studio");
-        if (bitwigPID != -1) {
-            cachedBitwigRef = AXUIElementCreateApplication(bitwigPID);
-        }
-    }
-    return cachedBitwigRef;
+    return findAXUIElementByName("Bitwig Studio");
 }
 
 Napi::Value AccessibilityEnabled(const Napi::CallbackInfo &info) {
@@ -96,44 +84,9 @@ Napi::Value AccessibilityEnabled(const Napi::CallbackInfo &info) {
     );
 }
 
-AXUIElementRef GetAXUIElement(std::string name) {
-    auto pid = GetPID(name);
-    if (pid == -1) {
-        return NULL;
-    }
-    return AXUIElementCreateApplication(pid);
-}
-
-bool refIsValidOrRelease(AXUIElementRef cachedRef) {
-    if (cachedRef != NULL) {
-        // Try to get a property so we can check if our ref is invalid
-        CFBooleanRef isFrontmost;
-        AXError result = AXUIElementCopyAttributeValue(cachedRef, kAXFrontmostAttribute, (CFTypeRef*) &isFrontmost);
-        if (result != kAXErrorInvalidUIElement) {
-            return true;
-        } else {
-            CFRelease(cachedRef);
-            return false;
-        }
-    }
-    return false;
-}
-
 AXUIElementRef GetPluginAXUIElement() {
-    if (pluginHostPID == -1 || !pidIsAlive(pluginHostPID)) {
-        if (cachedPluginHostRef != NULL) {
-            CFRelease(cachedPluginHostRef);
-            cachedPluginHostRef = NULL;
-        }
-        pluginHostPID = GetPID("Bitwig Plug-in Host 64");
-        if (pluginHostPID == -1) {
-            pluginHostPID = GetPID("Bitwig Studio Engine");
-        }
-        if (pluginHostPID != -1) {
-            cachedPluginHostRef = AXUIElementCreateApplication(pluginHostPID);
-        }
-    }
-    return cachedPluginHostRef;
+    auto separateProcess = findAXUIElementByName("Bitwig Plug-in Host 64");
+    return separateProcess != NULL ? separateProcess : findAXUIElementByName("Bitwig Studio Engine");
 }
 
 Napi::Value GetPluginWindowsPosition(const Napi::CallbackInfo &info) {
