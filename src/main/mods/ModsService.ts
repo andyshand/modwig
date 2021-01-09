@@ -460,8 +460,8 @@ export class ModsService extends BESService {
                 lockX: Keyboard.lockX,
                 lockY: Keyboard.lockY,
                 returnAfter: returnMouseAfter  ,
-                avoidingPluginWindows: async (point, cb) => {
-                    if (!intersectsPluginWindows(point)) {
+                avoidingPluginWindows: async (pointOpts, cb) => {
+                    if (!intersectsPluginWindows(pointOpts)) {
                         return Promise.resolve(cb())
                     }
                     const pluginPositions = Bitwig.getPluginWindowsPosition()
@@ -481,7 +481,9 @@ export class ModsService extends BESService {
                             if (result && result.then) {
                                 await result
                             }
-                            Bitwig.setPluginWindowsPosition(pluginPositions)
+                            if (!pointOpts.noReposition) {
+                                Bitwig.setPluginWindowsPosition(pluginPositions)
+                            }
                             res()
                         }, 100)
                     })
