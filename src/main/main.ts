@@ -6,6 +6,8 @@ import { TrayService } from "./core/Tray";
 import { SettingsService } from "./core/SettingsService";
 import { protocol } from "electron";
 import { ModsService } from "./mods/ModsService";
+import { BitwigService } from "./bitwig/BitwigService";
+import { UIService } from "./ui/UIService";
 
 app.whenReady().then(async () => {
 
@@ -30,6 +32,8 @@ app.whenReady().then(async () => {
     })
 
     const shortcutsService = await registerService(ShortcutsService)
+    const bitwigService = await registerService(BitwigService)
+    const uiService = await registerService(UIService)
     const modsService = await registerService(ModsService)
     const trayService = await registerService(TrayService)
   } catch (e) {

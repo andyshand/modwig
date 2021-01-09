@@ -901,7 +901,7 @@ export class ShortcutsService extends BESService {
             for (const { runner, action } of this.shortcutCache[code]) {
                 // this.log(action)
                 if (action && 'contexts' in action && !this.isCurrentContextRunnable(action.contexts)) {
-                    this.log(`Skipping action ${action} due to context mismatch`)
+                    this.log(`Skipping action ${action.id} due to context mismatch`)
                     continue
                 }
 

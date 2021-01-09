@@ -17,34 +17,13 @@ import _ from 'underscore'
 import { BrowserWindow, clipboard } from "electron"
 import { url } from "../core/Url"
 import { normalizeBitwigAction } from "./actionMap"
+import { UIService } from "../ui/UIService"
+import { BitwigService } from "../bitwig/BitwigService"
 const chokidar = require('chokidar')
 const colors = require('colors');
 
 let nextId = 0
 let modsLoading = false
-function intersectsPluginWindows(event) {
-    if ('_intersectsPluginWindows' in event) {
-        return event._intersectsPluginWindows
-    }
-    const pluginLocations = Bitwig.getPluginWindowsPosition()
-    for (const key in pluginLocations) {
-        const {x, y, w, h, ...rest} = pluginLocations[key]
-        if (event.x >= x && event.x < x + w && event.y >= y && event.y < y + h) {
-            let out = {
-                id: key,
-                x,
-                y,
-                w,
-                h,
-                ...rest
-            }
-            event._intersectsPluginWindows = true
-            return out
-        }
-    }
-    event._intersectsPluginWindows = false
-    return false
-}
 
 export function showMessage(msg, { timeout } = { timeout: 5000 }) {
     openCanvasWindow(`/canvas`, {
@@ -164,7 +143,6 @@ const openFloatingWindow = makeWindowOpener()
 const openCanvasWindow = makeWindowOpener()
 
 const { Keyboard, Mouse, MainWindow, Bitwig, UI } = require('bindings')('bes')
-const UIMainWindow = new UI.BitwigWindow({})
 
 interface ModInfo {
     name: string
@@ -190,25 +168,31 @@ interface Device {
 }
 
 export class ModsService extends BESService {
+
+    // Services
+    settingsService = getService<SettingsService>('SettingsService')
+    shortcutsService = getService<ShortcutsService>("ShortcutsService")
+    suckitService = getService<SocketMiddlemanService>("SocketMiddlemanService")
+    uiService = getService<UIService>("UIService")
+    bitwigService = getService<BitwigService>("BitwigService")
+
+    // Internal state
     currProject: string | null = null
     currTrack: string | null = null
     cueMarkers: CueMarker[] = []
     currDevice: Device | null = null
-    browserIsOpen = false
-    settingsService = getService<SettingsService>('SettingsService')
     folderWatcher?: any
     controllerScriptFolderWatcher?: any
     latestModsMap: { [name: string]: Partial<ModInfo> } = {}
     onReloadMods: Function[] = []
     refreshCount = 0
-    shortcutsService = getService<ShortcutsService>("ShortcutsService")
-    suckitService = getService<SocketMiddlemanService>("SocketMiddlemanService")
     activeEngineProject: string | null = null
     tracks: any[] = []
     activeModApiIds: {[key: string]: boolean} = {}
+
+    // Events
     events = {
         selectedTrackChanged: makeEvent<any>(),
-        browserOpen: makeEvent<boolean>(),
         projectChanged: makeEvent<number>(),
         modsReloaded: makeEvent<void>(),
         activeEngineProjectChanged: makeEvent<string>()
@@ -366,7 +350,7 @@ export class ModsService extends BESService {
 
         const MouseEvent = {
             intersectsPluginWindows() {
-                return intersectsPluginWindows(this)
+                return that.uiService.eventIntersectsPluginWindows(this)
             }
         }
 
@@ -459,9 +443,9 @@ export class ModsService extends BESService {
                 },
                 lockX: Keyboard.lockX,
                 lockY: Keyboard.lockY,
-                returnAfter: returnMouseAfter  ,
+                returnAfter: returnMouseAfter,
                 avoidingPluginWindows: async (pointOpts, cb) => {
-                    if (!intersectsPluginWindows(pointOpts)) {
+                    if (!this.uiService.eventIntersectsPluginWindows(pointOpts)) {
                         return Promise.resolve(cb())
                     }
                     const pluginPositions = Bitwig.getPluginWindowsPosition()
@@ -489,9 +473,7 @@ export class ModsService extends BESService {
                     })
                 }          
             },
-            UI: addNotAlreadyIn({
-                MainWindow: UIMainWindow
-            }, UI),
+            UI: this.uiService.getApi({ makeEmitterEvents }),
             Bitwig: addNotAlreadyIn({
                 closeFloatingWindows: Bitwig.closeFloatingWindows,
                 get isAccessibilityOpen() {
@@ -504,7 +486,7 @@ export class ModsService extends BESService {
                     return that.tracks
                 },
                 get isBrowserOpen() {
-                    return that.browserIsOpen
+                    return that.bitwigService.browserIsOpen
                 },
                 isActiveApplication(...args) {
                     return Bitwig.isActiveApplication(...args)
@@ -537,7 +519,7 @@ export class ModsService extends BESService {
                 },
                 showMessage: showMessage,
                 intersectsPluginWindows: event => {
-                    return intersectsPluginWindows({
+                    return this.uiService.eventIntersectsPluginWindows({
                         ...event,
                         ...(this.shortcutsService.bwToScreen(event))
                     })
@@ -562,7 +544,7 @@ export class ModsService extends BESService {
                 },
                 ...makeEmitterEvents({
                     selectedTrackChanged: this.events.selectedTrackChanged,
-                    browserOpen: this.events.browserOpen,
+                    browserOpen: this.bitwigService.events.browserOpen,
                     projectChanged: this.events.projectChanged,
                     activeEngineProjectChanged: this.events.activeEngineProjectChanged
                 })
@@ -828,15 +810,6 @@ export class ModsService extends BESService {
         interceptPacket('cue-markers', undefined, async ({ data: cueMarkers }) => {
             this.cueMarkers = cueMarkers
         })
-        interceptPacket('browser/state', undefined, ({ data }) => {
-            this.log('received browser state packet: ' + data.isOpen)
-            const previous = this.browserIsOpen
-            this.browserIsOpen = data.isOpen
-            updateCanvas({
-                browserIsOpen: data.isOpen
-            })
-            this.events.browserOpen.emit(data, previous)
-        })
 
         // API endpoint to set the current log for specific websocket
         interceptPacket('api/mods/log', ({ data: modId }, websocket) => {
@@ -927,20 +900,11 @@ export class ModsService extends BESService {
         this.refreshMods()
         refreshFolderWatcher()
 
-        Keyboard.on('mouseup', event => {
-            // FIXME for scaling
-            if (Bitwig.isActiveApplication() && event.y > 1000 && event.Meta && !event.Shift && !event.Alt && !event.Control && !intersectsPluginWindows(event) && !this.browserIsOpen) {
-                // Assume they are clicking to enter a value by keyboard
-                this.shortcutsService.setEnteringValue(true)
-            }
-        })
-
         this.shortcutsService.events.enteringValue.listen(enteringValue => {
             updateCanvas({
                 enteringValue
             })
         })
-
         
         this.shortcutsService.events.actionTriggered.listen(((action, context) => {
             this.showNotification({
@@ -952,14 +916,10 @@ export class ModsService extends BESService {
             })
         }) as any)
 
-        // Could do with moving the following handlers into a separate "UIService"
-        this.settingsService.onSettingValueChange('uiScale', val => {
-            UI.updateUILayout({scale: parseInt(val, 10) / 100})
-        })
-
-        interceptPacket('ui', undefined, (packet) => {
-            this.log('Updating UI from packet: ', packet)
-            UI.updateUILayout(packet.data)
+        this.bitwigService.events.browserOpen.listen(isOpen => {
+            updateCanvas({
+                browserIsOpen: isOpen
+            })
         })
     }
 

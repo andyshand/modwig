@@ -5,14 +5,23 @@
  * @category arranger
  */
 
+
+let mouseButton = 0
+
+// UI.on('activeToolChanged', tool => {
+//     showMessage(`Tool is ${tool}`)
+// })
+
 // We use the down event to check for location because it's possible to drag outside
 // of the bounds of a track but still only affect the track the intial down event hit.
 // e.g. Drawing automation with pencil. The mouseup may land outside of the track, but the
 // action does not affect the surrounding tracks
 let downEvent
+let downAt = new Date()
 Mouse.on('mousedown', e => {
-    if (e.button === 0) {
+    if (e.button === mouseButton) {
         downEvent = e
+        downAt = new Date()
     }
     // showNotification({
     //     content: `Color at ${downEvent.x}, ${downEvent.y} is: ${JSON.stringify(UI.MainWindow.pixelColorAt(downEvent))}`,
@@ -29,11 +38,15 @@ Bitwig.on('selectedTrackChanged', async (curr, prev) => {
 })
 
 Mouse.on('mouseup', upEvent => {
-    if (!Bitwig.isActiveApplication()
+    if (!downEvent 
+        // Only select on drag for drawing tool. Otherwise dragging clips, selections gets v frustrating
+        || (UI.activeTool != 3 && (downEvent.x !== upEvent.x || downEvent.y !== downEvent.y)) 
+        || !Bitwig.isActiveApplication()
         || Bitwig.isBrowserOpen
         || downEvent.intersectsPluginWindows()
         || upEvent.intersectsPluginWindows()
-        || upEvent.button !== 0) {
+        || upEvent.button !== mouseButton
+        ) {
         return
     }
 
@@ -65,8 +78,9 @@ Mouse.on('mouseup', upEvent => {
                         y: insideT.rect.y + Bitwig.scaleXY({ x: 0, y: 15 }).y,
                     }
                     this.log('About to select track by clicking at: ', clickAt)
-                    // log('Click at: ', clickAt)
-                    Mouse.click(0, clickAt)
+                    return Mouse.avoidingPluginWindows({...clickAt, noReposition: true}, () => {
+                        Mouse.click(0, clickAt)
+                    })
                 })
             }
         } catch (e) {
