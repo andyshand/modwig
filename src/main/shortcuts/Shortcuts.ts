@@ -975,6 +975,13 @@ export class ShortcutsService extends BESService {
             mouseIsDownMightBeDragging = true
         })
 
+        let previousEvent
+
+        Keyboard.on('keyup', event => {
+            if (previousEvent && event.lowerKey === previousEvent.lowerKey) {
+                previousEvent = null
+            }
+        })
         Keyboard.on('keydown', event => {
             let { lowerKey, nativeKeyCode, Meta, Shift, Control, Alt, Fn } = event
             if (/F[0-9]+/.test(lowerKey) || lowerKey === 'Clear' || lowerKey.indexOf('Arrow') === 0) {
@@ -987,6 +994,15 @@ export class ShortcutsService extends BESService {
                 keys,
                 fn: Fn
             }
+
+            if (previousEvent 
+                && previousEvent.lowerKey === lowerKey 
+                && (Meta || Shift || Alt || Control) 
+                && (!previousEvent.Meta && !previousEvent.Shift && !previousEvent.Control && !previousEvent.Alt)) {
+                    // Don't process events that are J+Cmd rather than Cmd+J. Wait for lowerKey to change first
+                    return
+            }
+            previousEvent = event
 
             // Don't process shortcuts when dragging (this was to stop shift + 2 being picked up as a shortcut when dragging to make
             // an off-grid time selection)
