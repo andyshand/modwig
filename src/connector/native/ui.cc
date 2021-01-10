@@ -390,6 +390,26 @@ Napi::Value BitwigWindow::GetArrangerTracks(const Napi::CallbackInfo &info) {
         2 // skip stays the same regardless of scale, we shouldn't lose that much speed and is safer
     ).value_or(XYPoint{-1, -1});
 
+    // We gotta do 2 searches cause we could land on the horizontal line, which'll stunt our search
+    // Only run this is the first one comes back with the same x coord. Barely uses any extra processing
+    if (endOfTrackWidthPoint.x == startSearchPoint.x) {
+        auto endOfTrackWidthPoint2 = screenshot->seekUntilColor(
+            XYPoint{
+                startSearchPoint.x,
+                startSearchPoint.y + scale(5)
+            },
+            [](MWColor color) {
+                return color.r == 6;
+            },
+            AXIS_X,
+            DIRECTION_RIGHT,
+            2 // skip stays the same regardless of scale, we shouldn't lose that much speed and is safer
+        ).value_or(XYPoint{-1, -1});
+        if (endOfTrackWidthPoint2.x > endOfTrackWidthPoint.x) {
+            endOfTrackWidthPoint = endOfTrackWidthPoint2;
+        }
+    }
+
     if (endOfTrackWidthPoint.x == -1) {
         std::cout << "Couldn't find track width";
         return env.Null();
