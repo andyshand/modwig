@@ -360,6 +360,8 @@ CallbackInfo* addEventListener(EventListenerSpec spec) {
                 CFRunLoopRun();
             } );
         } else {    
+            // EXC_BAD_ACCESS: __THE_PROCESS_HAS_FORKED_AND_YOU_CANNOT_USE_THIS_COREFOUNDATION_FUNCTIONALITY___YOU_MUST_EXEC__
+            // hmm... how fix?
             CFRunLoopAddSource(runLoop, ourInfo->runloopsrc, kCFRunLoopCommonModes);
         }
     }

@@ -68,6 +68,14 @@ Mouse.on('mouseup', upEvent => {
 
             if (insideI >= 0 && selectedI !== insideI) {
                 const insideT = tracks[insideI]
+                const offscreenY = insideT.visibleRect.y - insideT.rect.y
+                const minTrackHeight = UI.getSizeInfo('minimumTrackHeight')
+                const clickOffsetY = Bitwig.scaleXY({ x: 0, y: 5 }).y
+                if (offscreenY > minTrackHeight - clickOffsetY) {
+                    showMessage('Track is too far offscreen')
+                    return
+                }
+
                 // showMessage(JSON.stringify(insideT))
                 Mouse.returnAfter(() => {
                     // We have no way of knowing which track we actually clicked (by name)
@@ -75,9 +83,9 @@ Mouse.on('mouseup', upEvent => {
                     shouldAnnounceSelectedTrack = true
                     const clickAt = {
                         x: (insideT.rect.x + insideT.rect.w) - Bitwig.scaleXY({ x: 5, y: 0 }).x,
-                        y: insideT.rect.y + Bitwig.scaleXY({ x: 0, y: 15 }).y,
+                        y: insideT.visibleRect.y + clickOffsetY,
                     }
-                    this.log('About to select track by clicking at: ', clickAt)
+                    this.log('About to select track:', insideT, 'by clicking at: ', clickAt)
                     return Mouse.avoidingPluginWindows({...clickAt, noReposition: true}, () => {
                         Mouse.click(0, clickAt)
                     })

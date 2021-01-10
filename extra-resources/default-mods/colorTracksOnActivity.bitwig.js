@@ -83,6 +83,8 @@ const sets = [
     [
         makeMatcher([
             'keys',
+            'piano',
+            'keyscape',
             'lead',
             'arp',
             'phone',

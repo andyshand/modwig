@@ -32,7 +32,7 @@ struct MWColor {
     bool isWithinRange(MWColor b, int amount = 5);
 };
 struct ArrangerTrack {
-    MWRect rect;
+    MWRect rect, visibleRect;
     bool selected, automationOpen, isLargeTrackHeight;
     Napi::Object toJSObject(Napi::Env env);
     static ArrangerTrack fromJSObject(Napi::Object obj, Napi::Env env);

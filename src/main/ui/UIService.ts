@@ -33,6 +33,7 @@ export class UIService extends BESService {
     getApi({ makeEmitterEvents }) {
         const that = this
         return {
+            ...UI,
             MainWindow: UIMainWindow,
             get activeTool() {
                 return that.activeTool
@@ -88,7 +89,7 @@ export class UIService extends BESService {
             UI.updateUILayout(packet.data)
         })
     }
-    
+
     eventIntersectsPluginWindows(event) {
         if ('_intersectsPluginWindows' in event) {
             return event._intersectsPluginWindows
