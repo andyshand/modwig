@@ -4,6 +4,8 @@ import { ModwigComponent } from '../core/ModwigComponent'
 import { shortcutToTextDescription } from '../settings/helpers/settingTitle'
 import { faBolt, faInfo } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Spinner } from '../core/Spinner'
+
 const Wrap = styled.div`
     position: fixed;
     top: 0;
@@ -75,6 +77,7 @@ const notifTimeoutCheckFreqMS = 500
 
 const IconNotifWrap = styled.div`
     display: flex;
+    position: relative;
     align-items: center;
     > * {
     }
@@ -86,6 +89,15 @@ const IconNotifWrap = styled.div`
     >:nth-child(2) {
         padding: .4em .8em;
     }
+`
+const ProgressLine = styled.div`
+    position: absolute;
+    bottom: -.2em;
+    transition: width .3s;
+    left: 0;
+    width: ${(props: any) => Math.round(props.value * 100) + '%'};
+    background: #F97012;
+    height: .2em;
 `
 const IconNotification = ({notification: notif, children}) => {
     const iconMap = {
@@ -100,7 +112,9 @@ const IconNotification = ({notification: notif, children}) => {
     }
     const icon = <FontAwesomeIcon icon={notifInfo.icon} /> || <div>□</div>
     return <IconNotifWrap>
-        <div style={{color: notifInfo.color}}>{icon}</div>
+        {notif.type === 'progress' 
+            ? <Spinner style={{}}/> 
+            : <div style={{color: notifInfo.color}}>{icon}</div>}
         <div>{children}</div>
     </IconNotifWrap>
 }
@@ -113,7 +127,16 @@ export class Canvas extends ModwigComponent<any> {
         enteringValue: false
     }
     componentWillReceiveProps(nextProps) {
+        let newProgressIds = new Set()
         const newNotifications = (nextProps.notifications || []).map(notif => {
+            if (notif.type === 'progress') {
+                newProgressIds.add(notif.progressId)
+                if (notif.progress !== 1) {
+                    // Progress notifications don't have a timeout (unless they're complete)
+                    delete notif.timeout
+                    return notif
+                }
+            }
             return {
                 ...notif,
                 timeout: new Date().getTime() + notif.timeout
@@ -121,12 +144,17 @@ export class Canvas extends ModwigComponent<any> {
         })
         this.setState({
             ...nextProps,
-            notifications: this.state.notifications.concat(newNotifications),
+            notifications: this.state.notifications.filter(oldNotif => {
+                if (oldNotif.type === 'progress') {
+                    return !newProgressIds.has(oldNotif.progressId)
+                }
+                return true
+            }).concat(newNotifications),
         })
         
         const timeoutUntilAllDone = () => {
             const now = new Date()
-            const newNotifs = this.state.notifications.filter(notif => now < notif.timeout)
+            const newNotifs = this.state.notifications.filter(notif => !notif.timeout || now < notif.timeout)
             this.setState({
                 notifications: newNotifs
             })
@@ -144,6 +172,12 @@ export class Canvas extends ModwigComponent<any> {
             return <IconNotification notification={notif}>{notif.content}</IconNotification>
         } else if (notif.type) {
             return {
+                progress: (notif) => {
+                    return <IconNotification notification={notif}>
+                        {notif.title}
+                        <ProgressLine value={notif.progress} />
+                    </IconNotification>
+                },
                 actionTriggered: (notif) => {
                     return <IconNotification notification={notif}>
                         {shortcutToTextDescription({value: notif.data.state})} {notif.data.title}
@@ -156,7 +190,7 @@ export class Canvas extends ModwigComponent<any> {
     renderNotifications() {
         return <NotificatinosWrap>
             {this.state.notifications.map(notif => {
-                return <Notification key={notif.id}>
+                return <Notification key={notif.type === 'progress' ? ('progress'+notif.progressId) : notif.id}>
                     {this.renderNotification(notif)}
                 </Notification>
             })}

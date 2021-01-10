@@ -11,6 +11,7 @@ const maybeLog = (msg) => {
     log(msg)
 }
 
+let nextId = 0
 let iterating = false
 
 const ourCursorDevice = deviceController.cursorTrack.createCursorDevice("open-plugin-windows", "Open Plugin Windows", 0, CursorDeviceFollowMode.FIRST_DEVICE)
@@ -299,7 +300,7 @@ packetManager.listen('open-plugin-windows/open-all', (packet) => {
 
 function iteratingGuardShouldCancel() {
     if (iterating) {
-        host.showPopupNotification(`Currently iterating, skipping for now to prevent invalid states`)
+        showMessage(`Currently iterating, skipping for now to prevent invalid states`)
         return true
     }
     return false
@@ -314,16 +315,40 @@ packetManager.listen('open-plugin-windows/open-with-preset-name', (packet) => {
     ourCursorDevice.selectFirstInChannel(deviceController.cursorTrack)
 
     iterating = true
-    showMessage(`Reopening plugins: ${Object.keys(presetNames).join(', ')}`)
+    const notifBass = {
+        progressId: nextId++,
+        progress: 0,
+        type: 'progress'
+    }
+    const count = Object.keys(presetNames).length
+
+    let openedCount = 0
+    showNotification({
+        ...notifBass,
+        progress: 0,
+        title: `Opening plugins...`
+    })
     iterateDevices((d, _, done) => {
         maybeLog('Device: ' + d.name().get())
         maybeLog(`Found preset: ${d.presetName().get()}`)
         if (d.presetName().get() in presetNames || d.name().get() in presetNames) {
+            openedCount++
             maybeLog(`Opening`)
+            showNotification({
+                ...notifBass,
+                progress: openedCount / (count + 1),
+                title: `Opening plugins: ${d.name().get()} (${openedCount}/${count})`
+            })
             d.isWindowOpen().set(true)
         }
         done()
     }, () => {
+        showNotification({
+            ...notifBass,
+            progress: 1,
+            timeout: 1000,
+            title: `Opening plugins: ${openedCount}/${count}`
+        })
         iterating = false
     })
 })

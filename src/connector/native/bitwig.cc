@@ -133,6 +133,22 @@ Napi::Value GetPluginWindowsPosition(const Napi::CallbackInfo &info) {
     return outObj;
 }
 
+Napi::Value GetPluginWindowsCount(const Napi::CallbackInfo &info) {
+    Napi::Env env = info.Env();
+    auto inObject = info[0].As<Napi::Object>();
+    auto elementRef = GetPluginAXUIElement();
+    if (elementRef != NULL) {
+        CFArrayRef windowArray = nil;
+        AXUIElementCopyAttributeValue(elementRef, kAXWindowsAttribute, (CFTypeRef*)&windowArray);
+        if (windowArray != nil) { 
+            CFIndex nItems = CFArrayGetCount(windowArray);
+            CFRelease(windowArray);
+            return Napi::Number::New(env, nItems);
+        }
+    }
+    return Napi::Number::New(env, 0);
+}
+
 Napi::Value SetPluginWindowsPosition(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
     auto inObject = info[0].As<Napi::Object>();
@@ -155,6 +171,31 @@ Napi::Value SetPluginWindowsPosition(const Napi::CallbackInfo &info) {
                 newPoint.y = posForWindow.Get("y").As<Napi::Number>();
                 auto position = (CFTypeRef)(AXValueCreate((AXValueType)kAXValueCGPointType, (const void *)&newPoint));
                 AXUIElementSetAttributeValue(itemRef, kAXPositionAttribute, position);
+            }
+            CFRelease(windowArray);
+        }
+    }
+}
+
+Napi::Value FocusPluginWindow(const Napi::CallbackInfo &info) {
+    Napi::Env env = info.Env();
+    std::string id = info[0].As<Napi::String>();
+    auto elementRef = GetPluginAXUIElement();
+    if (elementRef != NULL) {
+        CFArrayRef windowArray = nil;
+        AXUIElementCopyAttributeValue(elementRef, kAXWindowsAttribute, (CFTypeRef*)&windowArray);
+        if (windowArray != nil) { 
+            CFIndex nItems = CFArrayGetCount(windowArray);
+            for (int i = 0; i < nItems; i++) {
+                AXUIElementRef itemRef = (AXUIElementRef) CFArrayGetValueAtIndex(windowArray, i);
+                CFStringRef titleRef;
+                AXUIElementCopyAttributeValue(itemRef, kAXTitleAttribute, (CFTypeRef *) &titleRef);
+                auto windowTitle = CFStringToString((CFStringRef)titleRef);
+                if (id == windowTitle) {
+                    AXUIElementSetAttributeValue(elementRef, kAXFrontmostAttribute, kCFBooleanTrue);
+                    AXUIElementSetAttributeValue(itemRef, kAXMainAttribute, kCFBooleanTrue);
+                    break;
+                }
             }
             CFRelease(windowArray);
         }
@@ -236,13 +277,15 @@ Napi::Value CloseFloatingWindows(const Napi::CallbackInfo &info) {
 Napi::Value InitBitwig(Napi::Env env, Napi::Object exports)
 {
     Napi::Object obj = Napi::Object::New(env);
-    obj.Set(Napi::String::New(env, "isActiveApplication"), Napi::Function::New(env, IsActiveApplication));
-    obj.Set(Napi::String::New(env, "isPluginWindowActive"), Napi::Function::New(env, IsPluginWindowActive));
-    obj.Set(Napi::String::New(env, "makeMainWindowActive"), Napi::Function::New(env, MakeMainWindowActive));
-    obj.Set(Napi::String::New(env, "closeFloatingWindows"), Napi::Function::New(env, CloseFloatingWindows));
-    obj.Set(Napi::String::New(env, "isAccessibilityEnabled"), Napi::Function::New(env, AccessibilityEnabled));
-    obj.Set(Napi::String::New(env, "getPluginWindowsPosition"), Napi::Function::New(env, GetPluginWindowsPosition));
-    obj.Set(Napi::String::New(env, "setPluginWindowsPosition"), Napi::Function::New(env, SetPluginWindowsPosition));
+    obj.Set("isActiveApplication", Napi::Function::New(env, IsActiveApplication));
+    obj.Set("isPluginWindowActive", Napi::Function::New(env, IsPluginWindowActive));
+    obj.Set("makeMainWindowActive", Napi::Function::New(env, MakeMainWindowActive));
+    obj.Set("closeFloatingWindows", Napi::Function::New(env, CloseFloatingWindows));
+    obj.Set("isAccessibilityEnabled", Napi::Function::New(env, AccessibilityEnabled));
+    obj.Set("getPluginWindowsPosition", Napi::Function::New(env, GetPluginWindowsPosition));
+    obj.Set("setPluginWindowsPosition", Napi::Function::New(env, SetPluginWindowsPosition));
+    obj.Set("focusPluginWindow", Napi::Function::New(env, FocusPluginWindow));
+    obj.Set("getPluginWindowsCount", Napi::Function::New(env, GetPluginWindowsCount));
     exports.Set("Bitwig", obj);
     return exports;
 }

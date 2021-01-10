@@ -770,7 +770,7 @@ export class ModsService extends BESService {
                 notifications: [
                     {
                         id: nextId++,
-                        timeout: 3000,
+                        timeout: notification.timeout ?? 3000,
                         date: new Date().getTime(),
                         ...notification,
                     }   
@@ -784,6 +784,9 @@ export class ModsService extends BESService {
     async activate() {
         interceptPacket('message', undefined, async ({ data: { msg } }) => {
             showMessage(msg)
+        })
+        interceptPacket('notification', undefined, async ({ data: notif }) => {
+            this.showNotification(notif)
         })
         interceptPacket('project', undefined, async ({ data: { name: projectName, hasActiveEngine, selectedTrack } }) => {
             const projectChanged = this.currProject !== projectName

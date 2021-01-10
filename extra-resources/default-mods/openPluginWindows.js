@@ -141,8 +141,15 @@ Mod.registerAction({
     }
 })
 
-Mouse.on('mouseup', event => {
-    if (event.button === 3) { 
+Mouse.on('mouseup', async event => {
+    if (event.button === 0) {
+        const intersects = event.intersectsPluginWindows()
+        if (intersects) {
+            Db.setCurrentTrackData({
+                focusedPlugin: intersects.id
+            })
+        }
+    } else if (event.button === 3) { 
         const intersection = event.intersectsPluginWindows()
         if (intersection) {
             if (!intersection.focused) {
@@ -186,12 +193,51 @@ Bitwig.on('activeEngineProjectChanged', async () => {
     openedPluginsForTracks = {}    
     log('Project Changed')
 })
+
+
+let prevPluginCount = 0
+let sameCount = 0
+
+async function restoreFocusedPluginWindowToTop(newTrack) {
+    const data = await Db.getTrackData(newTrack)
+    if (!data || !data.focusedPlugin) {
+        return
+    }
+    const { focusedPlugin } = data
+
+    const doIt = () => {
+        if (newTrack !== Bitwig.currentTrack) {
+            // Track has changed, abort!
+            return
+        }
+
+        const pluginOpenCount = Bitwig.getPluginWindowsCount()
+        // showMessage(pluginOpenCount)
+        if (pluginOpenCount > 1 && pluginOpenCount > prevPluginCount) {
+            // Every time we have more plugins, the last one could have opened over the the other
+            sameCount = 0
+            Bitwig.focusPluginWindow(focusedPlugin)
+            // showMessage(`Restoring focus of ${focusedPlugin}`)
+            prevPluginCount = pluginOpenCount
+            // Check again shortly (probs maximum time it could take to reopen a floating window?)
+            setTimeout(doIt, 250)
+        } else if (sameCount < 3) {
+            sameCount++
+            setTimeout(doIt, 250)
+        }
+    }
+
+    doIt()
+}
+
 Bitwig.on('selectedTrackChanged', debounce(async (track, prev) => {
+    prevPluginCount = 0
+    sameCount = 0
+    restoreFocusedPluginWindowToTop(track)
     if (track in openedPluginsForTracks) {
         log('Track already has plugins opened')
         return
     }
-    log('Reopening plugins for track ' + track)
     openedPluginsForTracks[track] = true
     restoreOpenedPluginsForTrack(track)
-}, 1500))
+}, 250))

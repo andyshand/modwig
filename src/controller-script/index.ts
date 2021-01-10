@@ -1071,7 +1071,13 @@ function init() {
                 type: 'message',
                 data: { msg }
             })
-        }
+        },
+        showNotification: notif => {
+            deps.packetManager.send({
+                type: 'notification',
+                data: notif
+            })
+        },
     } as any
     deps.packetManager = new PacketManager(deps)
     deps.globalController = new GlobalController(deps)
