@@ -39,6 +39,7 @@ Bitwig.on('selectedTrackChanged', async (curr, prev) => {
 
 Mouse.on('mouseup', upEvent => {
     if (!downEvent 
+        || Shortcuts.anyModalOpen()
         // Only select on drag for drawing tool. Otherwise dragging clips, selections gets v frustrating
         || (UI.activeTool != 3 && (downEvent.x !== upEvent.x || downEvent.y !== downEvent.y)) 
         || !Bitwig.isActiveApplication()

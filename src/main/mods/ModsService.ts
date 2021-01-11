@@ -388,6 +388,7 @@ export class ModsService extends BESService {
                     })
                 }
             },
+            Shortcuts: this.shortcutsService.getApi(),
             whenActiveListener: whenActiveListener,
             Mouse: {
                 ...Mouse,

@@ -83,6 +83,27 @@ export class ShortcutsService extends BESService {
         }
     }
 
+    getApi() {
+        const that = this
+        return {
+            get enteringValue() {
+                return that.enteringValue
+            },
+            get spotlightOpen() {
+                return that.spotlightOpen
+            },
+            get commanderOpen() {
+                return that.commanderOpen
+            },
+            get tabSwitcherOpen() {
+                return that.tabSwitcherOpen
+            },
+            anyModalOpen() {
+                return that.enteringValue || that.spotlightOpen || that.commanderOpen || that.tabSwitcherOpen
+            }
+        }
+    }
+
     repeatActionWithRange(name, startIncl, endIncl, genTakesI) {
         let out = {}
         for (let i = startIncl; i <= endIncl; i++) {
