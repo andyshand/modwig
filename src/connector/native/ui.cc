@@ -9,6 +9,7 @@
 #include <experimental/optional>
 #include <functional>
 #include <map>
+#include <algorithm>
 
 float uiScale = 1;
 int scale(int point) {
@@ -537,6 +538,7 @@ Napi::Value BitwigWindow::GetArrangerTracks(const Napi::CallbackInfo &info) {
             std::cout << "Fell off bottom edge of screen, returning";
             break;
         }
+        end.y = std::min(tracksEndYPX, end.y);
         if (!skipTrack) {
             track.visibleRect = MWRect{
                 scale(arrangerStartX),
