@@ -48,9 +48,9 @@ Mouse.on('mouseup', upEvent => {
         || upEvent.intersectsPluginWindows()
         || upEvent.button !== mouseButton
         ) {
-        return
-    }
-
+            return
+        }
+        
     // Wait for bitwig UI to update first, may select the track by itself
     setTimeout(() => {
         try {
@@ -63,10 +63,11 @@ Mouse.on('mouseup', upEvent => {
             if (downEvent.x < tracksStartX) {
                 return log('Clicked outside arranger view X')
             }
-
+            
             const selectedI = tracks.findIndex(t => t.selected)
             const insideI = tracks.findIndex(t => downEvent.y >= t.rect.y && downEvent.y < t.rect.y + t.rect.h)
 
+            // log(selectedI, insideI)
             if (insideI >= 0 && selectedI !== insideI) {
                 const insideT = tracks[insideI]
                 const offscreenY = insideT.visibleRect.y - insideT.rect.y
@@ -75,6 +76,13 @@ Mouse.on('mouseup', upEvent => {
                 if (offscreenY > minTrackHeight - clickOffsetY) {
                     showMessage('Track is too far offscreen')
                     return
+                }
+
+                const clickYOffsetInTrack = upEvent.y - insideT.rect.y
+                // log(clickYOffsetInTrack)
+                if (clickYOffsetInTrack < minTrackHeight && upEvent.x > insideT.rect.x + insideT.rect.w) {
+                    // Clicked the main part of the track, Bitwig will handle selection
+                    return showMessage('Clicked normal part of track, Bitwig handling')
                 }
 
                 // showMessage(JSON.stringify(insideT))
