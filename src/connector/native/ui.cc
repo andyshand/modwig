@@ -25,6 +25,8 @@ int DIRECTION_RIGHT = 1;
 int AXIS_X = 0;
 int AXIS_Y = 1;
 
+std::experimental::optional<BitwigLayout> prevLayout;
+
 // These are colors for midtones 28, black level 36
 MWColor trackSelectedColorActive = MWColor{141, 141, 141};
 MWColor trackSelectedColorInactive = MWColor{97, 97, 97};
@@ -40,6 +42,7 @@ MWColor panelButtonHover = MWColor{255, 255, 255};
 const std::string 
     BITWIG_HEADER_HEIGHT = "BITWIG_HEADER_HEIGHT",
     BITWIG_FOOTER_HEIGHT = "BITWIG_FOOTER_HEIGHT",
+    INSPECTOR_WIDTH = "INSPECTOR_WIDTH",
     ARRANGER_HEADER_HEIGHT = "ARRANGER_HEADER_HEIGHT",
     ARRANGER_FOOTER_HEIGHT = "ARRANGER_FOOTER_HEIGHT",
     AUTOMATION_LANE_MINIMUM_HEIGHT = "AUTOMATION_LANE_MINIMUM_HEIGHT",
@@ -48,6 +51,7 @@ const std::string
 std::map<std::string, int> constants = {
     {BITWIG_HEADER_HEIGHT, 82},
     {BITWIG_FOOTER_HEIGHT, 36},
+    {INSPECTOR_WIDTH, 170},
     {ARRANGER_HEADER_HEIGHT, 42},
     {ARRANGER_FOOTER_HEIGHT, 26},
     {AUTOMATION_LANE_MINIMUM_HEIGHT, 53},
@@ -55,8 +59,8 @@ std::map<std::string, int> constants = {
     {MINIMUM_TRACK_HEIGHT, 25}
 };
 
-int getConstant(std::string key) {
-    return constants[key];
+int getConstant(std::string key, bool scaleIt = false) {
+    return scaleIt ? scale(constants[key]) : constants[key];
 }
 
 /**
@@ -143,6 +147,40 @@ Napi::Object ArrangerTrack::toJSObject(Napi::Env env) {
 ArrangerTrack ArrangerTrack::fromJSObject(Napi::Object obj, Napi::Env env) {
     // Unimplemented
     return ArrangerTrack{};
+}
+
+Napi::Object EditorPanel::toJSObject(Napi::Env env) { 
+    Napi::Object obj = Napi::Object::New(env);
+    obj.Set("rect", rect.toJSObject(env));
+    obj.Set("type", type);
+    return obj;
+}
+
+Napi::Object Inspector::toJSObject(Napi::Env env) {
+    Napi::Object obj = Napi::Object::New(env);
+    obj.Set("rect", rect.toJSObject(env));
+    return obj;
+}
+
+Napi::Object Arranger::toJSObject(Napi::Env env) { 
+    Napi::Object obj = Napi::Object::New(env);
+    obj.Set("rect", rect.toJSObject(env));
+    return obj;
+}
+
+Napi::Object BitwigLayout::toJSObject(Napi::Env env) {
+    Napi::Object obj = Napi::Object::New(env);
+    if (!!this->editor) {
+        obj.Set("editor", (*this->editor).toJSObject(env));
+    }
+    if (!!this->inspector) {
+        obj.Set("inspector", (*this->inspector).toJSObject(env));
+    }
+    if (!!this->arranger) {
+        obj.Set("arranger", (*this->arranger).toJSObject(env));
+    }
+    obj.Set("modalOpen", this->modalOpen);
+    return obj;
 }
 
 bool operator==(const MWRect& lhs, const MWRect& rhs)
@@ -352,22 +390,116 @@ Napi::Value BitwigWindow::GetTrackInsetAtPoint(const Napi::CallbackInfo &info) {
     return Napi::Number::New(env, result.x);
 }
 
-Napi::Value BitwigWindow::GetArrangerTracks(const Napi::CallbackInfo &info) {
-    Napi::Env env = info.Env();
-    BitwigWindow* that = (BitwigWindow*)this;
+BitwigLayout BitwigWindow::getLayoutState() {
+    if (prevLayout) {
+        return *prevLayout;
+    }
 
-    auto screenshot = that->updateScreenshot();
+    auto layout = BitwigLayout();
+    auto screenshot = this->updateScreenshot();
     auto tracks = std::vector<ArrangerTrack>();
 
-    auto frame = that->lastBWFrame.frame;
-    auto inspectorOpen = screenshot->colorAt(frame.fromBottomLeft(scale(20), scale(17))).r == panelOpenIcon.r;
-
+    auto frame = this->lastBWFrame.frame;
     if (screenshot->colorAt(frame.fromBottomLeft(scale(2), scale(2))).r == 35) {
+        layout.modalOpen = true;
+        return layout;
+    }
+
+    auto inspectorOpen = screenshot->colorAt(frame.fromBottomLeft(scale(20), scale(17))).r == panelOpenIcon.r;
+    if (inspectorOpen) {
+        layout.inspector = Inspector{
+            .rect = MWRect{
+                0,
+                getConstant(BITWIG_HEADER_HEIGHT, true),
+                getConstant(INSPECTOR_WIDTH, true),
+                frame.h - scale(getConstant(BITWIG_HEADER_HEIGHT) + getConstant(BITWIG_FOOTER_HEIGHT))
+            }
+        };
+    }
+
+    auto arrangerStartX = inspectorOpen ? getConstant(INSPECTOR_WIDTH) : 4;
+    auto arrangerStartY = getConstant(BITWIG_HEADER_HEIGHT);
+    auto arrangerTrackStartY = 42;
+    auto minimumPossibleTrackWidth = 210;
+
+    std::string panelOpen = "";
+    if (screenshot->colorAt(frame.fromBottomLeft(scale(271), scale(20))).isWithinRange(panelOpenIcon)) {
+        panelOpen = "device";
+    } else if (screenshot->colorAt(frame.fromBottomLeft(scale(309), scale(20))).isWithinRange(panelOpenIcon)) {
+        panelOpen = "mixer";
+    } else if (screenshot->colorAt(frame.fromBottomLeft(scale(250), scale(17))).isWithinRange(MWColor{153, 78, 32})) { 
+        panelOpen = "automation"; // FIX ME
+    } else if (screenshot->colorAt(frame.fromBottomLeft(scale(211), scale(14))).isWithinRange(panelOpenIcon)) {
+        panelOpen = "detail";
+    }
+
+    auto arrangerViewHeightPX = frame.h - scale(arrangerStartY + getConstant(BITWIG_FOOTER_HEIGHT));
+    if (panelOpen != "") {
+        // Find the horizontal split where the extra panel stops
+        auto minimumExtraPanel = 108; // Minimum possible height of any extra panel 
+        auto horizontalSplit = screenshot->seekUntilColor(
+            XYPoint{
+                scale(arrangerStartX + 1), 
+                frame.h - scale(getConstant(BITWIG_FOOTER_HEIGHT) + (int)((float)minimumExtraPanel * .8)) 
+            },
+            [](MWColor color) {
+                return color.r == panelBorder.r || color.r == panelBorderInactive.r;
+            },
+            AXIS_Y,
+            DIRECTION_UP,
+            2
+        ).value_or(XYPoint{-1, -1});
+
+        // Go up and right a bit so we can ensure we hit the flat edge of the border and not the rounded corners
+        auto arrangerYBottomBorder = screenshot->seekUntilColor(
+            XYPoint{horizontalSplit.x + scale(20), horizontalSplit.y - scale(3)},
+            [](MWColor color) {
+                return color.r == panelBorder.r || color.r == panelBorderInactive.r;
+            },
+            AXIS_Y,
+            DIRECTION_UP,
+            2
+        ).value_or(XYPoint{-1, -1});
+        arrangerViewHeightPX = arrangerYBottomBorder.y - scale(arrangerStartY);      
+
+        layout.editor = EditorPanel{
+            .type = panelOpen,
+            .rect = MWRect{
+                scale(arrangerStartX),
+                arrangerYBottomBorder.y,
+                frame.w - scale(arrangerStartX),
+                frame.h - getConstant(BITWIG_FOOTER_HEIGHT, true) - arrangerYBottomBorder.y
+            }
+        };
+    }
+
+    layout.arranger = Arranger{
+        MWRect{
+            scale(arrangerStartX),
+            getConstant(BITWIG_HEADER_HEIGHT, true),
+            frame.w - scale(arrangerStartX),
+            arrangerViewHeightPX
+        }
+    };
+
+    return layout;
+}
+
+Napi::Value BitwigWindow::GetArrangerTracks(const Napi::CallbackInfo &info) {
+    Napi::Env env = info.Env();
+
+    auto layout = getLayoutState();
+    auto screenshot = this->updateScreenshot();
+    auto tracks = std::vector<ArrangerTrack>();
+
+    auto frame = this->lastBWFrame.frame;
+
+    if (layout.modalOpen || !layout.arranger) {
         std::cout << "Settings or popup open";
         return env.Null();
     }
 
-    auto arrangerStartX = inspectorOpen ? 170 : 4;
+    auto arrangerStartX = layout.inspector ? 170 : 4;
     auto arrangerStartY = getConstant(BITWIG_HEADER_HEIGHT);
     auto arrangerTrackStartY = 42;
     auto minimumPossibleTrackWidth = 210;
@@ -417,48 +549,7 @@ Napi::Value BitwigWindow::GetArrangerTracks(const Napi::CallbackInfo &info) {
     }
 
     auto trackWidthPX = endOfTrackWidthPoint.x - scale(arrangerStartX);
-
-    std::string panelOpen = "";
-    if (screenshot->colorAt(frame.fromBottomLeft(scale(271), scale(20))).isWithinRange(panelOpenIcon)) {
-        panelOpen = "device";
-    } else if (screenshot->colorAt(frame.fromBottomLeft(scale(309), scale(20))).isWithinRange(panelOpenIcon)) {
-        panelOpen = "mixer";
-    } else if (screenshot->colorAt(frame.fromBottomLeft(scale(250), scale(17))).isWithinRange(MWColor{153, 78, 32})) { 
-        panelOpen = "automation"; // FIX ME
-    } else if (screenshot->colorAt(frame.fromBottomLeft(scale(211), scale(14))).isWithinRange(panelOpenIcon)) {
-        panelOpen = "detail";
-    }
-
-    auto arrangerViewHeightPX = frame.h - scale(arrangerStartY + getConstant(BITWIG_FOOTER_HEIGHT));
-    if (panelOpen != "") {
-        // Find the horizontal split where the extra panel stops
-        auto minimumExtraPanel = 108; // Minimum possible height of any extra panel 
-        auto horizontalSplit = screenshot->seekUntilColor(
-            XYPoint{
-                scale(arrangerStartX + 1), 
-                frame.h - scale(getConstant(BITWIG_FOOTER_HEIGHT) + (int)((float)minimumExtraPanel * .8)) 
-            },
-            [](MWColor color) {
-                return color.r == panelBorder.r || color.r == panelBorderInactive.r;
-            },
-            AXIS_Y,
-            DIRECTION_UP,
-            2
-        ).value_or(XYPoint{-1, -1});
-
-        // Go up and right a bit so we can ensure we hit the flat edge of the border and not the rounded corners
-        auto arrangerYBottomBorder = screenshot->seekUntilColor(
-            XYPoint{horizontalSplit.x + scale(20), horizontalSplit.y - scale(3)},
-            [](MWColor color) {
-                return color.r == panelBorder.r || color.r == panelBorderInactive.r;
-            },
-            AXIS_Y,
-            DIRECTION_UP,
-            2
-        ).value_or(XYPoint{-1, -1});
-        arrangerViewHeightPX = arrangerYBottomBorder.y - scale(arrangerStartY);        
-    }
-    
+    auto arrangerViewHeightPX = (*layout.arranger).rect.h;
     auto minimumTrackHeight = isLargeTrackHeight 
         ? getConstant(MINIMUM_DOUBLE_TRACK_HEIGHT) 
         : getConstant(MINIMUM_TRACK_HEIGHT);
@@ -514,10 +605,10 @@ Napi::Value BitwigWindow::GetArrangerTracks(const Napi::CallbackInfo &info) {
                     AXIS_Y,
                     DIRECTION_DOWN,
                     2
-                ).value_or(XYPoint{-1, -1});
-                if (automationStart.x != -1) {
+                );
+                if (automationStart) {
                     // Difference between visible y and actual start y
-                    hiddenY = y - (automationStart.y - minimumTrackHeightPX);
+                    hiddenY = y - ((*automationStart).y - minimumTrackHeightPX);
                 }
             }
 
@@ -535,7 +626,7 @@ Napi::Value BitwigWindow::GetArrangerTracks(const Napi::CallbackInfo &info) {
             ).value_or(XYPoint{-1, -1});
         }
         if (end.y == -1) {
-            std::cout << "Fell off bottom edge of screen, returning";
+            std::cout << "Fell off bottom edge of screen, stopping search";
             break;
         }
         end.y = std::min(tracksEndYPX, end.y);
@@ -565,6 +656,10 @@ Napi::Value BitwigWindow::GetArrangerTracks(const Napi::CallbackInfo &info) {
     return array;
 };
 
+Napi::Value BitwigWindow::GetLayoutState(const Napi::CallbackInfo &info) {
+    return this->getLayoutState().toJSObject(info.Env());
+}
+
 BitwigWindow::BitwigWindow(const Napi::CallbackInfo &info) : Napi::ObjectWrap<BitwigWindow>(info) {
     // Napi::Env env = info.Env();
     this->latestImageDeets = nullptr;
@@ -573,6 +668,7 @@ Napi::Object BitwigWindow::Init(Napi::Env env, Napi::Object exports) {
     Napi::Function func = DefineClass(env, "BitwigWindow", {
         InstanceAccessor<&BitwigWindow::getRect>("rect"),
         InstanceMethod<&BitwigWindow::GetArrangerTracks>("getArrangerTracks"),
+        InstanceMethod<&BitwigWindow::GetLayoutState>("getLayoutState"),
         InstanceMethod<&BitwigWindow::GetTrackInsetAtPoint>("getTrackInsetAtPoint"),
         InstanceMethod<&BitwigWindow::PixelColorAt>("pixelColorAt")
     });
@@ -665,7 +761,7 @@ Napi::ObjectReference mainWindow;
 // Napi::ObjectReference mainWindowRef;
 // BitwigWindow* mainWindowUnwrapped;
 
-Napi::Value updateUILayout(const Napi::CallbackInfo &info) {
+Napi::Value updateUILayoutInfo(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
     auto obj = info[0].As<Napi::Object>();
     if (obj.Has("scale")) {
@@ -678,6 +774,11 @@ Napi::Value updateUILayout(const Napi::CallbackInfo &info) {
         // TODO
     }
     return env.Null();
+}
+
+Napi::Value invalidateLayout(const Napi::CallbackInfo &info) {
+    prevLayout = {};
+    return info.Env().Null();
 }
 
 Napi::Value getSizeInfo(const Napi::CallbackInfo &info) {
@@ -726,7 +827,8 @@ Napi::Value InitUI(Napi::Env env, Napi::Object exports) {
     // });
 
     // obj.Set(Napi::String::New(env, "MainWindow"), mainWindow.Value());
-    obj.Set(Napi::String::New(env, "updateUILayout"), Napi::Function::New(env, updateUILayout));
+    obj.Set(Napi::String::New(env, "updateUILayoutInfo"), Napi::Function::New(env, updateUILayoutInfo));
+    obj.Set(Napi::String::New(env, "invalidateLayout"), Napi::Function::New(env, invalidateLayout));
     obj.Set(Napi::String::New(env, "getSizeInfo"), Napi::Function::New(env, getSizeInfo));
     exports.Set("UI", obj);
     return exports;

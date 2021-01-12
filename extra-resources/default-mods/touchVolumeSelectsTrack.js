@@ -80,7 +80,7 @@ Mouse.on('mouseup', upEvent => {
 
                 const clickYOffsetInTrack = upEvent.y - insideT.rect.y
                 // log(clickYOffsetInTrack)
-                if (clickYOffsetInTrack < minTrackHeight && upEvent.x > insideT.rect.x + insideT.rect.w) {
+                if (clickYOffsetInTrack < minTrackHeight || upEvent.x < insideT.rect.x + insideT.rect.w) {
                     // Clicked the main part of the track, Bitwig will handle selection
                     return showMessage('Clicked normal part of track, Bitwig handling')
                 }

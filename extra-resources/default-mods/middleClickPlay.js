@@ -45,26 +45,36 @@ Keyboard.on('keyup', event => {
 })
 
 function playWithEvent(event) {
+    const uiLayout = UI.MainWindow.getLayoutState()
+    // log(uiLayout)
     const mousePosBefore = Mouse.getPosition()
     if (numDownBefore) {
         Keyboard.keyUp(String(numDownBefore))
     }
-    
-    const timelineClickPosition = {x: event.bitwigX, y: 91}
-    
-    // Modifiers move start position back further to left to allow run-up
-    // to start position. Left-er modifiers = left-er position :D
-    // let backFurther = 0
-    // if (event.Meta) {
-    //     backFurther = 100
-    // } else if (event.Alt) {
-    //     backFurther = 200
-    // } else if (event.Control) {
-    //     backFurther = 400
-    // }
 
-    // Make sure the position doesn't cross over into track header 
-    // timelineClickPosition.x = Math.max(480, timelineClickPosition.x);
+    const getClickPos = () => {
+        if (uiLayout.arranger && Rect.containsPoint(uiLayout.arranger.rect, mousePosBefore)) {
+            // Arranger panel
+            return {
+                x: event.x, 
+                y: Bitwig.scale(91)
+            }
+        } else if (uiLayout.editor?.type === 'detail' && Rect.containsPoint(uiLayout.editor.rect, mousePosBefore)) {
+            // Detail panel
+            return {
+                x: event.x, 
+                y: uiLayout.editor.rect.y + Bitwig.scale(8)
+            }
+        } else {
+            // Elsewhere, do nothing
+            return null
+        }
+    }
+    
+    const timelineClickPosition = getClickPos()
+    if (!timelineClickPosition) {
+        return
+    }
 
     const doTheClick = () => {
         if (normalClickToo) {
@@ -76,13 +86,14 @@ function playWithEvent(event) {
             Keyboard.keyUp('2')
         }
         Keyboard.keyDown('1')
-        Bitwig.doubleClick(0, {...event, ...timelineClickPosition})
+        Mouse.doubleClick(0, {...event, ...timelineClickPosition})
         Mouse.setPosition(mousePosBefore.x, mousePosBefore.y)
         Keyboard.keyUp('1')
         if (numDownBefore) {
             Keyboard.keyDown(String(numDownBefore))
         }
     }
+
     if (!Bitwig.intersectsPluginWindows(timelineClickPosition)) {
         log(`Double-clicking time ruler at ${timelineClickPosition.x}, ${timelineClickPosition.y}`)
         // Pass modifiers 

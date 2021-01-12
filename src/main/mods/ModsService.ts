@@ -390,6 +390,14 @@ export class ModsService extends BESService {
             },
             Shortcuts: this.shortcutsService.getApi(),
             whenActiveListener: whenActiveListener,
+            Rect: {
+                containsPoint(rect, point) {
+                    return point.x >= rect.x 
+                        && point.x < rect.x + rect.w 
+                        && point.y >= rect.y
+                        && point.y < rect.y + rect.h
+                }
+            },
             Mouse: {
                 ...Mouse,
                 on: (eventName: string, cb: Function) => {
@@ -519,14 +527,11 @@ export class ModsService extends BESService {
                     return sendPacketToBitwigPromise({type: 'action', data: actions.map(normalizeBitwigAction)})
                 },
                 showMessage: showMessage,
-                intersectsPluginWindows: event => {
-                    return this.uiService.eventIntersectsPluginWindows({
-                        ...event,
-                        ...(this.shortcutsService.bwToScreen(event))
-                    })
-                },
+                intersectsPluginWindows: event => this.uiService.eventIntersectsPluginWindows(event),
                 scaleXY: (args) => this.shortcutsService.scaleXY(args),
+                scale: (point) => this.shortcutsService.scaleXY({x: point, y: 0}).x,
                 unScaleXY: (args) => this.shortcutsService.unScaleXY(args),
+                unScale: (point) => this.shortcutsService.unScaleXY({x: point, y: 0}).x,
                 bwToScreen: (args) => this.shortcutsService.bwToScreen(args),
                 screenToBw: (args) => this.shortcutsService.screenToBw(args),
                 click: (button, positionAndStuff, ...rest) => {

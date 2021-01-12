@@ -31,6 +31,27 @@ struct MWColor {
     static MWColor fromJSObject(Napi::Object obj, Napi::Env env);
     bool isWithinRange(MWColor b, int amount = 5);
 };
+
+struct EditorPanel {
+    std::string type;
+    MWRect rect;
+    Napi::Object toJSObject(Napi::Env env);
+};
+struct Inspector {
+    MWRect rect;
+    Napi::Object toJSObject(Napi::Env env);
+};
+struct Arranger {
+    MWRect rect;
+    Napi::Object toJSObject(Napi::Env env);
+};
+struct BitwigLayout {
+    std::experimental::optional<EditorPanel> editor;
+    std::experimental::optional<Inspector> inspector;
+    std::experimental::optional<Arranger> arranger;
+    bool modalOpen;
+    Napi::Object toJSObject(Napi::Env env);
+};
 struct ArrangerTrack {
     MWRect rect, visibleRect;
     bool selected, automationOpen, isLargeTrackHeight;
@@ -93,6 +114,7 @@ class BitwigWindow: public Napi::ObjectWrap<BitwigWindow> {
     ImageDeets* latestImageDeets = nullptr;
     WindowInfo getFrame();
     ImageDeets* updateScreenshot();
+    BitwigLayout getLayoutState();
     BitwigWindow(const Napi::CallbackInfo &info);
 
     // BitwigUIComponent arranger;
@@ -102,6 +124,7 @@ class BitwigWindow: public Napi::ObjectWrap<BitwigWindow> {
     Napi::Value getRect(const Napi::CallbackInfo &info);
     Napi::Value PixelColorAt(const Napi::CallbackInfo &info);
     Napi::Value GetTrackInsetAtPoint(const Napi::CallbackInfo &info);
+    Napi::Value GetLayoutState(const Napi::CallbackInfo &info);
     Napi::Value GetArrangerTracks(const Napi::CallbackInfo &info);
 };
 

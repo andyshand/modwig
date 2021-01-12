@@ -62,6 +62,8 @@ export class ShortcutsService extends BESService {
     spotlightOpen = false
     commanderOpen = false
     tabSwitcherOpen = false
+    pausedHolders = 0
+
     browserText = ''
     actions = this.getActions()
     tempActions: {[id: string]: TempActionSpec} = {}
@@ -74,6 +76,15 @@ export class ShortcutsService extends BESService {
         enteringValue: makeEvent<boolean>()
     }
     uiScale: number = 1 // Cached from setting
+
+
+    pause() {
+        this.pausedHolders++
+    }
+
+    unpause() {
+        this.pausedHolders--
+    }
 
     setEnteringValue(value) {
         if (this.enteringValue !== value) {
@@ -1004,6 +1015,10 @@ export class ShortcutsService extends BESService {
             }
         })
         Keyboard.on('keydown', event => {
+            if (this.pausedHolders > 0) {
+                return
+            }
+
             let { lowerKey, nativeKeyCode, Meta, Shift, Control, Alt, Fn } = event
             if (/F[0-9]+/.test(lowerKey) || lowerKey === 'Clear' || lowerKey.indexOf('Arrow') === 0) {
                 // FN defaults to true when using function keys (makes sense I guess?), but also Clear???

@@ -6,7 +6,7 @@ import _ from 'underscore'
 import { BitwigService } from "../bitwig/BitwigService"
 
 const { Keyboard, Bitwig, UI } = require('bindings')('bes')
-const UIMainWindow = new UI.BitwigWindow({})
+
 
 /**
  * UI Service is basically responsible for keeping an up to date (insofar as possbile) representation of the Bitwig UI.
@@ -24,6 +24,7 @@ export class UIService extends BESService {
     activeTool = 0
     previousTool = 0
     activeToolKeyDownAt = new Date()
+    uiMainWindow = new UI.BitwigWindow({})
 
     // Events
     events = {       
@@ -34,13 +35,33 @@ export class UIService extends BESService {
         const that = this
         return {
             ...UI,
-            MainWindow: UIMainWindow,
+            MainWindow: this.uiMainWindow,
             get activeTool() {
                 return that.activeTool
             },
             ...makeEmitterEvents({
                 activeToolChanged: this.events.toolChanged
             })
+        }
+    }
+
+    modalWasOpen
+
+    checkIfModalOpen() {
+        UI.invalidateLayout()
+        const layout = this.uiMainWindow.getLayoutState()
+
+        // FIXME because of lack of explicit ordering of event listeners between services,
+        // the ShortcutsService will receive one round of inputs that correspond to an invalid UI
+        // state if the modal is triggered by keyboard shortcuts.
+        if (layout.modalOpen && !this.modalWasOpen) {
+            this.log('Modal is open, pausing shortcuts')
+            this.shortcutsService.pause()
+            this.modalWasOpen = true
+        } else if (!layout.modalOpen && this.modalWasOpen) {
+            this.log('Modal closed, unpausing shortcuts')
+            this.shortcutsService.unpause()
+            this.modalWasOpen = false
         }
     }
 
@@ -55,16 +76,24 @@ export class UIService extends BESService {
                 this.events.toolChanged.emit(this.activeTool)
             }
         })
+        
         Keyboard.on('keyup', event => {
+            UI.invalidateLayout()
+
             const asNumber = parseInt(event.lowerKey, 10)
             if (asNumber === this.activeTool && new Date().getTime() - this.activeToolKeyDownAt.getTime() > 250)  {
                 this.activeTool = this.previousTool
                 this.activeToolKeyDownAt = new Date(0)
                 this.events.toolChanged.emit(this.activeTool)
             }
+
+            this.checkIfModalOpen()
         })
 
         Keyboard.on('mouseup', event => {
+            // Layout could have always changed on mouse up
+            UI.invalidateLayout()
+
             // Attempt to track when user is entering a text field
             // FIXME for scaling
             if (Bitwig.isActiveApplication() 
@@ -78,15 +107,17 @@ export class UIService extends BESService {
                 // Assume they are clicking to enter a value by keyboard
                 this.shortcutsService.setEnteringValue(true)
             }
+            
+            this.checkIfModalOpen()
         })
 
         this.settingsService.onSettingValueChange('uiScale', val => {
-            UI.updateUILayout({scale: parseInt(val, 10) / 100})
+            UI.updateUILayoutInfo({scale: parseInt(val, 10) / 100})
         })
 
         interceptPacket('ui', undefined, (packet) => {
             this.log('Updating UI from packet: ', packet)
-            UI.updateUILayout(packet.data)
+            UI.updateUILayoutInfo(packet.data)
         })
     }
 
