@@ -33,4 +33,4 @@ Combine all available actions and shortcuts into your own macros using simple Ja
 
 # Setup
 
-Please note Modwig is currently quite unstable and should probably only be used if you're a developer and can afford to troubleshoot issues. See https://github.com/andyshand/modwig/blob/master/CONTRIBUTING.md for developer setup instructions, or ask questions at the [discord](https://discord.com/invite/6Wetp3ZsKv).
+Please note Modwig is currently Mac only, quite unstable and should probably only be used if you're a developer and can afford to troubleshoot issues. See https://github.com/andyshand/modwig/blob/master/CONTRIBUTING.md for developer setup instructions, or ask questions at the [discord](https://discord.com/invite/6Wetp3ZsKv).
