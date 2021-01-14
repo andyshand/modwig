@@ -290,6 +290,7 @@ export class ShortcutsService extends BESService {
                     defaultSetting: {
                         keys: []
                     },
+                    contexts: ['browser'],
                     action: () => {
                         Keyboard.keyPress('Enter', { modwigListeners: true })
                     }                
