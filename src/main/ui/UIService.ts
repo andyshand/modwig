@@ -48,6 +48,10 @@ export class UIService extends BESService {
     modalWasOpen
 
     checkIfModalOpen() {
+        if (!process.env.SCREENSHOTS) {
+            return
+        }
+
         UI.invalidateLayout()
         const layout = this.uiMainWindow.getLayoutState()
 
