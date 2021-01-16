@@ -1,7 +1,7 @@
 /**
  * @name Transport Nav Popup
  * @id transport-nav-popup
- * @description Shows a popup preview when changing transport position
+ * @description Shows a popup preview when changing transport position via shortcuts
  * @category global
  */
 
@@ -11,24 +11,29 @@ const open = position => {
             cueMarkers: Bitwig.cueMarkers,
             position
         },
-        width: 700,
-        height: 50,
-        timeout: 500
+        width: 1200,
+        height: 70,
+        y: 250,
+        timeout: 600
     })
 }
 
+let shouldShowNotification = false
+
 Mod.on('actionTriggered', action => {
-    if (action.id.indexOf('launchArrangerCueMarker') === 0) {
-        const markerI = parseInt(action.id.slice(-1), 10)
-        if (!isNaN(markerI)) {
-            const currMarker = Bitwig.cueMarkers[markerI - 1]
-            log(currMarker)
-            open(currMarker?.position ?? 0)
-        }
+    const { id } = action
+    if (id.indexOf('launchArrangerCueMarker') === 0 
+        || id.indexOf(['jump-to-next-cue-marker']) >= 0
+        || id.indexOf(['jump-to-previous-cue-marker']) >= 0
+        || id.indexOf(['nudge-transport-position']) === 0) {
+        shouldShowNotification = true
     }
 })
 
 Mod.interceptPacket('transport/play-start', undefined, ({ position }) => {
-    log('Received play start packet')
-    open(position)
+    if (shouldShowNotification) {
+        // log('Received play start packet')
+        open(position)
+        shouldShowNotification = false
+    }
 })
