@@ -29,8 +29,9 @@ async function showAutomationImpl(all, { onlyShow } = { onlyShow: false }) {
     const track = Bitwig.currentTrack
     let { automationShown } = await Db.getTrackData(track)
     if (onlyShow && automationShown) {
-        return
+        return log('Automation already shown')
     }
+    log('Showing automation')
     if (exclusiveAutomation && !automationShown) {
         Db.setExistingTracksData({
             automationShown: false
@@ -59,6 +60,15 @@ Mod.registerAction({
         Bitwig.makeMainWindowActive()
         Bitwig.runAction(`toggle_automation_shown_for_selected_tracks`)
     }
+})
+
+Mod.registerAction({
+    title: "Show Automation for Current Track",
+    id: "show-current-track-automation",
+    category: "arranger",
+    contexts: ['-browser'],
+    description: `Shows automation for the current track in the arranger.`,
+    action: showAutomationImpl.bind(null, false, { onlyShow: true })
 })
 
 Mod.registerAction({
@@ -295,21 +305,21 @@ Mod.registerAction({
             x: (selected.rect.x + selected.rect.w) - Bitwig.scaleXY({ x: 25, y: 0 }).x,
             y: selected.rect.y + Bitwig.scaleXY({ x: 0, y: 15 }).y,
         }
-        Mouse.returnAfter(async () => {
-            return Mouse.avoidingPluginWindows(clickAt, async () => {
-                // log('Clicking at: ', clickAt)
-                Mouse.click(0, clickAt)
-                if (!selected.automationOpen) {
-                    showAutomationImpl(false)
-                    Db.setCurrentTrackData({
-                        automationShown: true
-                    })
-                }
-                // For whatever reason the click here happens after returning the mouse,
-                // so we need to wait a little. So many timeouts :(
-                return wait(100)
-            })
+
+        // log('Clicking at: ', clickAt)
+        await Mouse.click(0, {
+            ...clickAt,
+            avoidPluginWindows: true,
+            // For whatever reason the click here happens after returning the mouse,
+            // so we need to wait a little. So many timeouts :(
+            returnAfter: 100
         })
+        if (!selected.automationOpen) {
+            showAutomationImpl(false)
+            Db.setCurrentTrackData({
+                automationShown: true
+            })
+        }
     }
 })
 

@@ -448,12 +448,32 @@ export class ModsService extends BESService {
                         wrappedOnForReloadDisconnect(Keyboard)(eventName, wrappedCb)
                     }
                 },
-                click: (...args) => {
+                click: async (...args) => {
                     const button = args[0]
-                    if (typeof button !== 'number') {
-                        return Mouse.click(0, ...args)
+                    const opts = args[args.length - 1] || {}
+                    const doIt = async () => {
+                        const reallyDoIt = async () => {
+                            let ret
+                            if (typeof button !== 'number') {
+                                ret = Mouse.click(0, ...args)
+                            } else {
+                                ret = Mouse.click(...args)
+                            }
+                            if (typeof opts.returnAfter === 'number') {
+                                await api.wait(opts.returnAfter)
+                            }
+                            return ret
+                        }
+                        if (opts.returnAfter) {
+                            return returnMouseAfter(reallyDoIt)
+                        } else {
+                            return reallyDoIt()
+                        }
+                    }
+                    if (opts.avoidPluginWindows) {
+                        return api.Mouse.avoidingPluginWindows(opts, doIt)
                     } else {
-                        return Mouse.click(...args)
+                        return doIt()
                     }
                 },
                 lockX: Keyboard.lockX,
