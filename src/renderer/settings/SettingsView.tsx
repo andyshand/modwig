@@ -460,6 +460,11 @@ export class SettingsView extends ModwigComponent<Props> {
                             return <SettingItem focused={false} key={action.id} setting={action} />
                         })}
                     </div>
+                    <div style={{background: `#161616`, padding: `2rem 4rem`, paddingTop: `0`}}>
+                        {chosenMod.settings.map(sett => {
+                            return <SettingItem focused={false} key={sett.id} setting={sett} />
+                        })}
+                    </div>
                 </ModRow> 
                 <ModLogs mod={chosenMod} />
             </ModAndLogs> : null}

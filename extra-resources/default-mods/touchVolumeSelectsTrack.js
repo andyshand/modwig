@@ -38,15 +38,20 @@ Bitwig.on('selectedTrackChanged', async (curr, prev) => {
 })
 
 Mouse.on('mouseup', upEvent => {
+    const wasDrag = (downEvent.x !== upEvent.x || downEvent.y !== downEvent.y)
     if (!downEvent 
         || Shortcuts.anyModalOpen()
+
         // Only select on drag for drawing tool. Otherwise dragging clips, selections gets v frustrating
-        || (UI.activeTool != 3 && (downEvent.x !== upEvent.x || downEvent.y !== downEvent.y)) 
+        || UI.activeTool != 3 && wasDrag 
         || !Bitwig.isActiveApplication()
         || Bitwig.isBrowserOpen
         || downEvent.intersectsPluginWindows()
         || upEvent.intersectsPluginWindows()
         || upEvent.button !== mouseButton
+
+        // Use meta similar to how macOS prevents apps from taking focus if you cmd-click on them
+        || upEvent.Meta && !wasDrag
         ) {
             return
         }
@@ -80,9 +85,9 @@ Mouse.on('mouseup', upEvent => {
 
                 const clickYOffsetInTrack = upEvent.y - insideT.rect.y
                 // log(clickYOffsetInTrack)
-                if (clickYOffsetInTrack < minTrackHeight || upEvent.x < insideT.rect.x + insideT.rect.w) {
+                if (clickYOffsetInTrack < minTrackHeight && upEvent.x > insideT.rect.x + insideT.rect.w) {
                     // Clicked the main part of the track, Bitwig will handle selection
-                    return showMessage('Clicked normal part of track, Bitwig handling')
+                    return // showMessage('Clicked normal part of track, Bitwig handling')
                 }
 
                 // showMessage(JSON.stringify(insideT))

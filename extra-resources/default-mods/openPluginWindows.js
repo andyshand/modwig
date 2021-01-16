@@ -5,6 +5,12 @@
  * @category global
  */
 
+const autoOpen = Mod.registerSetting({
+    id: 'auto-open',
+    name: 'Automatically reopen plugins from last session',
+    description: `When selecting a track, plugin windows that were open last session (or last run of Modwig) are reopened. Try not to interact with the device view while plugins are being opened as this may prevent the search from working correctly.`
+})
+
 Mod.registerAction({
     title: "Restore Open Plugin Windows",
     id: "restore-open-plugin-windows",
@@ -234,10 +240,14 @@ Bitwig.on('selectedTrackChanged', debounce(async (track, prev) => {
     prevPluginCount = 0
     sameCount = 0
     restoreFocusedPluginWindowToTop(track)
-    if (track in openedPluginsForTracks) {
-        log('Track already has plugins opened')
-        return
+
+    // log('Auto open is: ' + await autoOpen.getValue())
+    if (await autoOpen.getValue()) {
+        if (track in openedPluginsForTracks) {
+            log('Track already has plugins opened')
+            return
+        }
+        openedPluginsForTracks[track] = true
+        restoreOpenedPluginsForTrack(track)
     }
-    openedPluginsForTracks[track] = true
-    restoreOpenedPluginsForTrack(track)
 }, 250))

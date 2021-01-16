@@ -167,6 +167,11 @@ interface Device {
     name: string
 }
 
+interface SettingInfo {
+    name: string
+    description?: string
+}
+
 export class ModsService extends BESService {
 
     // Services
@@ -189,6 +194,7 @@ export class ModsService extends BESService {
     activeEngineProject: string | null = null
     tracks: any[] = []
     activeModApiIds: {[key: string]: boolean} = {}
+    settingKeyInfo: {[key: string]: SettingInfo} = {}
 
     // Events
     events = {
@@ -638,6 +644,32 @@ export class ModsService extends BESService {
                         api.Mod.runAction(action)
                     }
                 },
+                registerSetting: settingSpec => {
+                    const defaultValue = JSON.stringify(settingSpec.value ?? {})
+                    const actualKey = `mod/${mod.id}/${settingSpec.id}`
+                    const type = settingSpec.type ?? 'boolean'
+
+                    const setting = {
+                        name: settingSpec.name,
+                        type,
+                        category: 'global',
+                        value: defaultValue,
+                        key: actualKey,
+                        mod: mod.id
+                    }
+                    this.log(`Registering setting for ${mod.id}: `, setting)
+                    this.settingsService.insertSettingIfNotExist(setting)
+                    this.settingKeyInfo[actualKey] = {
+                        name: settingSpec.name,
+                        description: settingSpec.description
+                    }
+
+                    return {
+                        getValue: async () => {
+                            return (await that.settingsService.getSettingValue(actualKey)).enabled
+                        }
+                    }
+                },
                 registerAction: (action) => {
                     action.category = action.category || mod.category
                     this.shortcutsService.registerAction({
@@ -741,6 +773,7 @@ export class ModsService extends BESService {
             _,
         }
     }
+
     async getModsWithInfo({category, inMenu} = {} as any) : Promise<(ModInfo & {key: string, value: any})[]> {
         const db = await getDb()
         const settings = db.getRepository(Setting) 
@@ -839,14 +872,26 @@ export class ModsService extends BESService {
                 const settingsForMod = await settings.find({where: {
                     mod: mod.id
                 }})
-                mod.actions = settingsForMod.map(setting => {
-                    const action = this.shortcutsService.actions[setting.key]
-                    return {
-                        ...this.settingsService.postload(setting),
-                        ...action,
-                        notFound: !action
-                    }
-                })
+                mod.actions = settingsForMod
+                    .filter(setting => setting.type === 'mod' || setting.type === 'shortcut')
+                    .map(setting => {
+                        const action = this.shortcutsService.actions[setting.key]
+                        return {
+                            ...this.settingsService.postload(setting),
+                            ...action,
+                            notFound: !action
+                        }
+                    })
+                mod.settings = settingsForMod
+                    .filter(setting => setting.type !== 'mod' && setting.type !== 'shortcut')
+                    .map(setting => {
+                        const info = this.settingKeyInfo[setting.key]
+                        return {
+                            ...this.settingsService.postload(setting),
+                            ...info,
+                            notFound: !info
+                        }
+                    })
             }
             return mods
         })
@@ -876,33 +921,37 @@ export class ModsService extends BESService {
                 });
             }
         }
-        this.settingsService.events.settingUpdated.listen(data => {
-            const key = data.key!
+        this.settingsService.events.settingUpdated.listen(setting => {
+            // this.log(setting)
+            const key = setting.key!
             if (key === 'userLibraryPath') {
                 refreshFolderWatcher()
             } else if (key.indexOf('mod') === 0) {
-                const modData = this.latestModsMap[key]
-                const value = JSON.parse(data.value)
-                // console.log(modData)
-                if (!modData.noReload) {
-                    showMessage(`Settings changed, restarting Modwig...`)
-                    this.refreshMods()
-                } else {
-                    this.log('Mod marked as `noReload`, not reloading')
-                    const data = {
-                        [modData.id!]: value.enabled
-                    }
+                if (setting.type === 'mod') {
+                    const modData = this.latestModsMap[key]
+                    const value = JSON.parse(setting.value)
+                    const reload = !modData.noReload
                     showMessage(`${modData.name}: ${value.enabled ? 'Enabled' : 'Disabled'}`)
-                    sendPacketToBitwig({type: 'settings/update', data })
 
-                    // FIXME shortcuts service deregisters on settingUpdated event, so re-register all in a setTimeout
-                    setTimeout(async () => {
-                        const mods = await this.getModsWithInfo()
-                        for (const mod of mods) {
-                            this.registerEnableDisableShortcut(mod)
+                    if (reload) {
+                        this.refreshMods()
+                    } else {
+                        this.log('Mod marked as `noReload`, not reloading')
+                        const data = {
+                            [modData.id!]: value.enabled
                         }
-                    }, 100)
-                }               
+                        sendPacketToBitwig({type: 'settings/update', data })
+                    }         
+                } else if (setting.type === 'boolean') {
+                    const info = this.settingKeyInfo[key]
+                    if (!info) {
+                        return this.log(`Setting updated (${setting.key}) but no info found, mod no longer exists?`)
+                    }
+                    const value = JSON.parse(setting.value)
+                    if (setting.type === 'boolean') {
+                        showMessage(`${info.name}: ${value.enabled ? 'Enabled' : 'Disabled'}`)
+                    }
+                }      
             }
         })
 
@@ -930,20 +979,6 @@ export class ModsService extends BESService {
                 browserIsOpen: isOpen
             })
         })
-    }
-
-    async registerEnableDisableShortcut(mod: ModInfo) {
-        // Re-register shortcuts for disabling/enabling mods
-        const enabledValue = await this.settingsService.getSettingValue(mod.settingsKey)
-        if (enabledValue && enabledValue.keys.length > 0) {
-            this.shortcutsService.registerShortcut(enabledValue, async () => {
-                const currentVal = (await this.settingsService.getSettingValue(mod.settingsKey))
-                await this.settingsService.setSettingValue(mod.settingsKey, {
-                    ...currentVal,
-                    enabled: !currentVal.enabled
-                })
-            })
-        }
     }
 
     async getModsFolderPaths() : Promise<string[]> {
@@ -1047,7 +1082,6 @@ export class ModsService extends BESService {
             })
         }
 
-        this.registerEnableDisableShortcut(mod)
         this.latestModsMap[mod.settingsKey] = mod
     }
 

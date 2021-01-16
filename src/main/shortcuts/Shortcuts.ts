@@ -169,21 +169,28 @@ export class ShortcutsService extends BESService {
         this.log('Updating shortcut cache')
         const db = await getDb()
         const settings = db.getRepository(Setting) 
-        const results = await settings.find({where: {type: 'shortcut'}})
+        const results = await settings.find()
 
         this.shortcutCache = {}
-        for (let shortcut of results) {
-            shortcut = this.settingsService.postload(shortcut)
-            if (shortcut.value.keys.length > 0) {
-                const value = shortcut.value
-                const key = shortcut.key
+        for (let setting of results) {
+            setting = this.settingsService.postload(setting)
+            if (setting.value.keys?.length > 0 ?? false) {
+                const value = setting.value
+                const key = setting.key
                 const code = this.makeShortcutValueCode(value)
                 // code is our ID, key is the action to run
-                const runner = (context) => {
+                const runner = async (context) => {
                     this.log('Running shortcut code: ' + code + ' with action key: ' + colors.yellow(key))
                     try {
-                        // console.log(`Action data is: `, this.actions[key])
-                        this.actions[key].action(context)
+                        if (setting.type === 'mod' || setting.type === 'boolean') {
+                            await this.settingsService.setSettingValue(setting.key, {
+                                ...setting.value,
+                                enabled: !setting.value.enabled
+                            })
+                        } else if (setting.type === 'shortcut') {
+                            // console.log(`Action data is: `, this.actions[key])
+                            this.actions[key].action(context)
+                        }
                     } catch (e) {
                         this.log(colors.red(e))
                     }

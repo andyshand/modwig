@@ -192,7 +192,7 @@ export const SettingShortcut = ({setting}) => {
     }
 
     const getValue = () => {
-        if (value.keys.length === 0) {
+        if (value.keys?.length === 0 ?? true) {
             return focused ? 'Listening...' : 'Click to set...'
         } else {
             return shortcutToTextDescription({value})
@@ -222,7 +222,7 @@ export const SettingShortcut = ({setting}) => {
     }
 
     const options = [
-        ...(setting.type === 'mod' ? [
+        ...(setting.type !== 'shortcut' ? [
             optionProps('showInMenu', 'Show in Menu'),
         ] : []),
         optionProps('doubleTap', 'Double-tap')

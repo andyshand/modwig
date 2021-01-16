@@ -100,7 +100,7 @@ export class SettingsService extends BESService {
             const content = this.preSave(setting)
             const newSetting = this.Settings.create(content)
             await this.Settings.save(newSetting);
-
+            this.log('Inserted new setting: ', newSetting)
             // this.events.settingsUpdated.emit()
             // this.events.settingUpdated.emit(content)
         }
