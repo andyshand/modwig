@@ -25,6 +25,7 @@ export class UIService extends BESService {
     previousTool = 0
     activeToolKeyDownAt = new Date()
     uiMainWindow = new UI.BitwigWindow({})
+    uiScale
 
     // Events
     events = {       
@@ -41,14 +42,20 @@ export class UIService extends BESService {
             },
             ...makeEmitterEvents({
                 activeToolChanged: this.events.toolChanged
-            })
+            }),
+            scaleXY: (args) => this.scaleXY(args),
+            scale: (point) => this.scaleXY({x: point, y: 0}).x,
+            unScaleXY: (args) => this.unScaleXY(args),
+            unScale: (point) => this.unScaleXY({x: point, y: 0}).x,
+            bwToScreen: (args) => this.bwToScreen(args),
+            screenToBw: (args) => this.screenToBw(args)
         }
     }
 
     modalWasOpen
 
     checkIfModalOpen() {
-        if (!process.env.SCREENSHOTS) {
+        if (process.env.SCREENSHOTS !== 'true') {
             return
         }
 
@@ -116,7 +123,9 @@ export class UIService extends BESService {
         })
 
         this.settingsService.onSettingValueChange('uiScale', val => {
+            this.uiScale = parseInt(val, 10) / 100
             UI.updateUILayoutInfo({scale: parseInt(val, 10) / 100})
+            this.log(`Ui scale set to ${this.uiScale}`)
         })
 
         interceptPacket('ui', undefined, (packet) => {
@@ -147,5 +156,41 @@ export class UIService extends BESService {
         }
         event._intersectsPluginWindows = false
         return false
+    }
+
+    bwToScreen({ x, y, ...rest }) {
+        const frame = this.uiMainWindow.getFrame()
+        const scaled = this.scaleXY({ x, y })
+        return {
+            x: scaled.x + frame.x,
+            y: scaled.y + frame.y,
+            ...rest
+        }
+    }
+
+    screenToBw({ x, y, ...rest }) {
+        const frame = this.uiMainWindow.getFrame()
+        const bwRelative = {
+            x: x - frame.x,
+            y: y - frame.y,
+            ...rest
+        }
+        return this.unScaleXY(bwRelative)
+    }
+
+    scaleXY({ x, y, ...rest }) {
+        return {
+            x: x * this.uiScale,
+            y: y * this.uiScale,
+            ...rest
+        }
+    }
+
+    unScaleXY({ x, y, ...rest }) {
+        return {
+            x: x / this.uiScale,
+            y: y / this.uiScale,
+            ...rest
+        }
     }
 }

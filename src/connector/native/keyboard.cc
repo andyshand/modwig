@@ -313,7 +313,7 @@ CallbackInfo* addEventListener(EventListenerSpec spec) {
         mask = CGEventMaskBit(kCGEventKeyUp);
     } else if ("keydown" == spec.eventType) {
         mask = CGEventMaskBit(kCGEventKeyDown);
-    } else if ("mousemoved" == spec.eventType) {
+    } else if ("mousemove" == spec.eventType) {
         mask = CGEventMaskBit(kCGEventMouseMoved) | CGEventMaskBit(kCGEventOtherMouseDragged);
     } else if ("mousedown" == spec.eventType) {
         mask = CGEventMaskBit(kCGEventLeftMouseDown) | CGEventMaskBit(kCGEventRightMouseDown) | CGEventMaskBit(kCGEventOtherMouseDown);
@@ -381,6 +381,7 @@ Napi::Value on(const Napi::CallbackInfo &info) {
         env
     }));
     return Napi::Number::New(env, ourInfo->id);
+    // return Napi::Number::New(env, 1);
 }
 
 Napi::Value off(const Napi::CallbackInfo &info) {

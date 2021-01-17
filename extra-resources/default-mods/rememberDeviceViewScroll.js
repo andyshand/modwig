@@ -11,7 +11,7 @@ let lastX = 0
 
 const doScroll = (dX) => {
     Mouse.returnAfter(() => {
-        const frame = MainWindow.getFrame()
+        const frame = UI.MainWindow.getFrame()
         const startX = frame.x + frame.w - 50
         const startY = frame.y + frame.h - 160
         Mouse.setPosition(startX, startY)
@@ -35,13 +35,13 @@ Mouse.on('mouseup', whenActiveListener(event => {
     middleMouseDown = false
 }))
 
-Mouse.on('mousemoved', whenActiveListener(event => {
-    if (middleMouseDown) {
-        const dX = event.x - lastX
-        currTrackScroll = Math.max(0, currTrackScroll - dX)
-        lastX = event.x
-    }
-}))
+// Mouse.on('mousemove', whenActiveListener(event => {
+//     if (middleMouseDown) {
+//         const dX = event.x - lastX
+//         currTrackScroll = Math.max(0, currTrackScroll - dX)
+//         lastX = event.x
+//     }
+// }))
 
 Bitwig.on('selectedTrackChanged', async ( curr, prev ) => {
     if (prev) {

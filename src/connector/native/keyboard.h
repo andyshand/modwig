@@ -3,6 +3,7 @@
 #include <functional>
 #include <string>
 #include <CoreGraphics/CoreGraphics.h>
+#include <iostream>
 
 struct JSEvent {
     UInt16 nativeKeyCode;
@@ -10,6 +11,9 @@ struct JSEvent {
     std::string lowerKey;
     bool Meta, Shift, Control, Alt, Fn;
     int button, x, y;
+    ~JSEvent() {
+        // std::cout << "deleting jsevent";
+    }
 };
 
 struct CallbackInfo {
@@ -29,6 +33,8 @@ struct CallbackInfo {
         if (cb != nullptr) {
             cb.Release();
         }
+
+        // std::cout << "removing callbackinfo";
 
         if (CGEventTapIsEnabled(tap)) CGEventTapEnable(tap, false);
 

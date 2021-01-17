@@ -57,13 +57,13 @@ function playWithEvent(event) {
             // Arranger panel
             return {
                 x: event.x, 
-                y: Bitwig.scale(91)
+                y: UI.scale(91)
             }
         } else if (uiLayout.editor?.type === 'detail' && Rect.containsPoint(uiLayout.editor.rect, mousePosBefore)) {
             // Detail panel
             return {
                 x: event.x, 
-                y: uiLayout.editor.rect.y + Bitwig.scale(8)
+                y: uiLayout.editor.rect.y + UI.scale(8)
             }
         } else {
             // Elsewhere, do nothing

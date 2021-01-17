@@ -1,6 +1,8 @@
 import { BrowserWindow, clipboard, app } from "electron";
 import { url } from "../core/Url";
 import { returnMouseAfter } from "../../connector/shared/EventUtils";
+import { getService } from "../core/Service";
+import { UIService } from "../ui/UIService";
 const { MainWindow, Keyboard, Mouse, Bitwig } = require('bindings')('bes')
 let valueEntryWindow
 let open = false
@@ -26,7 +28,7 @@ export function setupValueEntry() {
     Keyboard.on('keyup', async event => {
         const { lowerKey } = event
         function getAutomationValueLoc() {
-            const frame = MainWindow.getFrame()
+            const frame = getService<UIService>('UIService').uiMainWindow.getFrame()
             return {
                 x: frame.x + 120,
                 y: frame.y + 140

@@ -1,4 +1,7 @@
 import { promises as fs } from 'fs'
+const os = require('os')
+const { sep } = require('path')
+const tmpDir = os.tmpdir();
 
 export async function createDirIfNotExist(path: string) {
     try {
@@ -19,4 +22,13 @@ export async function exists(path: string) {
 
 export async function filesAreEqual(pathA: string, pathB: string) {
     return (await fs.readFile(pathA)).equals(await fs.readFile(pathB))
+}
+
+export function getTempDirectory() {
+    // The parent directory for the new temporary directory
+    return fs.mkdtemp(`${tmpDir}${sep}`)
+}
+
+export function writeStrFile(str: string, path: string) {
+    return fs.writeFile(path, str);
 }

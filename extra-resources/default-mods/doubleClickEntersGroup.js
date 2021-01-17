@@ -7,7 +7,7 @@
 
 Mouse.on('doubleClick', whenActiveListener(async event => {
     if (event.button === 0 && event.Alt && !event.intersectsPluginWindows()) {
-        const frame = MainWindow.getFrame()
+        const frame = UI.MainWindow.getFrame()
         const yWithinArranger = x => {
             return event.y >= frame.y + 130 && event.y < (frame.y + frame.h) - 313
         }

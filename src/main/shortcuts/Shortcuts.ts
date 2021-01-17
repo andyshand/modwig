@@ -75,8 +75,6 @@ export class ShortcutsService extends BESService {
         actionTriggered: makeEvent<AnyActionSpec>(),
         enteringValue: makeEvent<boolean>()
     }
-    uiScale: number = 1 // Cached from setting
-
 
     pause() {
         this.pausedHolders++
@@ -123,42 +121,6 @@ export class ShortcutsService extends BESService {
             }
         }
         return out
-    }
-
-    bwToScreen({ x, y, ...rest }) {
-        const frame = MainWindow.getFrame()
-        const scaled = this.scaleXY({ x, y })
-        return {
-            x: scaled.x + frame.x,
-            y: scaled.y + frame.y,
-            ...rest
-        }
-    }
-
-    screenToBw({ x, y, ...rest }) {
-        const frame = MainWindow.getFrame()
-        const bwRelative = {
-            x: x - frame.x,
-            y: y - frame.y,
-            ...rest
-        }
-        return this.unScaleXY(bwRelative)
-    }
-
-    scaleXY({ x, y, ...rest }) {
-        return {
-            x: x * this.uiScale,
-            y: y * this.uiScale,
-            ...rest
-        }
-    }
-
-    unScaleXY({ x, y, ...rest }) {
-        return {
-            x: x / this.uiScale,
-            y: y / this.uiScale,
-            ...rest
-        }
     }
 
     makeShortcutValueCode = (value) => {
@@ -718,42 +680,6 @@ export class ShortcutsService extends BESService {
                         sendPacketToBitwig({type: 'track/selected/scroll'})
                     } 
                 },
-                setAutomationValue: {
-                    defaultSetting: {
-                        keys: ['NumpadEnter']
-                    },
-                    contexts: ['-browser'],
-                    description: 'Focuses the automation value field in the inspector for quickly setting value of selected automation.',
-                    action: () => {
-                        this.runAction('focusArranger')
-                        returnMouseAfter(() => {
-                            Mouse.click(0, this.bwToScreen({
-                                x: 140,
-                                y: 140,
-                                Meta: true
-                            }))
-                        })
-                        this.setEnteringValue(true)
-                    }
-                },
-                setAutomationPosition: {
-                    defaultSetting: {
-                        keys: ['Control', 'NumpadEnter']
-                    },
-                    contexts: ['-browser'],
-                    description: 'Focuses the automation position field in the inspector for quickly setting position of selected automation.',
-                    action: () => {
-                        this.runAction('focusArranger')
-                        returnMouseAfter(() => {
-                            Mouse.click(0, this.bwToScreen({
-                                x: 140,
-                                y: 120,
-                                Meta: true
-                            }))
-                        })
-                        this.setEnteringValue(true)
-                    }
-                },
                 locatePlayhead: {
                     defaultSetting: {
                         keys: ['F']
@@ -981,10 +907,6 @@ export class ShortcutsService extends BESService {
         this.settingsService = getService('SettingsService')
         this.seedSettings()
         this.setupPacketListeners()
-        this.settingsService.onSettingValueChange('uiScale', val => {
-            this.uiScale = parseInt(val, 10) / 100
-            this.log(`Ui scale set to ${this.uiScale}`)
-        })
 
         const getEventKeysArray = event => {
             const { lowerKey, Meta, Shift, Control, Alt } = event

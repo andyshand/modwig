@@ -61,7 +61,7 @@ Mouse.on('click', async event => {
         if (type === 'macro') {
             // Click to start renaming macro
             await wait(100)
-            Mouse.click(0, {Meta: true, x: event.x, y: event.y - Bitwig.scaleXY({x: 0, y: 25}).y})
+            Mouse.click(0, {Meta: true, x: event.x, y: event.y - UI.scaleXY({x: 0, y: 25}).y})
             Mod.setEnteringValue(true)
         } else {
             // Not sure why but this doesn't work at all...

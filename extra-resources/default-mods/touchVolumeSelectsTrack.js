@@ -34,10 +34,12 @@ Mouse.on('mousedown', e => {
     // log('down')
 })
 
-Mouse.on('mousemove', e => {
+Mouse.on('mousemove', () => {
     // log('move')
-    moveEventCount++
-    didDrag = didDrag || moveEventCount > 1 || (downEvent && (e.x !== downEvent.x || e.y !== downEvent.y))
+    // moveEventCount++
+    // didDrag = didDrag || moveEventCount > 1 || (downEvent && (e.x !== downEvent.x || e.y !== downEvent.y))
+
+    didDrag = true
 })
 
 let shouldAnnounceSelectedTrack = false
@@ -106,9 +108,9 @@ Mouse.on('mouseup', upEvent => {
                 const insideT = tracks[insideI]
                 const rect = insideT.rect
                 wasLevelMeter = isLargeTrackHeight 
-                        ? (upEvent.x >= rect.x + rect.w * .25 
-                            && upEvent.x < rect.x + rect.w - Bitwig.scale(43)
-                            && upEvent.y >= rect.y + Bitwig.scale(25)
+                        ? (upEvent.x >= rect.x + rect.w * .33
+                            && upEvent.x < rect.x + rect.w - UI.scale(43)
+                            && upEvent.y >= rect.y + UI.scale(25)
                         )
                         : (upEvent.x >= rect.x + rect.w - 31 
                             && upEvent.x < rect.x + rect.w - 19
@@ -117,7 +119,7 @@ Mouse.on('mouseup', upEvent => {
                     // Track is not selected, select it first
                     const offscreenY = insideT.visibleRect.y - insideT.rect.y
                     const minTrackHeight = UI.getSizeInfo('minimumTrackHeight')
-                    const clickOffsetY = Bitwig.scaleXY({ x: 0, y: 5 }).y
+                    const clickOffsetY = UI.scaleXY({ x: 0, y: 5 }).y
                     if (offscreenY > minTrackHeight - clickOffsetY) {
                         showMessage('Track is too far offscreen')
                         return
@@ -135,12 +137,12 @@ Mouse.on('mouseup', upEvent => {
                     // via the UI analysis only, so we just announce when the selected track changes
                     shouldAnnounceSelectedTrack = true
                     const clickAt = {
-                        x: (insideT.rect.x + insideT.rect.w) - Bitwig.scaleXY({ x: 5, y: 0 }).x,
+                        x: (insideT.rect.x + insideT.rect.w) - UI.scaleXY({ x: 5, y: 0 }).x,
                         y: insideT.visibleRect.y + clickOffsetY,
                         avoidPluginWindows: true,
                         returnAfter: true
                     }
-                    this.log('About to select track:', insideT, 'by clicking at: ', clickAt)
+                    log('About to select track:', insideT, 'by clicking at: ', clickAt)
                     await Mouse.click(0, clickAt)
                 } else if (wasLevelMeter) {
                     // Track didn't change but we still want to show the level meter automation

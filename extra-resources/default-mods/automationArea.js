@@ -299,11 +299,11 @@ Mod.registerAction({
         const clickAt = selected.isLargeTrackHeight ? {
             // Level meter is halfway across near the bottom
             x: selected.rect.x + (selected.rect.w / 2), 
-            y: selected.rect.y + Bitwig.scaleXY({ x: 0, y: 33 }).y,
+            y: selected.rect.y + UI.scaleXY({ x: 0, y: 33 }).y,
         } : {
             // Level meter is on the right hand edge from top to bottom
-            x: (selected.rect.x + selected.rect.w) - Bitwig.scaleXY({ x: 25, y: 0 }).x,
-            y: selected.rect.y + Bitwig.scaleXY({ x: 0, y: 15 }).y,
+            x: (selected.rect.x + selected.rect.w) - UI.scaleXY({ x: 25, y: 0 }).x,
+            y: selected.rect.y + UI.scaleXY({ x: 0, y: 15 }).y,
         }
 
         // log('Clicking at: ', clickAt)
@@ -339,5 +339,43 @@ Keyboard.on('keydown', e => {
 Mouse.on('mouseup', event => {
     if (event.button === 0 && down3)  {
         Bitwig.sendPacket({type: 'action', data: 'restore_automation_control'})
+    }
+})
+
+Mod.registerAction({
+    id: 'set-automation-value',
+    defaultSetting: {
+        keys: ['NumpadEnter']
+    },
+    contexts: ['-browser'],
+    description: 'Focuses the automation value field in the inspector for quickly setting value of selected automation.',
+    action: async ({setEnteringValue}) => {
+        Mod.runAction('focusArranger')
+        await Mouse.click(0, UI.bwToScreen({
+            x: 140,
+            y: 140,
+            Meta: true,
+            returnAfter: true
+        }))
+        setEnteringValue(true)
+    }
+})
+
+Mod.registerAction({
+    id: 'set-automation-position',
+    defaultSetting: {
+        keys: ['Control', 'NumpadEnter']
+    },
+    contexts: ['-browser'],
+    description: 'Focuses the automation position field in the inspector for quickly setting position of selected automation.',
+    action: async ({setEnteringValue}) => {
+        Mod.runAction('focusArranger')
+        await Mouse.click(0, UI.bwToScreen({
+            x: 140,
+            y: 120,
+            Meta: true,
+            returnAfter: true
+        }))
+        setEnteringValue(true)
     }
 })

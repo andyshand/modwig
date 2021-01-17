@@ -9,7 +9,7 @@ import { SettingsService } from "../core/SettingsService"
 import { promises as fs } from 'fs'
 import * as path from 'path'
 import { Setting } from "../db/entities/Setting"
-import { createDirIfNotExist, exists as fileExists, filesAreEqual } from "../core/Files"
+import { createDirIfNotExist, exists as fileExists, filesAreEqual, getTempDirectory, writeStrFile } from "../core/Files"
 import { logWithTime } from "../core/Log"
 import { ShortcutsService } from "../shortcuts/Shortcuts"
 import { debounce } from '../../connector/shared/engine/Debounce'
@@ -21,6 +21,18 @@ import { UIService } from "../ui/UIService"
 import { BitwigService } from "../bitwig/BitwigService"
 const chokidar = require('chokidar')
 const colors = require('colors');
+
+const KeyboardEvent = {
+    noModifiers() {
+        return !(this.Meta || this.Control || this.Alt || this.Shift)
+    }
+}
+
+const MouseEvent = {
+    intersectsPluginWindows() {
+        return getService<UIService>("UIService").eventIntersectsPluginWindows(this)
+    }
+}
 
 let nextId = 0
 let modsLoading = false
@@ -245,13 +257,13 @@ export class ModsService extends BESService {
     }
 
     logForModWebOnly(modId: string, ...args: any[]) {
-        const socketsForWithModId = this.suckitService.getActiveWebsockets().filter(({id, ws, activeModLogKey}) => activeModLogKey === modId)
-        for (const socc of socketsForWithModId) {
-            socc.send({
-                type: 'log',
-                data: args
-            })
-        }
+        // const socketsForWithModId = this.suckitService.getActiveWebsockets().filter(({id, ws, activeModLogKey}) => activeModLogKey === modId)
+        // for (const socc of socketsForWithModId) {
+        //     socc.send({
+        //         type: 'log',
+        //         data: args
+        //     })
+        // }
     }
 
     async makeApi(mod) {
@@ -348,17 +360,7 @@ export class ModsService extends BESService {
             }
         }
 
-        const KeyboardEvent = {
-            noModifiers() {
-                return !(this.Meta || this.Control || this.Alt || this.Shift)
-            }
-        }
-
-        const MouseEvent = {
-            intersectsPluginWindows() {
-                return that.uiService.eventIntersectsPluginWindows(this)
-            }
-        }
+        
 
         const addNotAlreadyIn = (obj, parent) => {
             for (const key in parent) {
@@ -382,9 +384,10 @@ export class ModsService extends BESService {
                 ...Keyboard,
                 on: (eventName: string, cb: Function) => {
                     const wrappedCb = (event, ...rest) => {
+                        const eventCopy = {...event}
                         this.logForModWebOnly(mod.id, `${eventName}`)
-                        Object.setPrototypeOf(event, KeyboardEvent)
-                        cb(event, ...rest)
+                        Object.setPrototypeOf(eventCopy, KeyboardEvent)
+                        cb(eventCopy, ...rest)
                     }
                     wrappedOnForReloadDisconnect(Keyboard)(eventName, wrappedCb)
                 },
@@ -403,110 +406,6 @@ export class ModsService extends BESService {
                         && point.y >= rect.y
                         && point.y < rect.y + rect.h
                 }
-            },
-            Mouse: {
-                ...Mouse,
-                on: (eventName: string, cb: Function) => {
-                    const wrappedCb = async (event, ...rest) => {
-                        this.eventLogger({msg: eventName, modId: mod.id})
-                        Object.setPrototypeOf(event, MouseEvent)
-
-                        try {
-                            // Add Bitwig coordinates
-                            const bwPos = await this.shortcutsService.screenToBw({x: event.x, y: event.y})
-                            event.bitwigX = bwPos.x
-                            event.bitwigY = bwPos.y
-                        } catch (e) {
-                            // Bitwig may not be open
-                            this.log(colors.red(e))
-                        }
-
-                        cb(event, ...rest)
-                    }
-                    if (eventName === 'click') {
-                        let downEvent, downTime
-                        api.Mouse.on('mousedown', (event) => {
-                            downTime = new Date()
-                            downEvent = JSON.stringify(event)
-                        })
-                        api.Mouse.on('mouseup', (event, ...rest) => {
-                            if (JSON.stringify(event) === downEvent && downTime && new Date().getTime() - downTime.getTime() < 250) {
-                                wrappedCb(event, ...rest)
-                            }
-                        })
-                    } else if (eventName === 'doubleClick') {
-                        let lastClickTime = new Date(0)
-                        api.Mouse.on('click', (event, ...rest) => {
-                            if (new Date().getTime() - lastClickTime.getTime() < 250) {
-                                wrappedCb(event, ...rest)
-                                lastClickTime = new Date(0)
-                            } else {
-                                lastClickTime = new Date()
-                            }
-                        })
-                    } else {
-                        wrappedOnForReloadDisconnect(Keyboard)(eventName, wrappedCb)
-                    }
-                },
-                click: async (...args) => {
-                    const button = args[0]
-                    const opts = args[args.length - 1] || {}
-                    const doIt = async () => {
-                        const reallyDoIt = async () => {
-                            let ret
-                            if (typeof button !== 'number') {
-                                ret = Mouse.click(0, ...args)
-                            } else {
-                                ret = Mouse.click(...args)
-                            }
-                            if (typeof opts.returnAfter === 'number') {
-                                await api.wait(opts.returnAfter)
-                            }
-                            return ret
-                        }
-                        if (opts.returnAfter) {
-                            return returnMouseAfter(reallyDoIt)
-                        } else {
-                            return reallyDoIt()
-                        }
-                    }
-                    if (opts.avoidPluginWindows) {
-                        return api.Mouse.avoidingPluginWindows(opts, doIt)
-                    } else {
-                        return doIt()
-                    }
-                },
-                lockX: Keyboard.lockX,
-                lockY: Keyboard.lockY,
-                returnAfter: returnMouseAfter,
-                avoidingPluginWindows: async (pointOpts, cb) => {
-                    if (!this.uiService.eventIntersectsPluginWindows(pointOpts)) {
-                        return Promise.resolve(cb())
-                    }
-                    const pluginPositions = Bitwig.getPluginWindowsPosition()
-                    const displayDimensions = MainWindow.getMainScreen()
-                    let tempPositions = {}
-                    for (const key in pluginPositions) {
-                        tempPositions[key] = {
-                            ...pluginPositions[key],
-                            x: displayDimensions.w - 1,
-                            y: displayDimensions.h - 1,
-                        }
-                    }
-                    Bitwig.setPluginWindowsPosition(tempPositions)
-                    return new Promise<void>(res => {
-                        setTimeout(async () => {
-                            const result = cb()
-                            if (result && result.then) {
-                                await result
-                            }
-                            if (!pointOpts.noReposition) {
-                                Bitwig.setPluginWindowsPosition(pluginPositions)
-                            }
-                            res()
-                        }, 100)
-                    })
-                }          
             },
             UI: this.uiService.getApi({ makeEmitterEvents }),
             Bitwig: addNotAlreadyIn({
@@ -554,26 +453,6 @@ export class ModsService extends BESService {
                 },
                 showMessage: showMessage,
                 intersectsPluginWindows: event => this.uiService.eventIntersectsPluginWindows(event),
-                scaleXY: (args) => this.shortcutsService.scaleXY(args),
-                scale: (point) => this.shortcutsService.scaleXY({x: point, y: 0}).x,
-                unScaleXY: (args) => this.shortcutsService.unScaleXY(args),
-                unScale: (point) => this.shortcutsService.unScaleXY({x: point, y: 0}).x,
-                bwToScreen: (args) => this.shortcutsService.bwToScreen(args),
-                screenToBw: (args) => this.shortcutsService.screenToBw(args),
-                click: (button, positionAndStuff, ...rest) => {
-                    return api.Mouse.click(button, this.shortcutsService.bwToScreen(positionAndStuff), ...rest)
-                },
-                doubleClick: (button, positionAndStuff, ...rest) => {
-                    return api.Mouse.doubleClick(button, this.shortcutsService.bwToScreen(positionAndStuff), ...rest)
-                },
-                setMousePosition: (x, y, ...rest) => {
-                    const screen = this.shortcutsService.bwToScreen({ x , y })
-                    return api.Mouse.setPosition(screen.x, screen.y, ...rest)
-                },
-                getMousePosition: () => {
-                    const pos = api.Mouse.getPosition()
-                    return this.shortcutsService.screenToBw(pos)
-                },
                 ...makeEmitterEvents({
                     selectedTrackChanged: this.events.selectedTrackChanged,
                     browserOpen: this.bitwigService.events.browserOpen,
@@ -752,9 +631,6 @@ export class ModsService extends BESService {
                     actionTriggered: this.shortcutsService.events.actionTriggered   
                 })
             },
-            wait: ms => new Promise(res => {
-                setTimeout(res, ms)
-            }),
             debounce,
             showNotification: (notif) => this.showNotification(notif)
         }
@@ -1106,7 +982,121 @@ export class ModsService extends BESService {
     }
 
     async isModEnabled(mod) {
+        if (process.env.SAFE_MODE === 'true') {
+            return false
+        }
         return (await this.settingsService.getSetting(mod.settingsKey))?.value.enabled ?? false;
+    }
+
+    tempDir
+
+    wrappedOnForReloadDisconnect = (parent) => {
+        return (...args) => {
+            const id = parent.on(...args)
+            this.onReloadMods.push(() => {
+                parent.off(id)
+            })
+        }
+    }
+
+    staticApi = {
+        wait: ms => new Promise(res => {
+            setTimeout(res, ms)
+        }),
+        showMessage,
+        Mouse: {
+            ...Mouse,
+            on: (eventName: string, cb: Function) => {
+                const wrappedCb = async (event, ...rest) => {
+                    // this.eventLogger({msg: eventName, modId: mod.id})
+                    Object.setPrototypeOf(event, MouseEvent)
+                    cb(event, ...rest)
+                }
+                if (eventName === 'click') {
+                    let downEvent, downTime
+                    this.staticApi.Mouse.on('mousedown', (event) => {
+                        downTime = new Date()
+                        downEvent = JSON.stringify(event)
+                    })
+                    this.staticApi.Mouse.on('mouseup', (event, ...rest) => {
+                        if (JSON.stringify(event) === downEvent && downTime && new Date().getTime() - downTime.getTime() < 250) {
+                            wrappedCb(event, ...rest)
+                        }
+                    })
+                } else if (eventName === 'doubleClick') {
+                    let lastClickTime = new Date(0)
+                    this.staticApi.Mouse.on('click', (event, ...rest) => {
+                        if (new Date().getTime() - lastClickTime.getTime() < 250) {
+                            wrappedCb(event, ...rest)
+                            lastClickTime = new Date(0)
+                        } else {
+                            lastClickTime = new Date()
+                        }
+                    })
+                } else {
+                    this.wrappedOnForReloadDisconnect(Keyboard)(eventName, wrappedCb)
+                }
+            },
+            click: async (...args) => {
+                const button = args[0]
+                const opts = args[args.length - 1] || {}
+                const doIt = async () => {
+                    const reallyDoIt = async () => {
+                        let ret
+                        if (typeof button !== 'number') {
+                            ret = Mouse.click(0, ...args)
+                        } else {
+                            ret = Mouse.click(...args)
+                        }
+                        if (typeof opts.returnAfter === 'number') {
+                            await this.staticApi.wait(opts.returnAfter)
+                        }
+                        return ret
+                    }
+                    if (opts.returnAfter) {
+                        return returnMouseAfter(reallyDoIt)
+                    } else {
+                        return reallyDoIt()
+                    }
+                }
+                if (opts.avoidPluginWindows) {
+                    return this.staticApi.Mouse.avoidingPluginWindows(opts, doIt)
+                } else {
+                    return doIt()
+                }
+            },
+            lockX: Keyboard.lockX,
+            lockY: Keyboard.lockY,
+            returnAfter: returnMouseAfter,
+            avoidingPluginWindows: async (pointOpts, cb) => {
+                if (!this.uiService.eventIntersectsPluginWindows(pointOpts)) {
+                    return Promise.resolve(cb())
+                }
+                const pluginPositions = Bitwig.getPluginWindowsPosition()
+                const displayDimensions = MainWindow.getMainScreen()
+                let tempPositions = {}
+                for (const key in pluginPositions) {
+                    tempPositions[key] = {
+                        ...pluginPositions[key],
+                        x: displayDimensions.w - 1,
+                        y: displayDimensions.h - 1,
+                    }
+                }
+                Bitwig.setPluginWindowsPosition(tempPositions)
+                return new Promise<void>(res => {
+                    setTimeout(async () => {
+                        const result = cb()
+                        if (result && result.then) {
+                            await result
+                        }
+                        if (!pointOpts.noReposition) {
+                            Bitwig.setPluginWindowsPosition(pluginPositions)
+                        }
+                        res()
+                    }, 100)
+                })
+            }          
+        }
     }
 
     async refreshLocalMods() {
@@ -1114,34 +1104,61 @@ export class ModsService extends BESService {
         this.activeModApiIds = {}
         modsLoading = true
 
+        if (!this.tempDir) {
+            this.tempDir = await getTempDirectory()
+        }
+
         try {
             const modsById = await this.gatherModsFromPaths(modsFolders, { type: 'local'})
+            let fileOut = ''
+            let enabledMods: any[] = []
 
-            // await ;(async () => {
-                for (const modId in modsById) {
-                    const mod = modsById[modId]
-                    this.initModAndStoreInMap(mod)
-                    const isEnabled = await this.isModEnabled(mod)
-                    if (isEnabled) {
-                        const api = await this.makeApi(mod)
-                        // Populate function scope with api objects
-                        try { 
-                            this.log('Enabling local mod: ' + modId)
-                            let setVars = ''
-                            for (const key in api) {
-                                setVars += `const ${key} = api["${key}"]\n`
-                            }
-                            eval(setVars + mod.contents)
-                            this.log('Enabled local mod: ' + colors.green(modId))
-                        } catch (e) {
-                            mod.error = e
-                            this.log(colors.red(e))   
-                            showMessage(`There was an error loading mod ${modId}: ${e}`)
-                        }
-                        this.activeModApiIds[api.id] = true
-                    }
+            for (const modId in modsById) {
+                const mod = modsById[modId]
+                this.initModAndStoreInMap(mod)
+                const isEnabled = await this.isModEnabled(mod)
+                if (isEnabled) {
+                    const api = await this.makeApi(mod)
+                    this.activeModApiIds[api.id] = true
+                    // Populate function scope with api objects
+                    
+                        let thisModI = enabledMods.length         
+                        fileOut += `
+function mod${thisModI}({ ${[...Object.keys(api), ...Object.keys(this.staticApi)].join(', ')} }) {
+${mod.contents}
+}
+`
+                    enabledMods.push({mod, api})
                 }
-            // })()
+            }
+
+            if (enabledMods.length) {
+                try {
+                    fileOut += `
+module.exports = {
+    ${enabledMods.map((_, i) => `mod${i}`).join(',\n')}
+}
+`
+                    const p = path.join(this.tempDir, `mods${nextId++}.js`)
+                    await writeStrFile(fileOut, p)
+                    this.log(`Mods written to ${p}`)
+
+                    const modsOut = require(p)
+                    for (let i = 0; i < enabledMods.length; i++) {
+                        const {mod, api} = enabledMods[i]
+                        try {
+                            this.log('Enabling local mod: ' + mod.id)
+                            const allApi = {...api, ...this.staticApi}
+                            modsOut[`mod${i}`](allApi)
+                        } catch (e) {
+                            this.log(colors.red(`Error loading mod ${mod.id}: `), e)
+                        }
+                    }
+                } catch (e) {
+                    console.error(e)
+                    this.log(colors.red(`Error loading mods`))
+                }
+            }
         } catch (e) {
             console.error(e)
         }

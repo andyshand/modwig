@@ -30,9 +30,11 @@ pid_t GetPID(std::string name) {
             CFNumberRef ownerPidRef = (CFNumberRef) CFDictionaryGetValue(dict, kCGWindowOwnerPID);
             pid_t ownerPid;
             CFNumberGetValue(ownerPidRef, kCFNumberSInt32Type, &ownerPid);
+            CFRelease(array);
             return ownerPid;
         }
     }
+    CFRelease(array);
     return -1;
 }
 

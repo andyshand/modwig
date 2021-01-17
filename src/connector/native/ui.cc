@@ -281,9 +281,7 @@ std::experimental::optional<XYPoint> ImageDeets::seekUntilColor(
 
 ImageDeets::~ImageDeets() {
     CFRelease(imageRef);
-    if (imageData != NULL) {
-        CFRelease(imageData);
-    }
+    CFRelease(imageData);
 };
 
 /**
@@ -664,13 +662,18 @@ BitwigWindow::BitwigWindow(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Bi
     // Napi::Env env = info.Env();
     this->latestImageDeets = nullptr;
 }
+Napi::Value BitwigWindow::GetFrame(const Napi::CallbackInfo &info) {
+    auto env = info.Env();
+    return this->lastBWFrame.frame.toJSObject(env);
+}
 Napi::Object BitwigWindow::Init(Napi::Env env, Napi::Object exports) {
     Napi::Function func = DefineClass(env, "BitwigWindow", {
         InstanceAccessor<&BitwigWindow::getRect>("rect"),
         InstanceMethod<&BitwigWindow::GetArrangerTracks>("getArrangerTracks"),
         InstanceMethod<&BitwigWindow::GetLayoutState>("getLayoutState"),
         InstanceMethod<&BitwigWindow::GetTrackInsetAtPoint>("getTrackInsetAtPoint"),
-        InstanceMethod<&BitwigWindow::PixelColorAt>("pixelColorAt")
+        InstanceMethod<&BitwigWindow::PixelColorAt>("pixelColorAt"),
+        InstanceMethod<&BitwigWindow::GetFrame>("getFrame")
     });
     exports.Set("BitwigWindow", func);
     BitwigWindow::constructor = Napi::Persistent(func);
@@ -696,6 +699,7 @@ WindowInfo BitwigWindow::getFrame() {
             }
             CGWindowID windowId;
             CFNumberGetValue((CFNumberRef)CFDictionaryGetValue(dict, kCGWindowNumber), kCGWindowIDCFNumberType, &windowId);
+            CFRelease(array);
             return WindowInfo{
                 windowId,
                 MWRect({ 
@@ -707,6 +711,7 @@ WindowInfo BitwigWindow::getFrame() {
             };
         }
     }
+    CFRelease(array);
     return WindowInfo{
         1,
         MWRect{0, 0, 0, 0}
