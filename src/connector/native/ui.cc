@@ -285,62 +285,6 @@ ImageDeets::~ImageDeets() {
 };
 
 /**
- * BitwigUIComponent
- */
-// Napi::FunctionReference BitwigUIComponent::constructor;
-// Napi::Value BitwigUIComponent::getRect(const Napi::CallbackInfo &info) {
-//     return this->rect.toJSObject(info.Env());
-// }
-// MWColor BitwigUIComponent::colorAt(XYPoint point) {
-//     return MWColor{};
-// }
-// BitwigUIComponent::BitwigUIComponent(const Napi::CallbackInfo &info) : Napi::ObjectWrap<BitwigUIComponent>(info) {
-    
-// }
-// Napi::Object BitwigUIComponent::Init(Napi::Env env, Napi::Object exports) {
-//     Napi::Function func = DefineClass(env, "BitwigWindow", {
-//         InstanceAccessor<&BitwigUIComponent::getRect>("rect")
-//     });
-//     exports.Set("BitwigUIComponent", func);
-//     BitwigUIComponent::constructor = Napi::Persistent(func);
-//     BitwigUIComponent::constructor.SuppressDestruct();
-// }
-
-/**
- * BitwigUI
- */
-// Napi::FunctionReference BitwigUI::constructor;
-// void BitwigUI::processEvent(JSEvent* event) {};
-// void BitwigUI::setFrame(MWRect frame) {
-//     this->rect = frame;
-// };
-// void BitwigUI::ensureUpToDate() {
-//     // We don't bother processing children that aren't requested, so only update
-//     // children components as needed.
-//     // 
-//     // Store an id associated with the latest screenshot. When the ids match,
-//     // The UI component can be considered up to date
-// };
-// Napi::Value BitwigUI::getRect(const Napi::CallbackInfo &info) {
-//     return rect.toJSObject(info.Env());
-// };
-// BitwigUI::BitwigUI(const Napi::CallbackInfo &info) : Napi::ObjectWrap<BitwigUI>(info) {
-//     // For whatever reason our subclass doesn't run its constructor, 
-//     // its ok since we currently only use BitwigWindow
-//     BitwigWindow* that = (BitwigWindow*)this;
-//     that->latestImageDeets = nullptr;
-// }
-// Napi::Object BitwigUI::Init(Napi::Env env, Napi::Object exports) {
-//     Napi::Function func = DefineClass(env, "BitwigUI", {
-//         InstanceAccessor<&BitwigUI::getRect>("rect")
-//     });
-//     BitwigUI::constructor = Napi::Persistent(func);
-//     BitwigUI::constructor.SuppressDestruct();
-// };
-
-
-
-/**
  * BitwigWindow
  */
 Napi::FunctionReference BitwigWindow::constructor;
@@ -738,34 +682,6 @@ ImageDeets* BitwigWindow::updateScreenshot() {
     return latestImageDeets;
 };
 
-/**
- * Each Bitwig window gets passed all mouse/keyboard events (the same ones that get passed to 
- * our JS callbacks) so it can update its internal state accordingly
- */
-// void BitwigWindow::processEvent(JSEvent* event) {
-//     // TODO events appear to be coming through more than once, why? Investigate
-//     // std::cout << "Got event!" << event->type << '\n';
-
-//     if (event->type == "mousedown") {
-//         mouseDownAt = XYPoint({event->x, event->y});
-//         mouseDownButton = event->button;
-//     } else if (event->type == "mouseup") {
-//         // updateScreenshot();
-//         // auto frame = getFrame();
-//         // auto bwX = event->x - frame.x;
-//         // auto bwY = event->y - frame.y;
-//         // if (latestImageDeets->isWithinBounds(bwX, bwY)) {
-//         //     auto color = latestImageDeets->colorAt(bwX, bwY);
-//         //     std::cout << "Color is r: " << color.r << " g: " << color.g << " b: " << color.b;
-//         //     std::cout.flush();
-//         // }
-//     }
-// }
-
-Napi::ObjectReference mainWindow;
-// Napi::ObjectReference mainWindowRef;
-// BitwigWindow* mainWindowUnwrapped;
-
 Napi::Value updateUILayoutInfo(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
     auto obj = info[0].As<Napi::Object>();
@@ -802,36 +718,7 @@ Napi::Value getSizeInfo(const Napi::CallbackInfo &info) {
 Napi::Value InitUI(Napi::Env env, Napi::Object exports) {
     Napi::Object obj = Napi::Object::New(env);
 
-    // BitwigUI::Init(env, obj);
     BitwigWindow::Init(env, obj);
-
-    // TODO figure out why we can't just do this?
-    // mainWindow = Napi::Persistent(BitwigWindow::constructor.New({}));
-    // mainWindow.SuppressDestruct();
-    // mainWindowRef = Napi::Reference<Napi::Object>::New(mainWindowObj, 999);
-    // mainWindowRef.SuppressDestruct();
-    // auto mainWindowUnwrapped = (BitwigWindow*)BitwigWindow::Unwrap(mainWindowObj);
-    // mainWindowUnwrapped->latestImageDeets = nullptr;
-
-    // addEventListener(EventListenerSpec{
-    //     "mouseup",
-    //     [](JSEvent* event) -> void {
-    //         mainWindow->processEvent(event);
-    //     },
-    //     nullptr,
-    //     nullptr
-    // });
-
-    // addEventListener(EventListenerSpec{
-    //     "keyup",
-    //     [](JSEvent* event) -> void {
-    //         mainWindow->processEvent(event);
-    //     },
-    //     nullptr,
-    //     nullptr
-    // });
-
-    // obj.Set(Napi::String::New(env, "MainWindow"), mainWindow.Value());
     obj.Set(Napi::String::New(env, "updateUILayoutInfo"), Napi::Function::New(env, updateUILayoutInfo));
     obj.Set(Napi::String::New(env, "invalidateLayout"), Napi::Function::New(env, invalidateLayout));
     obj.Set(Napi::String::New(env, "getSizeInfo"), Napi::Function::New(env, getSizeInfo));
