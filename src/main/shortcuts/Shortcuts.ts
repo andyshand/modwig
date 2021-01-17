@@ -872,10 +872,7 @@ export class ShortcutsService extends BESService {
                 }
 
                 runner({
-                    keyState: state,
-                    setEnteringValue: (yesOrNo) => {
-                        this.setEnteringValue(yesOrNo)
-                    }
+                    keyState: state
                 })
                 
                 // Need vocab clarification. Not all "actions" are really full fletched actions.

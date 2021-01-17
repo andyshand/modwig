@@ -121,8 +121,8 @@ for (let i = 0; i < 100; i+= 10) {
         defaultSetting: {
             keys: ["Shift", `Numpad${String(i)[0]}`]
         },
-        action: ({setEnteringValue}) => {
-            Mod.runAction('setAutomationValue')
+        action: () => {
+            Mod.runAction('set-automation-value')
             setTimeout(() => {
                 // Select all (remove trailing "db")
                 Keyboard.keyPress('a', {Meta: true})
@@ -134,7 +134,7 @@ for (let i = 0; i < 100; i+= 10) {
                 Keyboard.keyPress('5', {Shift: true})
         
                 Keyboard.keyPress('NumpadEnter')
-                setEnteringValue(false)
+                Mod.setEnteringValue(false)
             }, 100)
         }
     })
@@ -151,11 +151,11 @@ for (const dir of ['left', 'right']) {
         defaultSetting: {
             keys: ["Control", dir === 'left' ? 'Numpad4' : 'Numpad6']
         },
-        action: async ({setEnteringValue}) => {
+        action: async () => {
             // Incase modifiers are still pressed
             Keyboard.keyUp('Control')
 
-            Mod.runAction('setAutomationValue')
+            Mod.runAction('set-automation-value')
             await wait(100)
 
             // Select all
@@ -172,10 +172,10 @@ for (const dir of ['left', 'right']) {
             // Move to left/right automation point
             Keyboard.keyPress(`Arrow${capitalized}`)
             
-            // Must reset enteringValue for setAutomationValue to trigger
+            // Must reset enteringValue for set-automation-value to trigger
             // (see implementation)
-            setEnteringValue(false)
-            Mod.runAction('setAutomationValue')
+            Mod.setEnteringValue(false)
+            Mod.runAction('set-automation-value')
 
             await wait(100)
             // Select all
@@ -186,7 +186,7 @@ for (const dir of ['left', 'right']) {
 
             // Confirm
             Keyboard.keyPress('NumpadEnter')
-            setEnteringValue(false)
+            Mod.setEnteringValue(false)
 
             // Focus arranger
             Mod.runAction('focusArranger')
@@ -203,12 +203,12 @@ Mod.registerAction({
     defaultSetting: {
         keys: ["Control", 'Numpad5']
     },
-    action: async ({setEnteringValue}) => {
+    action: async () => {
         // Incase modifiers are still pressed, they prevent
         // the value from being set for some reason
         Keyboard.keyUp('Control')
 
-        Mod.runAction('setAutomationPosition')
+        Mod.runAction('set-automation-position')
         await wait(100)
 
         // Copy
@@ -233,7 +233,7 @@ Mod.registerAction({
         Keyboard.type(toType)
         Keyboard.keyPress('NumpadEnter')
         
-        setEnteringValue(false)
+        Mod.setEnteringValue(false)
         log(`Set automation point to ${toType}`)
     }
 })
@@ -247,11 +247,11 @@ Mod.registerAction({
     defaultSetting: {
         keys: ["Meta", "Shift", "C"]
     },
-    action: async ({setEnteringValue}) => {
-        Mod.runAction('setAutomationValue')
+    action: async () => {
+        Mod.runAction('set-automation-value')
         Keyboard.keyPress('c', {Meta: true})
         Keyboard.keyPress('NumpadEnter')
-        setEnteringValue(false)
+        Mod.setEnteringValue(false)
         Mod.runAction('focusArranger')
     }
 })
@@ -265,11 +265,11 @@ Mod.registerAction({
     defaultSetting: {
         keys: ["Meta", "Shift", "V"]
     },
-    action: async ({setEnteringValue}) => {
-        Mod.runAction('setAutomationValue')
+    action: async () => {
+        Mod.runAction('set-automation-value')
         Keyboard.keyPress('v', {Meta: true})
         Keyboard.keyPress('NumpadEnter')
-        setEnteringValue(false)
+        Mod.setEnteringValue(false)
         Mod.runAction('focusArranger')
     }
 })
@@ -349,7 +349,7 @@ Mod.registerAction({
     },
     contexts: ['-browser'],
     description: 'Focuses the automation value field in the inspector for quickly setting value of selected automation.',
-    action: async ({setEnteringValue}) => {
+    action: async () => {
         Mod.runAction('focusArranger')
         await Mouse.click(0, UI.bwToScreen({
             x: 140,
@@ -357,7 +357,7 @@ Mod.registerAction({
             Meta: true,
             returnAfter: true
         }))
-        setEnteringValue(true)
+        Mod.setEnteringValue(true)
     }
 })
 
@@ -368,7 +368,7 @@ Mod.registerAction({
     },
     contexts: ['-browser'],
     description: 'Focuses the automation position field in the inspector for quickly setting position of selected automation.',
-    action: async ({setEnteringValue}) => {
+    action: async () => {
         Mod.runAction('focusArranger')
         await Mouse.click(0, UI.bwToScreen({
             x: 140,
@@ -376,6 +376,6 @@ Mod.registerAction({
             Meta: true,
             returnAfter: true
         }))
-        setEnteringValue(true)
+        Mod.setEnteringValue(true)
     }
 })
