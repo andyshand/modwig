@@ -290,12 +290,71 @@ Mod.registerAction({
             return log('No tracks found, spoopy...')
         }
 
+        const mousePos = Mouse.getPosition()
+        const getTargetTrack = () => {
+            if (true) {
+                return tracks.find(t => t.selected)
+            } else {
+                return tracks.find(t => mousePos.y >= t.rect.y && mousePos.y < t.rect.y + t.rect.h)
+            }
+        }
+        const targetT = getTargetTrack()
+        if (!targetT) {
+            return showMessage(`Couldn't find track`)
+        }
+
+        // log (selected)
+        const clickAt = targetT.isLargeTrackHeight ? {
+            // Level meter is halfway across near the bottom
+            x: targetT.rect.x + (targetT.rect.w / 2), 
+            y: targetT.rect.y + UI.scaleXY({ x: 0, y: 33 }).y,
+        } : {
+            // Level meter is on the right hand edge from top to bottom
+            x: (targetT.rect.x + targetT.rect.w) - UI.scaleXY({ x: 25, y: 0 }).x,
+            y: targetT.rect.y + UI.scaleXY({ x: 0, y: 15 }).y,
+        }
+
+        // if (!targetT.selected) {
+
+        // }
+
+        // log('Clicking at: ', clickAt)
+        await Mouse.click(0, {
+            ...clickAt,
+            avoidPluginWindows: true,
+            // For whatever reason the click here happens after returning the mouse,
+            // so we need to wait a little. So many timeouts :(
+            returnAfter: 100
+        })
+        if (!targetT.automationOpen) {
+            showAutomationImpl(false)
+            Db.setCurrentTrackData({
+                automationShown: true
+            })
+        }
+    }
+})
+
+Mod.registerAction({
+    title: `Jump to track level meter`,
+    id: `jump-track-level-meter`,
+    description: `Moves the mouse cursor to the track level meter`,
+    category: 'arranger',
+    contexts: ['-browser'],
+    defaultSetting: {
+        keys: ["Shift", "V"]
+    },
+    action: async () => {
+        const tracks = UI.MainWindow.getArrangerTracks()
+        if (tracks === null || tracks.length === 0) {
+            return log('No tracks found, spoopy...')
+        }
+
         const selected = tracks.find(t => t.selected)
         if (!selected) {
             return showMessage(`Couldn't find selected track`)
         }
 
-        // log (selected)
         const clickAt = selected.isLargeTrackHeight ? {
             // Level meter is halfway across near the bottom
             x: selected.rect.x + (selected.rect.w / 2), 
@@ -306,20 +365,7 @@ Mod.registerAction({
             y: selected.rect.y + UI.scaleXY({ x: 0, y: 15 }).y,
         }
 
-        // log('Clicking at: ', clickAt)
-        await Mouse.click(0, {
-            ...clickAt,
-            avoidPluginWindows: true,
-            // For whatever reason the click here happens after returning the mouse,
-            // so we need to wait a little. So many timeouts :(
-            returnAfter: 100
-        })
-        if (!selected.automationOpen) {
-            showAutomationImpl(false)
-            Db.setCurrentTrackData({
-                automationShown: true
-            })
-        }
+        Mouse.setPosition(clickAt.x, clickAt.y)
     }
 })
 

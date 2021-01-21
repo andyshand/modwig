@@ -30,5 +30,6 @@ Mod.registerAction({
     action: () => {
         Bitwig.runAction([`clear_arm`, `Create Instrument Track`])
         Mod.runAction('openDeviceBrowser')
+        // Bitwig.runAction([`toggle_track_arm`])
     }
 })

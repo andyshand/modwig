@@ -62,7 +62,7 @@ const sets = [
     ],
     [
         makeMatcher([
-            'drums',
+            'drum',
             'tom',
             'clap',
             'rim',
@@ -70,6 +70,8 @@ const sets = [
             'bongo',
             'shaker',
             'click',
+            'ride',
+            'crash',
             'tamb',
             '505',
             '606',

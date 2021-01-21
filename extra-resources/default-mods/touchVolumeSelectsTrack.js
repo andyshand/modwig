@@ -60,6 +60,8 @@ Bitwig.on('selectedTrackChanged', async (curr, prev) => {
 Mouse.on('mouseup', upEvent => {
     // log('up')
 
+    didDrag = didDrag || new Date().getTime() - downAt.getTime() > 250
+
     if (!downEvent 
         || Shortcuts.anyModalOpen()
 
@@ -70,6 +72,9 @@ Mouse.on('mouseup', upEvent => {
         || downEvent.intersectsPluginWindows()
         || upEvent.intersectsPluginWindows()
         || upEvent.button !== mouseButton
+
+        // Don't select when shift clicking to select multiple tracks
+        || upEvent.Shift
 
         // Use meta similar to how macOS prevents apps from taking focus if you cmd-click on them
         || upEvent.Meta && !didDrag

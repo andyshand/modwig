@@ -645,7 +645,7 @@ export class ShortcutsService extends BESService {
                         })
                     }
                 },
-                ...this.repeatActionWithRange('launchArrangerCueMarker', 1, 9, i => {
+                ...this.repeatActionWithRange('launchArrangerCueMarker', 1, 20, i => {
                     return {
                         defaultSetting: {
                             keys: ["Meta", String(i)]
