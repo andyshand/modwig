@@ -451,6 +451,10 @@ export class ModsService extends BESService {
                     }
                     return sendPacketToBitwigPromise({type: 'action', data: actions.map(normalizeBitwigAction)})
                 },
+                getFocusedPluginWindow: () => {
+                    const pluginWindows = Bitwig.getPluginWindowsPosition()
+                    return Object.values(pluginWindows).find((w: any) => w.focused)
+                },
                 showMessage: showMessage,
                 intersectsPluginWindows: event => this.uiService.eventIntersectsPluginWindows(event),
                 ...makeEmitterEvents({

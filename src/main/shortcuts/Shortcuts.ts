@@ -1009,11 +1009,6 @@ export class ShortcutsService extends BESService {
             // Keep track of whether an action itself declares that we are entering a value (e.g entering automation)
             let enteringBefore = this.enteringValue
 
-            if (this.enteringValue && (Meta || Control || Alt)) {
-                // Assume a shortcut must have been pressed, must no longer be entering value?
-                this.setEnteringValue(false)
-            }
-
             if (lowerKey === 'Space' && Meta && !Shift && !Control && !Alt) {
                 this.log('Spotlight is open')
                 this.spotlightOpen = true
