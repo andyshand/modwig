@@ -131,10 +131,18 @@ Mouse.on('mouseup', upEvent => {
                     }
 
                     const clickYOffsetInTrack = upEvent.y - insideT.rect.y
-                    // log(clickYOffsetInTrack)
                     if (clickYOffsetInTrack < minTrackHeight && upEvent.x > insideT.rect.x + insideT.rect.w) {
                         // Clicked the main part of the track, Bitwig will handle selection
-                        return // showMessage('Clicked normal part of track, Bitwig handling')
+                        // showMessage('Clicked normal part of track, Bitwig handling')
+                        return
+                    }
+
+                    const clickXOffsetInTrack = upEvent.x - insideT.rect.x
+                    const xRatio = clickXOffsetInTrack / insideT.rect.w
+                    if ((isLargeTrackHeight && xRatio < .5) || (!isLargeTrackHeight && xRatio < .25)) {
+                        // Likely clicked track header or expand/collapse group, no action needed
+                        // showMessage('Clicked track header')
+                        return
                     }
 
                     // showMessage(JSON.stringify(insideT))
@@ -149,7 +157,7 @@ Mouse.on('mouseup', upEvent => {
                     }
                     log('About to select track:', insideT, 'by clicking at: ', clickAt)
                     await Mouse.click(0, clickAt)
-                } else if (wasLevelMeter) {
+                } else if (wasLevelMeter && !insideT.automationOpen) {
                     // Track didn't change but we still want to show the level meter automation
                     Mod.runAction(`show-current-track-automation`)
                 }

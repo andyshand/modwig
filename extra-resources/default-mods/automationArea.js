@@ -123,7 +123,7 @@ for (let i = 0; i < 100; i+= 10) {
         },
         action: () => {
             Mod.runAction('set-automation-value')
-            setTimeout(() => {
+            setTimeout(async () => {
                 // Select all (remove trailing "db")
                 Keyboard.keyPress('a', {Meta: true})
 
@@ -133,12 +133,37 @@ for (let i = 0; i < 100; i+= 10) {
                 // Percentage sign
                 Keyboard.keyPress('5', {Shift: true})
         
+                await wait(100)
                 Keyboard.keyPress('NumpadEnter')
                 Mod.setEnteringValue(false)
             }, 100)
         }
     })
 }
+
+Mod.registerAction({
+    title: `Set selected automation value to 0`,
+    id: `set-automation-0`,
+    description: `Requires inspector panel to be open`,
+    category: 'arranger',
+    contexts: ['-browser'],
+    defaultSetting: {
+        keys: [`Numpad0`]
+    },
+    action: () => {
+        Mod.runAction('set-automation-value')
+        setTimeout(() => {
+            // Select all (remove trailing "db")
+            Keyboard.keyPress('a', {Meta: true})
+
+            // Type in number
+            Keyboard.type('0')
+    
+            Keyboard.keyPress('NumpadEnter')
+            Mod.setEnteringValue(false)
+        }, 100)
+    }
+})
 
 for (const dir of ['left', 'right']) {
     const capitalized = dir[0].toUpperCase() + dir.slice(1)
@@ -274,6 +299,61 @@ Mod.registerAction({
     }
 })
 
+async function showTrackVolumeAutomation(currentTrack) {
+    const tracks = UI.MainWindow.getArrangerTracks()
+    if (tracks === null || tracks.length === 0) {
+        return log('No tracks found, spoopy...')
+    }
+
+    const mousePos = Mouse.getPosition()
+    const getTargetTrack = () => {
+        if (currentTrack) {
+            return tracks.find(t => t.selected)
+        } else {
+            return tracks.find(t => mousePos.y >= t.rect.y && mousePos.y < t.rect.y + t.rect.h)
+        }
+    }
+    const targetT = getTargetTrack()
+    if (!targetT) {
+        return showMessage(`Couldn't find track`)
+    }
+    log(targetT)
+
+    if (!targetT.selected) {
+        // Select the track first
+        await Mouse.click({
+            x: (targetT.rect.x + targetT.rect.w) - UI.scale(5),
+            y: targetT.visibleRect.y + UI.scale(5),
+            avoidPluginWindows: true,
+            returnAfter: true
+        })
+    }
+
+    const clickAt = targetT.isLargeTrackHeight ? {
+        // Level meter is halfway across near the bottom
+        x: targetT.rect.x + (targetT.rect.w / 2), 
+        y: targetT.rect.y + UI.scale(33),
+    } : {
+        // Level meter is on the right hand edge from top to bottom
+        x: (targetT.rect.x + targetT.rect.w) - UI.scale(25),
+        y: targetT.rect.y + UI.scale(15),
+    }
+
+    // log('Clicking at: ', clickAt)
+    await Mouse.click(0, {
+        ...clickAt,
+        avoidPluginWindows: true,
+        // For whatever reason the click here happens after returning the mouse,
+        // so we need to wait a little. So many timeouts :(
+        returnAfter: 100
+    })
+    if (!targetT.automationOpen) {
+        showAutomationImpl(false)
+        Db.setCurrentTrackData({
+            automationShown: true
+        })
+    }
+}
 
 Mod.registerAction({
     title: `Show track volume automation`,
@@ -285,53 +365,21 @@ Mod.registerAction({
         keys: ["V"]
     },
     action: async () => {
-        const tracks = UI.MainWindow.getArrangerTracks()
-        if (tracks === null || tracks.length === 0) {
-            return log('No tracks found, spoopy...')
-        }
+        showTrackVolumeAutomation(false)
+    }
+})
 
-        const mousePos = Mouse.getPosition()
-        const getTargetTrack = () => {
-            if (true) {
-                return tracks.find(t => t.selected)
-            } else {
-                return tracks.find(t => mousePos.y >= t.rect.y && mousePos.y < t.rect.y + t.rect.h)
-            }
-        }
-        const targetT = getTargetTrack()
-        if (!targetT) {
-            return showMessage(`Couldn't find track`)
-        }
-
-        // log (selected)
-        const clickAt = targetT.isLargeTrackHeight ? {
-            // Level meter is halfway across near the bottom
-            x: targetT.rect.x + (targetT.rect.w / 2), 
-            y: targetT.rect.y + UI.scaleXY({ x: 0, y: 33 }).y,
-        } : {
-            // Level meter is on the right hand edge from top to bottom
-            x: (targetT.rect.x + targetT.rect.w) - UI.scaleXY({ x: 25, y: 0 }).x,
-            y: targetT.rect.y + UI.scaleXY({ x: 0, y: 15 }).y,
-        }
-
-        // if (!targetT.selected) {
-
-        // }
-
-        // log('Clicking at: ', clickAt)
-        await Mouse.click(0, {
-            ...clickAt,
-            avoidPluginWindows: true,
-            // For whatever reason the click here happens after returning the mouse,
-            // so we need to wait a little. So many timeouts :(
-            returnAfter: 100
-        })
-        if (!targetT.automationOpen) {
-            showAutomationImpl(false)
-            Db.setCurrentTrackData({
-                automationShown: true
-            })
-        }
+Mod.registerAction({
+    title: `Show selected track volume automation`,
+    id: `show-selected-track-volume-automation`,
+    description: `Selects the track volume and opens automation if it isn't open already`,
+    category: 'arranger',
+    contexts: ['-browser'],
+    defaultSetting: {
+        keys: ["Shift", "V"]
+    },
+    action: async () => {
+        showTrackVolumeAutomation(true)
     }
 })
 
