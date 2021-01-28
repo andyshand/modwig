@@ -23,6 +23,21 @@ Mod.registerAction({
     }
 })
 
+Mod.registerAction({
+    title: "Open Specific Plugin Windows",
+    id: "open-specific-plugin-windows",
+    description: `Open specific plugin windows for the current track.`,
+    action: async () => {
+        restoreOpenedPluginsForTrack(Bitwig.currentTrack, [
+            'q',
+            'qe',
+            'qw',
+            '5m',
+            'c2',
+        ])
+    }
+})
+
 const getFocusedPluginWindow = () => {
     const pluginWindows = Bitwig.getPluginWindowsPosition()
     return Object.values(pluginWindows).find(w => w.focused)
@@ -173,13 +188,22 @@ Mouse.on('mouseup', async event => {
     }
 })
 
-async function restoreOpenedPluginsForTrack(track) {
+async function restoreOpenedPluginsForTrack(track, presetNames) {
+    if (presetNames) {
+        return Bitwig.sendPacket({
+            type: 'open-plugin-windows/open-with-preset-name',
+            data: {
+                presetNames: _.indexBy(presetNames)
+            }
+        })
+    }
+    
     const { positions } = await Db.getTrackData(track, { 
         modId: 'move-plugin-windows'
     })
     const windowIds = Object.keys(positions || {})
     if (windowIds.length) {
-        const presetNames = windowIds.map(id => id.split('/').slice(-1).join('').trim())
+        presetNames = windowIds.map(id => id.split('/').slice(-1).join('').trim())
         log(`Reopening preset names: ${presetNames.join(', ')}`)
         Bitwig.sendPacket({
             type: 'open-plugin-windows/open-with-preset-name',

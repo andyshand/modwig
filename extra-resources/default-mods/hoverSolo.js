@@ -41,13 +41,15 @@ async function toggleSolo(index, opts = {}) {
 }
 
 Mouse.on('scroll', event => {
-    lastTracks = null
-    Bitwig.runAction('clear_solo')
-    soloedIndex = -1
-    pauseMouseMove = true
-    setTimeout(() => {
-        pauseMouseMove = false    
-    }, 250)
+    if (downAt) {
+        lastTracks = null
+        Bitwig.runAction('clear_solo')
+        soloedIndex = -1
+        pauseMouseMove = true
+        setTimeout(() => {
+            pauseMouseMove = false    
+        }, 250)
+    }
 })
 
 Mouse.on('mousedown', async event => {
