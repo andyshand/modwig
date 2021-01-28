@@ -9,9 +9,12 @@ let downAt = null
 let lastTracks = null
 // Keep track of which track we soloed
 let soloedIndex = -1
-let doingToggle = false
+let pauseMouseMove = false
 
 function trackIndexForEvent(mousePositionXY) {
+    if (!lastTracks) {
+        lastTracks = UI.MainWindow.getArrangerTracks() || []
+    }
     return lastTracks.findIndex(t => mousePositionXY.y >= t.rect.y && mousePositionXY.y < t.rect.y + t.rect.h) 
 }
 
@@ -37,11 +40,19 @@ async function toggleSolo(index, opts = {}) {
     return true
 }
 
+Mouse.on('scroll', event => {
+    lastTracks = null
+    Bitwig.runAction('clear_solo')
+    soloedIndex = -1
+    pauseMouseMove = true
+    setTimeout(() => {
+        pauseMouseMove = false    
+    }, 250)
+})
+
 Mouse.on('mousedown', async event => {
     // log('mousedown', event)
     if (event.button === 3 && !event.intersectsPluginWindows()) {
-        // Only fetch UI state on mouse down, so that on mousemove we don't need to keep fetching
-        lastTracks = UI.MainWindow.getArrangerTracks() || []
         const trackIndex = trackIndexForEvent(event)
         // log(lastTracks, trackIndex)
         // showMessage(`Soloing track index ${trackIndex}`)
@@ -55,18 +66,18 @@ Mouse.on('mousedown', async event => {
 })
 
 Mouse.on('mousemove', debounce(async event => {
-    if (downAt && !doingToggle) {
+    if (downAt && !pauseMouseMove) {
         const index = trackIndexForEvent(event)
         // log('mousemove')
         if (index !== soloedIndex) {
-            doingToggle = true
+            pauseMouseMove = true
             let oldIndex = soloedIndex
             soloedIndex = index
             const pos = Mouse.getPosition()
-            await toggleSolo(oldIndex, { returnAfter: false })
             await toggleSolo(index, { returnAfter: false })
+            await toggleSolo(oldIndex, { returnAfter: false })
             Mouse.setPosition(pos.x, pos.y)
-            doingToggle = false
+            pauseMouseMove = false
         }
     }
 }, 50))
@@ -77,7 +88,16 @@ Mouse.on('mouseup', async event => {
         // We held click for a while, unsolo the previously solo'd track
         const timeDif = new Date() - downAt
         log(timeDif)
-        if (timeDif > 500 && soloedIndex >= 0) {
+        if (soloedIndex >= 0) {
+            let soloed = lastTracks[soloedIndex]
+            if (!soloed.selected) {
+                await Mouse.click({
+                    x: (soloed.rect.x + soloed.rect.w) - UI.scale(5),
+                    y: soloed.visibleRect.y + UI.scale(5),
+                    avoidPluginWindows: true,
+                    returnAfter: true
+                })
+            }
             Bitwig.runAction('clear_solo')
         }
         lastTracks = null

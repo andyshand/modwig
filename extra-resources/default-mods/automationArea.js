@@ -339,7 +339,7 @@ async function showTrackVolumeAutomation(currentTrack) {
         y: targetT.rect.y + UI.scale(15),
     }
 
-    // log('Clicking at: ', clickAt)
+    log('Clicking at: ', clickAt)
     await Mouse.click(0, {
         ...clickAt,
         avoidPluginWindows: true,

@@ -969,7 +969,7 @@ export class ShortcutsService extends BESService {
 
             // Don't process shortcuts when dragging (this was to stop shift + 2 being picked up as a shortcut when dragging to make
             // an off-grid time selection)
-            if (mouseIsDownMightBeDragging) {
+            if (mouseIsDownMightBeDragging && !isNaN(parseInt(event.lowerKey, 10))) {
                 // Also store code pressed while dragging so that upon release the shortcut doesn't get triggered until next keypress
                 // (as keydown events will continue to come in as key repeats)
                 shortcutCodeWhileMouseDown = this.makeShortcutValueCode(partialState)
