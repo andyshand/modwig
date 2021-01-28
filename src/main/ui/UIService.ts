@@ -4,9 +4,10 @@ import { SettingsService } from "../core/SettingsService"
 import { ShortcutsService } from "../shortcuts/Shortcuts"
 import _ from 'underscore'
 import { BitwigService } from "../bitwig/BitwigService"
+import { wait } from "../../connector/shared/engine/Debounce"
+import { returnMouseAfter } from "../../connector/shared/EventUtils"
 
-const { Keyboard, Bitwig, UI } = require('bindings')('bes')
-
+const { Keyboard, Bitwig, UI, Mouse: _Mouse, MainWindow } = require('bindings')('bes')
 
 /**
  * UI Service is basically responsible for keeping an up to date (insofar as possbile) representation of the Bitwig UI.
@@ -25,17 +26,104 @@ export class UIService extends BESService {
     previousTool = 0
     activeToolKeyDownAt = new Date()
     uiMainWindow = new UI.BitwigWindow({})
-    uiScale
+    uiScale = 1
     apiEventRouter = new EventRouter<any>()
     idsByEventType: {[type: string] : number} = {}
     hasOnReloadModsCb = false
+    modalWasOpen = false
+    Mouse
+    addedExtras = false
 
     // Events
     events = {       
         toolChanged: makeEvent<number>()
     }
 
+
+    addExtras() {
+        const uiService = this
+        this.Mouse = {
+            click: async (...args) => {
+                const button = args[0]
+                const opts = args[args.length - 1] || {}
+                const doIt = async () => {
+                    const reallyDoIt = async () => {
+                        let ret
+                        if (typeof button !== 'number') {
+                            ret = _Mouse.click(0, ...args)
+                        } else {
+                            ret = _Mouse.click(...args)
+                        }
+                        if (typeof opts.returnAfter === 'number') {
+                            await wait(opts.returnAfter)
+                        }
+                        return ret
+                    }
+                    if (opts.returnAfter) {
+                        return returnMouseAfter(reallyDoIt)
+                    } else {
+                        return reallyDoIt()
+                    }
+                }
+                if (opts.avoidPluginWindows) {
+                    return this.Mouse.avoidingPluginWindows(opts, doIt)
+                } else {
+                    return doIt()
+                }
+            },
+            avoidingPluginWindows: async (pointOpts, cb) => {
+                if (!this.eventIntersectsPluginWindows(pointOpts)) {
+                    return Promise.resolve(cb())
+                }
+                const pluginPositions = Bitwig.getPluginWindowsPosition()
+                const displayDimensions = MainWindow.getMainScreen()
+                let tempPositions = {}
+                for (const key in pluginPositions) {
+                    tempPositions[key] = {
+                        ...pluginPositions[key],
+                        x: displayDimensions.w - 1,
+                        y: displayDimensions.h - 1,
+                    }
+                }
+                Bitwig.setPluginWindowsPosition(tempPositions)
+                return new Promise<void>(res => {
+                    setTimeout(async () => {
+                        const result = cb()
+                        if (result && result.then) {
+                            await result
+                        }
+                        if (!pointOpts.noReposition) {
+                            Bitwig.setPluginWindowsPosition(pluginPositions)
+                        }
+                        res()
+                    }, 100)
+                })
+            }    
+        }
+
+        const proto = this.uiMainWindow
+        const ArrangerTrack = {
+            async selectWithMouse() {
+                return uiService.Mouse.click({
+                    x: (this.rect.x + this.rect.w) - uiService.scale(5),
+                    y: this.visibleRect.y + uiService.scale(5),
+                    avoidPluginWindows: true,
+                    returnAfter: true
+                })
+            }
+        }
+        proto.getArrangerTracks = (...args) => {
+            const results = proto._getArrangerTracks(...args)
+            return results.map(obj => Object.setPrototypeOf(obj, ArrangerTrack))
+        }
+        this.addedExtras = true
+    }
+
     getApi({ makeEmitterEvents, onReloadMods }) {
+        if (!this.addedExtras) {
+            this.addExtras()
+        }
+
         const that = this
         if (!this.hasOnReloadModsCb) {
             this.hasOnReloadModsCb = true
@@ -50,27 +138,20 @@ export class UIService extends BESService {
                 this.hasOnReloadModsCb = false
             })
         }
+        const MouseEvent = {
+            intersectsPluginWindows() {
+                return that.eventIntersectsPluginWindows(this)
+            },
+            noModifiers() {
+                return !(this.Meta || this.Control || this.Alt || this.Shift)
+            }
+        }
 
-        return {
-            ...UI,
-            MainWindow: this.uiMainWindow,
-            get activeTool() {
-                return that.activeTool
-            },
-            ...makeEmitterEvents({
-                activeToolChanged: this.events.toolChanged
-            }),
-            scaleXY: (args) => this.scaleXY(args),
-            scale: (point) => this.scaleXY({x: point, y: 0}).x,
-            unScaleXY: (args) => this.unScaleXY(args),
-            unScale: (point) => this.unScaleXY({x: point, y: 0}).x,
-            bwToScreen: (args) => this.bwToScreen(args),
-            screenToBw: (args) => this.screenToBw(args),
-            get doubleClickInterval() {
-                return 250
-            },
+        const api = {
             Mouse: {
-                on: (event, cb) => {
+                ..._Mouse,
+                ...this.Mouse,
+                _on: (event, cb) => {
                     this.apiEventRouter.listen(event, cb)
                     if (!this.idsByEventType[event]) {
                         const id = Keyboard.on(event, (...args) => {
@@ -79,16 +160,64 @@ export class UIService extends BESService {
                         this.log(`Id for ${event} is ${id}`)
                         this.idsByEventType[event] = id
                     }
+                },
+                on: (eventName: string, cb: Function) => {
+                    const wrappedCb = async (event, ...rest) => {
+                        // this.eventLogger({msg: eventName, modId: mod.id})
+                        Object.setPrototypeOf(event, MouseEvent)
+                        cb(event, ...rest)
+                    }
+                    if (eventName === 'click') {
+                        let downEvent, downTime
+                        api.Mouse._on('mousedown', (event) => {
+                            downTime = new Date()
+                            downEvent = JSON.stringify(event)
+                        })
+                        api.Mouse._on('mouseup', (event, ...rest) => {
+                            if (JSON.stringify(event) === downEvent && downTime && new Date().getTime() - downTime.getTime() < 250) {
+                                wrappedCb(event, ...rest)
+                            }
+                        })
+                    } else if (eventName === 'doubleClick') {
+                        let lastClickTime = new Date(0)
+                        api.Mouse._on('click', (event, ...rest) => {
+                            if (new Date().getTime() - lastClickTime.getTime() < 250) {
+                                wrappedCb(event, ...rest)
+                                lastClickTime = new Date(0)
+                            } else {
+                                lastClickTime = new Date()
+                            }
+                        })
+                    } else {
+                        api.Mouse._on(eventName, wrappedCb)
+                    }
+                },
+                lockX: Keyboard.lockX,
+                lockY: Keyboard.lockY,
+                returnAfter: returnMouseAfter   
+            },
+            UI: {
+                ...UI,
+                MainWindow: this.uiMainWindow,
+                get activeTool() {
+                    return that.activeTool
+                },
+                ...makeEmitterEvents({
+                    activeToolChanged: this.events.toolChanged
+                }),
+                scaleXY: (args) => this.scaleXY(args),
+                scale: (point) => this.scaleXY({x: point, y: 0}).x,
+                unScaleXY: (args) => this.unScaleXY(args),
+                unScale: (point) => this.unScaleXY({x: point, y: 0}).x,
+                bwToScreen: (args) => this.bwToScreen(args),
+                screenToBw: (args) => this.screenToBw(args),
+                get doubleClickInterval() {
+                    return 250
                 }
             }
         }
+        return api
     }
-
-    onReloadMods() {
-
-    }
-
-    modalWasOpen
 
     checkIfModalOpen() {
         if (process.env.SCREENSHOTS !== 'true') {
@@ -168,6 +297,8 @@ export class UIService extends BESService {
             this.log('Updating UI from packet: ', packet)
             UI.updateUILayoutInfo(packet.data)
         })
+
+        // this.addExtras()
     }
 
     eventIntersectsPluginWindows(event) {
@@ -221,6 +352,9 @@ export class UIService extends BESService {
             ...rest
         }
     }
+
+    scale = point => this.scaleXY({x: point, y: 0}).x
+    unscale = point => this.unScaleXY({x: point, y: 0}).x
 
     unScaleXY({ x, y, ...rest }) {
         return {

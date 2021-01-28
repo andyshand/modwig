@@ -54,7 +54,7 @@ Mouse.on('scroll', event => {
 
 Mouse.on('mousedown', async event => {
     // log('mousedown', event)
-    if (event.button === 3 && !event.intersectsPluginWindows()) {
+    if (event.button === 3 && event.noModifiers() && !event.intersectsPluginWindows()) {
         const trackIndex = trackIndexForEvent(event)
         // log(lastTracks, trackIndex)
         // showMessage(`Soloing track index ${trackIndex}`)
@@ -88,8 +88,8 @@ Mouse.on('mouseup', async event => {
     // log('mouseup', event)
     if (event.button === 3) {
         // We held click for a while, unsolo the previously solo'd track
-        const timeDif = new Date() - downAt
-        log(timeDif)
+        // const timeDif = new Date() - downAt
+        // log(timeDif)
         if (soloedIndex >= 0) {
             let soloed = lastTracks[soloedIndex]
             if (!soloed.selected) {

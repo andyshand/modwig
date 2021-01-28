@@ -5,6 +5,7 @@ import { shortcutToTextDescription } from '../settings/helpers/settingTitle'
 import { faBolt, faInfo } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Spinner } from '../core/Spinner'
+import { TrackVolumePopup } from './canvas/TrackVolumePopup'
 
 const Wrap = styled.div`
     position: fixed;
@@ -124,10 +125,14 @@ export class Canvas extends ModwigComponent<any> {
     state = {
         notifications: [],
         browserIsOpen: false,
-        enteringValue: false
+        enteringValue: false,
+
+        // Different types of static notification
+        volume: null
     }
     componentWillReceiveProps(nextProps) {
         let newProgressIds = new Set()
+        let stateAdditions: any = {}
         const newNotifications = (nextProps.notifications || []).map(notif => {
             if (notif.type === 'progress') {
                 newProgressIds.add(notif.progressId)
@@ -137,12 +142,17 @@ export class Canvas extends ModwigComponent<any> {
                     return notif
                 }
             }
+            if (notif.type === 'volume') {
+                stateAdditions.volume = notif
+                return null
+            }
             return {
                 ...notif,
                 timeout: new Date().getTime() + notif.timeout
             }
-        })
+        }).filter(n => !!n)
         this.setState({
+            ...stateAdditions,
             ...nextProps,
             notifications: this.state.notifications.filter(oldNotif => {
                 if (oldNotif.type === 'progress') {
@@ -206,6 +216,7 @@ export class Canvas extends ModwigComponent<any> {
                 <div><div style={{
                     marginRight: '.4rem', marginTop: '.3rem', width: '.5rem', height: '.5rem', borderRadius: '1000px', background: 'rgb(230,89,13)'
                 }}/> modwig active</div>
+                {this.state.volume && this.state.volume.track ? <TrackVolumePopup {...this.state.volume} /> : null}
             </Static>
         </Wrap>
     }

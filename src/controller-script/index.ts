@@ -291,6 +291,16 @@ class GlobalController extends Controller {
                 data: this.createTrackInfo(track)
             }
         })
+        packetManager.listen('track/get', ({ data: { name }}) => {
+            const track = this.findTrackByName(name)
+            if (!track) {
+                throw new PacketError(404, "Track not found")
+            }
+            return {
+                type: 'track/get',
+                data: this.createTrackInfo(track)
+            }
+        })
         packetManager.listen('track/select', ({ data: { name, allowExitGroup, enter, scroll }}) => {
             this.selectTrackWithName(
                 name, 

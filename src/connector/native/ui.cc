@@ -613,7 +613,7 @@ Napi::Value BitwigWindow::GetFrame(const Napi::CallbackInfo &info) {
 Napi::Object BitwigWindow::Init(Napi::Env env, Napi::Object exports) {
     Napi::Function func = DefineClass(env, "BitwigWindow", {
         InstanceAccessor<&BitwigWindow::getRect>("rect"),
-        InstanceMethod<&BitwigWindow::GetArrangerTracks>("getArrangerTracks"),
+        InstanceMethod<&BitwigWindow::GetArrangerTracks>("_getArrangerTracks"),
         InstanceMethod<&BitwigWindow::GetLayoutState>("getLayoutState"),
         InstanceMethod<&BitwigWindow::GetTrackInsetAtPoint>("getTrackInsetAtPoint"),
         InstanceMethod<&BitwigWindow::PixelColorAt>("pixelColorAt"),

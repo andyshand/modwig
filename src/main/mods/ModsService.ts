@@ -3,6 +3,7 @@ import { BESService, getService, makeEvent } from "../core/Service"
 import { returnMouseAfter, whenActiveListener } from "../../connector/shared/EventUtils"
 import { getDb } from "../db"
 import { ProjectTrack } from "../db/entities/ProjectTrack"
+import { clamp } from "../../connector/shared/Math"
 import { Project } from "../db/entities/Project"
 import { getResourcePath } from '../../connector/shared/ResourcePath'
 import { SettingsService } from "../core/SettingsService"
@@ -12,7 +13,7 @@ import { Setting } from "../db/entities/Setting"
 import { createDirIfNotExist, exists as fileExists, filesAreEqual, getTempDirectory, writeStrFile } from "../core/Files"
 import { logWithTime } from "../core/Log"
 import { ShortcutsService } from "../shortcuts/Shortcuts"
-import { debounce } from '../../connector/shared/engine/Debounce'
+import { debounce, wait } from '../../connector/shared/engine/Debounce'
 import _ from 'underscore'
 import { BrowserWindow, clipboard } from "electron"
 import { url } from "../core/Url"
@@ -25,12 +26,6 @@ const colors = require('colors');
 const KeyboardEvent = {
     noModifiers() {
         return !(this.Meta || this.Control || this.Alt || this.Shift)
-    }
-}
-
-const MouseEvent = {
-    intersectsPluginWindows() {
-        return getService<UIService>("UIService").eventIntersectsPluginWindows(this)
     }
 }
 
@@ -195,7 +190,7 @@ export class ModsService extends BESService {
 
     // Internal state
     currProject: string | null = null
-    currTrack: string | null = null
+    currTrack: any | null = null
     cueMarkers: CueMarker[] = []
     currDevice: Device | null = null
     folderWatcher?: any
@@ -342,7 +337,7 @@ export class ModsService extends BESService {
                     }
                 }            
             }
-            return {
+            const out = {
                 on: (eventName: string, cb: Function) => {
                     const wrappedCb = (...args) => {
                         try {
@@ -354,10 +349,17 @@ export class ModsService extends BESService {
                     }
                     return handlers[eventName].on(wrappedCb)
                 },
+                once: (eventName: string, cb: Function) => {
+                    const id = out.on(eventName, (...args) => {
+                        out.off(eventName, id)
+                        cb(...args)
+                    })
+                },
                 off: (eventName: string, id: number) => {
                     handlers[eventName].off(id)
                 }
             }
+            return out
         }
 
         
@@ -412,100 +414,8 @@ export class ModsService extends BESService {
                         && point.y < rect.y + rect.h
                 }
             },
-            Mouse: {
-                ...Mouse,
-                on: (eventName: string, cb: Function) => {
-                    const wrappedCb = async (event, ...rest) => {
-                        // this.eventLogger({msg: eventName, modId: mod.id})
-                        Object.setPrototypeOf(event, MouseEvent)
-                        cb(event, ...rest)
-                    }
-                    if (eventName === 'click') {
-                        let downEvent, downTime
-                        uiApi.Mouse.on('mousedown', (event) => {
-                            downTime = new Date()
-                            downEvent = JSON.stringify(event)
-                        })
-                        uiApi.Mouse.on('mouseup', (event, ...rest) => {
-                            if (JSON.stringify(event) === downEvent && downTime && new Date().getTime() - downTime.getTime() < 250) {
-                                wrappedCb(event, ...rest)
-                            }
-                        })
-                    } else if (eventName === 'doubleClick') {
-                        let lastClickTime = new Date(0)
-                        uiApi.Mouse.on('click', (event, ...rest) => {
-                            if (new Date().getTime() - lastClickTime.getTime() < 250) {
-                                wrappedCb(event, ...rest)
-                                lastClickTime = new Date(0)
-                            } else {
-                                lastClickTime = new Date()
-                            }
-                        })
-                    } else {
-                        uiApi.Mouse.on(eventName, wrappedCb)
-                    }
-                },
-                click: async (...args) => {
-                    const button = args[0]
-                    const opts = args[args.length - 1] || {}
-                    const doIt = async () => {
-                        const reallyDoIt = async () => {
-                            let ret
-                            if (typeof button !== 'number') {
-                                ret = Mouse.click(0, ...args)
-                            } else {
-                                ret = Mouse.click(...args)
-                            }
-                            if (typeof opts.returnAfter === 'number') {
-                                await this.staticApi.wait(opts.returnAfter)
-                            }
-                            return ret
-                        }
-                        if (opts.returnAfter) {
-                            return returnMouseAfter(reallyDoIt)
-                        } else {
-                            return reallyDoIt()
-                        }
-                    }
-                    if (opts.avoidPluginWindows) {
-                        return api.Mouse.avoidingPluginWindows(opts, doIt)
-                    } else {
-                        return doIt()
-                    }
-                },
-                lockX: Keyboard.lockX,
-                lockY: Keyboard.lockY,
-                returnAfter: returnMouseAfter,
-                avoidingPluginWindows: async (pointOpts, cb) => {
-                    if (!this.uiService.eventIntersectsPluginWindows(pointOpts)) {
-                        return Promise.resolve(cb())
-                    }
-                    const pluginPositions = Bitwig.getPluginWindowsPosition()
-                    const displayDimensions = MainWindow.getMainScreen()
-                    let tempPositions = {}
-                    for (const key in pluginPositions) {
-                        tempPositions[key] = {
-                            ...pluginPositions[key],
-                            x: displayDimensions.w - 1,
-                            y: displayDimensions.h - 1,
-                        }
-                    }
-                    Bitwig.setPluginWindowsPosition(tempPositions)
-                    return new Promise<void>(res => {
-                        setTimeout(async () => {
-                            const result = cb()
-                            if (result && result.then) {
-                                await result
-                            }
-                            if (!pointOpts.noReposition) {
-                                Bitwig.setPluginWindowsPosition(pluginPositions)
-                            }
-                            res()
-                        }, 100)
-                    })
-                }          
-            },
-            UI: uiApi,
+            Mouse: uiApi.Mouse,
+            UI: uiApi.UI,
             Bitwig: addNotAlreadyIn({
                 closeFloatingWindows: Bitwig.closeFloatingWindows,
                 get isAccessibilityOpen() {
@@ -626,10 +536,10 @@ export class ModsService extends BESService {
                     }
                 },
                 getCurrentTrackData: () => {
-                    return api.Db.getTrackData(api.Bitwig.currentTrack)
+                    return api.Db.getTrackData(api.Bitwig.currentTrack.name)
                 },
                 setCurrentTrackData: (data) => {
-                    return api.Db.setTrackData(api.Bitwig.currentTrack, data)
+                    return api.Db.setTrackData(api.Bitwig.currentTrack.name, data)
                 },
             },
             Mod: {
@@ -734,6 +644,7 @@ export class ModsService extends BESService {
                 })
             },
             debounce,
+            throttle: (_ as any).throttle,
             showNotification: (notif) => this.showNotification(notif)
         }
         const wrapFunctionsWithTryCatch = (value, key?: string) => {
@@ -835,9 +746,9 @@ export class ModsService extends BESService {
                     this.events.activeEngineProjectChanged.emit(projectName)
                 }
             }
-            if (selectedTrack && this.currTrack !== selectedTrack.name) {
+            if (selectedTrack && (!this.currTrack || (this.currTrack.name !== selectedTrack.name))) {
                 const prev = this.currTrack
-                this.currTrack = selectedTrack.name
+                this.currTrack = selectedTrack
                 this.events.selectedTrackChanged.emit(this.currTrack, prev)
             }
         })
@@ -1102,9 +1013,8 @@ export class ModsService extends BESService {
     }
 
     staticApi = {
-        wait: ms => new Promise(res => {
-            setTimeout(res, ms)
-        }),
+        wait: wait,
+        clamp: clamp,
         showMessage
     }
 

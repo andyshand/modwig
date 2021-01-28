@@ -49,14 +49,14 @@ for (let i = 0; i < NUM_HOTKEYS; i++) {
             keys: ["Alt", "Shift", String(i + 1).slice(-1)]
         },
         action: async (context) => {
-            if (!Bitwig.currentTrack) {
+            if (!Bitwig.currentTrack.name) {
                 Bitwig.showMessage(`No track selected.`)
                 return
             }
             const projectData = await Db.getCurrentProjectData()
             const newProjectData = {
                 ...projectData,
-                [i]: Bitwig.currentTrack
+                [i]: Bitwig.currentTrack.name
             }
             await Db.setCurrentProjectData(newProjectData)
             highlightNumber(i + 1, context, newProjectData)

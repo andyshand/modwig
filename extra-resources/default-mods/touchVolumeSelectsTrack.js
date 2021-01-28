@@ -46,7 +46,7 @@ let shouldAnnounceSelectedTrack = false
 let wasLevelMeter = false
 Bitwig.on('selectedTrackChanged', async (curr, prev) => {
     if (shouldAnnounceSelectedTrack) {
-        showMessage(`Selected "${curr}"`)
+        showMessage(`Selected "${curr.name}"`)
         shouldAnnounceSelectedTrack = false
 
         if (wasLevelMeter) {
@@ -149,14 +149,8 @@ Mouse.on('mouseup', upEvent => {
                     // We have no way of knowing which track we actually clicked (by name)
                     // via the UI analysis only, so we just announce when the selected track changes
                     shouldAnnounceSelectedTrack = true
-                    const clickAt = {
-                        x: (insideT.rect.x + insideT.rect.w) - UI.scaleXY({ x: 5, y: 0 }).x,
-                        y: insideT.visibleRect.y + clickOffsetY,
-                        avoidPluginWindows: true,
-                        returnAfter: true
-                    }
-                    log('About to select track:', insideT, 'by clicking at: ', clickAt)
-                    await Mouse.click(0, clickAt)
+                    log('About to select track:', insideT)
+                    await insideT.selectWithMouse()
                 } else if (wasLevelMeter && !insideT.automationOpen) {
                     // Track didn't change but we still want to show the level meter automation
                     Mod.runAction(`show-current-track-automation`)

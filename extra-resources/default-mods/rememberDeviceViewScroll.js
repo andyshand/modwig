@@ -48,7 +48,7 @@ Bitwig.on('selectedTrackChanged', async ( curr, prev ) => {
         Db.setTrackData(prev, {scroll: currTrackScroll})
     }
 
-    currTrackScroll = (await Db.getTrackData(curr)).scroll || 0
+    currTrackScroll = (await Db.getTrackData(curr.name)).scroll || 0
     if (currTrackScroll > 0) {
         doScroll(currTrackScroll)
     }

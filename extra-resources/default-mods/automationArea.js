@@ -26,7 +26,7 @@ Mod.registerAction({
 })
 
 async function showAutomationImpl(all, { onlyShow } = { onlyShow: false }) {
-    const track = Bitwig.currentTrack
+    const track = Bitwig.currentTrack.name
     let { automationShown } = await Db.getTrackData(track)
     if (onlyShow && automationShown) {
         return log('Automation already shown')
@@ -96,20 +96,20 @@ Mod.registerAction({
 })
 
 // Quickly create adjacent automation points with mouse button 3
-Mouse.on('mousedown', whenActiveListener(event => {
-    if (event.button === 3 && event.Shift) {
-        Mouse.returnAfter(() => {
-            const { x, y } = Mouse.getPosition()
-            if (event.Meta) {
-                Mouse.doubleClick(0, {x, y, Shift: true})
-                Mouse.doubleClick(0, {x: x + 8, y, Shift: true})
-            } else {
-                Mouse.click(0, {x, y, Shift: true})
-                Mouse.click(0, {x: x + 8, y, Shift: true})
-            }
-        })
-    }
-}))
+// Mouse.on('mousedown', whenActiveListener(event => {
+//     if (event.button === 3 && event.Shift) {
+//         Mouse.returnAfter(() => {
+//             const { x, y } = Mouse.getPosition()
+//             if (event.Meta) {
+//                 Mouse.doubleClick(0, {x, y, Shift: true})
+//                 Mouse.doubleClick(0, {x: x + 8, y, Shift: true})
+//             } else {
+//                 Mouse.click(0, {x, y, Shift: true})
+//                 Mouse.click(0, {x: x + 8, y, Shift: true})
+//             }
+//         })
+//     }
+// }))
 
 for (let i = 0; i < 100; i+= 10) {
     Mod.registerAction({
@@ -320,13 +320,7 @@ async function showTrackVolumeAutomation(currentTrack) {
     log(targetT)
 
     if (!targetT.selected) {
-        // Select the track first
-        await Mouse.click({
-            x: (targetT.rect.x + targetT.rect.w) - UI.scale(5),
-            y: targetT.visibleRect.y + UI.scale(5),
-            avoidPluginWindows: true,
-            returnAfter: true
-        })
+        await targetT.selectWithMouse()
     }
 
     const clickAt = targetT.isLargeTrackHeight ? {
