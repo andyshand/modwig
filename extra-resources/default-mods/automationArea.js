@@ -384,6 +384,48 @@ Mod.registerAction({
 })
 
 Mod.registerAction({
+    title: `Solo hovered track`,
+    id: `solo-hovered-track`,
+    description: `Solos the track the mouse cursor is currently over`,
+    category: 'arranger',
+    contexts: ['-browser'],
+    defaultSetting: {
+        keys: ["Alt", "S"]
+    },
+    action: async () => {
+        const tracks = UI.MainWindow.getArrangerTracks()
+        if (tracks === null || tracks.length === 0) {
+            return log('No tracks found, spoopy...')
+        }
+    
+        const mousePos = Mouse.getPosition()
+        const getTargetTrack = () => {
+            return tracks.find(t => mousePos.y >= t.rect.y && mousePos.y < t.rect.y + t.rect.h)
+        }
+        const targetT = getTargetTrack()
+        if (!targetT) {
+            return showMessage(`Couldn't find track`)
+        }
+        log(targetT)
+        
+        const clickAt = targetT.isLargeTrackHeight ? {
+            x: targetT.rect.x + targetT.rect.w - UI.scale(54), 
+            y: targetT.rect.y + UI.scale(10),
+        } : {
+            x: targetT.rect.x + targetT.rect.w - UI.scale(90), 
+            y: targetT.rect.y + UI.scale(7),
+        }
+        await Mouse.click(0, {
+            ...clickAt,
+            avoidPluginWindows: true,
+            // For whatever reason the click here happens after returning the mouse,
+            // so we need to wait a little. So many timeouts :(
+            returnAfter: 100
+        })
+    }
+})
+
+Mod.registerAction({
     title: `Jump to track level meter`,
     id: `jump-track-level-meter`,
     description: `Moves the mouse cursor to the track level meter`,
