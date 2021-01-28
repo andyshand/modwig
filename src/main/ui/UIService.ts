@@ -1,5 +1,5 @@
 import { interceptPacket } from "../core/WebsocketToSocket"
-import { BESService, getService, makeEvent } from "../core/Service"
+import { BESService, EventRouter, getService, makeEvent } from "../core/Service"
 import { SettingsService } from "../core/SettingsService"
 import { ShortcutsService } from "../shortcuts/Shortcuts"
 import _ from 'underscore'
@@ -26,14 +26,31 @@ export class UIService extends BESService {
     activeToolKeyDownAt = new Date()
     uiMainWindow = new UI.BitwigWindow({})
     uiScale
+    apiEventRouter = new EventRouter<any>()
+    idsByEventType: {[type: string] : number} = {}
+    hasOnReloadModsCb = false
 
     // Events
     events = {       
         toolChanged: makeEvent<number>()
     }
 
-    getApi({ makeEmitterEvents }) {
+    getApi({ makeEmitterEvents, onReloadMods }) {
         const that = this
+        if (!this.hasOnReloadModsCb) {
+            this.hasOnReloadModsCb = true
+            onReloadMods(() => {
+                this.log('Reloading mods', this.idsByEventType)
+                for (const eventName in this.idsByEventType) {
+                    Keyboard.off(this.idsByEventType[eventName])
+                    this.log('Removed id ' + this.idsByEventType[eventName])
+                }
+                this.idsByEventType = {}
+                this.apiEventRouter.clear()
+                this.hasOnReloadModsCb = false
+            })
+        }
+
         return {
             ...UI,
             MainWindow: this.uiMainWindow,
@@ -48,8 +65,27 @@ export class UIService extends BESService {
             unScaleXY: (args) => this.unScaleXY(args),
             unScale: (point) => this.unScaleXY({x: point, y: 0}).x,
             bwToScreen: (args) => this.bwToScreen(args),
-            screenToBw: (args) => this.screenToBw(args)
+            screenToBw: (args) => this.screenToBw(args),
+            get doubleClickInterval() {
+                return 250
+            },
+            Mouse: {
+                on: (event, cb) => {
+                    this.apiEventRouter.listen(event, cb)
+                    if (!this.idsByEventType[event]) {
+                        const id = Keyboard.on(event, (...args) => {
+                            this.apiEventRouter.emit(event, ...args)
+                        })
+                        this.log(`Id for ${event} is ${id}`)
+                        this.idsByEventType[event] = id
+                    }
+                }
+            }
         }
+    }
+
+    onReloadMods() {
+
     }
 
     modalWasOpen

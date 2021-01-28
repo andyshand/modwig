@@ -20,6 +20,25 @@ export class EventEmitter<T> {
     }
 }
 
+export class EventRouter<T> {
+    nextId = 0
+    listenersByEvent: {[event: string]: Function[]} = {}
+    listen(eventName: string, cb: (data: T) => void) {
+        if (!this.listenersByEvent[eventName]) {
+            this.listenersByEvent[eventName] = []
+        }
+        this.listenersByEvent[eventName].push(cb)
+    }
+    clear() {
+        this.listenersByEvent = {}
+    }
+    emit(eventName: string, ...values: any[]) {
+        for (const cb of (this.listenersByEvent[eventName] || [])) {
+            cb(...values)
+        }
+    }
+}
+
 export function makeEvent<T>() : EventEmitter<T> {
     return new EventEmitter()
 }

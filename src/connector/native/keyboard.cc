@@ -283,6 +283,9 @@ CGEventRef eventtap_callback(CGEventTapProxy proxy, CGEventType type, CGEventRef
             // Note that because we return NULL, our other callbacks won't be processed, so we have to
             // find them ourselves
             for (auto cbInfo : callbacks) {
+                // FIXME when we call the other callbacks the memory of jsEvent is corrupted. For some reason it's
+                // not always visible to them. At the moment we're working around this by only using one single cb
+                // to process these other buttons - which isn't ideal
                 if (cbInfo->eventType == e->eventType && cbInfo != e) {
                     // Call all other listeners except for this one
                     if (cbInfo->cb != nullptr) {

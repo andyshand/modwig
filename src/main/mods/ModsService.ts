@@ -371,6 +371,11 @@ export class ModsService extends BESService {
             return obj
         }
         const thisApiId = nextId++
+        const uiApi = this.uiService.getApi({ 
+            makeEmitterEvents, 
+            onReloadMods: cb => this.onReloadMods.push(cb) 
+        })
+
         const api = {
             id: thisApiId,
             log: (...args) => {
@@ -407,7 +412,100 @@ export class ModsService extends BESService {
                         && point.y < rect.y + rect.h
                 }
             },
-            UI: this.uiService.getApi({ makeEmitterEvents }),
+            Mouse: {
+                ...Mouse,
+                on: (eventName: string, cb: Function) => {
+                    const wrappedCb = async (event, ...rest) => {
+                        // this.eventLogger({msg: eventName, modId: mod.id})
+                        Object.setPrototypeOf(event, MouseEvent)
+                        cb(event, ...rest)
+                    }
+                    if (eventName === 'click') {
+                        let downEvent, downTime
+                        uiApi.Mouse.on('mousedown', (event) => {
+                            downTime = new Date()
+                            downEvent = JSON.stringify(event)
+                        })
+                        uiApi.Mouse.on('mouseup', (event, ...rest) => {
+                            if (JSON.stringify(event) === downEvent && downTime && new Date().getTime() - downTime.getTime() < 250) {
+                                wrappedCb(event, ...rest)
+                            }
+                        })
+                    } else if (eventName === 'doubleClick') {
+                        let lastClickTime = new Date(0)
+                        uiApi.Mouse.on('click', (event, ...rest) => {
+                            if (new Date().getTime() - lastClickTime.getTime() < 250) {
+                                wrappedCb(event, ...rest)
+                                lastClickTime = new Date(0)
+                            } else {
+                                lastClickTime = new Date()
+                            }
+                        })
+                    } else {
+                        uiApi.Mouse.on(eventName, wrappedCb)
+                    }
+                },
+                click: async (...args) => {
+                    const button = args[0]
+                    const opts = args[args.length - 1] || {}
+                    const doIt = async () => {
+                        const reallyDoIt = async () => {
+                            let ret
+                            if (typeof button !== 'number') {
+                                ret = Mouse.click(0, ...args)
+                            } else {
+                                ret = Mouse.click(...args)
+                            }
+                            if (typeof opts.returnAfter === 'number') {
+                                await this.staticApi.wait(opts.returnAfter)
+                            }
+                            return ret
+                        }
+                        if (opts.returnAfter) {
+                            return returnMouseAfter(reallyDoIt)
+                        } else {
+                            return reallyDoIt()
+                        }
+                    }
+                    if (opts.avoidPluginWindows) {
+                        return api.Mouse.avoidingPluginWindows(opts, doIt)
+                    } else {
+                        return doIt()
+                    }
+                },
+                lockX: Keyboard.lockX,
+                lockY: Keyboard.lockY,
+                returnAfter: returnMouseAfter,
+                avoidingPluginWindows: async (pointOpts, cb) => {
+                    if (!this.uiService.eventIntersectsPluginWindows(pointOpts)) {
+                        return Promise.resolve(cb())
+                    }
+                    const pluginPositions = Bitwig.getPluginWindowsPosition()
+                    const displayDimensions = MainWindow.getMainScreen()
+                    let tempPositions = {}
+                    for (const key in pluginPositions) {
+                        tempPositions[key] = {
+                            ...pluginPositions[key],
+                            x: displayDimensions.w - 1,
+                            y: displayDimensions.h - 1,
+                        }
+                    }
+                    Bitwig.setPluginWindowsPosition(tempPositions)
+                    return new Promise<void>(res => {
+                        setTimeout(async () => {
+                            const result = cb()
+                            if (result && result.then) {
+                                await result
+                            }
+                            if (!pointOpts.noReposition) {
+                                Bitwig.setPluginWindowsPosition(pluginPositions)
+                            }
+                            res()
+                        }, 100)
+                    })
+                }          
+            },
+            UI: uiApi,
             Bitwig: addNotAlreadyIn({
                 closeFloatingWindows: Bitwig.closeFloatingWindows,
                 get isAccessibilityOpen() {
@@ -1007,100 +1105,7 @@ export class ModsService extends BESService {
         wait: ms => new Promise(res => {
             setTimeout(res, ms)
         }),
-        showMessage,
-        Mouse: {
-            ...Mouse,
-            on: (eventName: string, cb: Function) => {
-                const wrappedCb = async (event, ...rest) => {
-                    // this.eventLogger({msg: eventName, modId: mod.id})
-                    Object.setPrototypeOf(event, MouseEvent)
-                    cb(event, ...rest)
-                }
-                if (eventName === 'click') {
-                    let downEvent, downTime
-                    this.staticApi.Mouse.on('mousedown', (event) => {
-                        downTime = new Date()
-                        downEvent = JSON.stringify(event)
-                    })
-                    this.staticApi.Mouse.on('mouseup', (event, ...rest) => {
-                        if (JSON.stringify(event) === downEvent && downTime && new Date().getTime() - downTime.getTime() < 250) {
-                            wrappedCb(event, ...rest)
-                        }
-                    })
-                } else if (eventName === 'doubleClick') {
-                    let lastClickTime = new Date(0)
-                    this.staticApi.Mouse.on('click', (event, ...rest) => {
-                        if (new Date().getTime() - lastClickTime.getTime() < 250) {
-                            wrappedCb(event, ...rest)
-                            lastClickTime = new Date(0)
-                        } else {
-                            lastClickTime = new Date()
-                        }
-                    })
-                } else {
-                    this.wrappedOnForReloadDisconnect(Keyboard)(eventName, wrappedCb)
-                }
-            },
-            click: async (...args) => {
-                const button = args[0]
-                const opts = args[args.length - 1] || {}
-                const doIt = async () => {
-                    const reallyDoIt = async () => {
-                        let ret
-                        if (typeof button !== 'number') {
-                            ret = Mouse.click(0, ...args)
-                        } else {
-                            ret = Mouse.click(...args)
-                        }
-                        if (typeof opts.returnAfter === 'number') {
-                            await this.staticApi.wait(opts.returnAfter)
-                        }
-                        return ret
-                    }
-                    if (opts.returnAfter) {
-                        return returnMouseAfter(reallyDoIt)
-                    } else {
-                        return reallyDoIt()
-                    }
-                }
-                if (opts.avoidPluginWindows) {
-                    return this.staticApi.Mouse.avoidingPluginWindows(opts, doIt)
-                } else {
-                    return doIt()
-                }
-            },
-            lockX: Keyboard.lockX,
-            lockY: Keyboard.lockY,
-            returnAfter: returnMouseAfter,
-            avoidingPluginWindows: async (pointOpts, cb) => {
-                if (!this.uiService.eventIntersectsPluginWindows(pointOpts)) {
-                    return Promise.resolve(cb())
-                }
-                const pluginPositions = Bitwig.getPluginWindowsPosition()
-                const displayDimensions = MainWindow.getMainScreen()
-                let tempPositions = {}
-                for (const key in pluginPositions) {
-                    tempPositions[key] = {
-                        ...pluginPositions[key],
-                        x: displayDimensions.w - 1,
-                        y: displayDimensions.h - 1,
-                    }
-                }
-                Bitwig.setPluginWindowsPosition(tempPositions)
-                return new Promise<void>(res => {
-                    setTimeout(async () => {
-                        const result = cb()
-                        if (result && result.then) {
-                            await result
-                        }
-                        if (!pointOpts.noReposition) {
-                            Bitwig.setPluginWindowsPosition(pluginPositions)
-                        }
-                        res()
-                    }, 100)
-                })
-            }          
-        }
+        showMessage
     }
 
     async refreshLocalMods() {
