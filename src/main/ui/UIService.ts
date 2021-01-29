@@ -114,7 +114,7 @@ export class UIService extends BESService {
         }
         proto.getArrangerTracks = (...args) => {
             const results = proto._getArrangerTracks(...args)
-            return results.map(obj => Object.setPrototypeOf(obj, ArrangerTrack))
+            return results ? results.map(obj => Object.setPrototypeOf(obj, ArrangerTrack)) : null
         }
         this.addedExtras = true
     }

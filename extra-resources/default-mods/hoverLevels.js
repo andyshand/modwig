@@ -55,7 +55,8 @@ Mouse.on('mousedown', async event => {
             if (!t.selected) {
                 log('Not selected, waiting for selection')
                 await t.selectWithMouse()
-                Bitwig.once('selectedTrackChanged', bwTrack => {
+                Bitwig.once('selectedTrackChanged', async bwTrack => {
+                    await wait(100)
                     log(bwTrack)
                     startWithTrack({...t, ...bwTrack})
                 })
