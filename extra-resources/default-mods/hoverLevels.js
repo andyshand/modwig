@@ -108,7 +108,7 @@ Mouse.on('mousemove', async event => {
 })
     
 Mouse.on('mouseup', async event => {
-    if (event.button === 3) {
+    if (event.button === 3 && track) {
         showNotification({
             ...notifBase,
             track: null
