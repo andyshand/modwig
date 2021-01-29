@@ -10,11 +10,14 @@ let lastTracks = null
 let track = null
 let downPos
 
-function trackIndexForEvent(mousePositionXY) {
+function trackIndexForEvent(event) {
     if (!lastTracks) {
         lastTracks = UI.MainWindow.getArrangerTracks() || []
     }
-    return lastTracks.findIndex(t => mousePositionXY.y >= t.rect.y && mousePositionXY.y < t.rect.y + t.rect.h) 
+    if (event.Meta) {
+        return lastTracks.findIndex(t => t.selected)
+    }
+    return lastTracks.findIndex(t => event.y >= t.rect.y && event.y < t.rect.y + t.rect.h) 
 }
 let notifBase = null
 
@@ -73,9 +76,9 @@ Mouse.on('mousedown', async event => {
 
 Mouse.on('mousemove', async event => {
     if (track) {
-        const dY = event.y - lastEvent.y
+        const dX = event.x - lastEvent.x
         lastEvent = event
-        track.volume = clamp(track.volume + (-dY * (event.Shift ? 0.0015 : 0.005)), 0, 1)
+        track.volume = clamp(track.volume + (dX * (true ? 0.0015 : 0.005)), 0, 1)
         throttledShowNotification({
             ...notifBase,
             track

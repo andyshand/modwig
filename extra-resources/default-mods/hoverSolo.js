@@ -93,12 +93,7 @@ Mouse.on('mouseup', async event => {
         if (soloedIndex >= 0) {
             let soloed = lastTracks[soloedIndex]
             if (!soloed.selected) {
-                await Mouse.click({
-                    x: (soloed.rect.x + soloed.rect.w) - UI.scale(5),
-                    y: soloed.visibleRect.y + UI.scale(5),
-                    avoidPluginWindows: true,
-                    returnAfter: true
-                })
+                await soloed.selectWithMouse()
             }
             Bitwig.runAction('clear_solo')
         }

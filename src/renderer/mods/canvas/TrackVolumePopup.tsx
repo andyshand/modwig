@@ -3,7 +3,7 @@ import { styled } from 'linaria/react'
 
 const TooltipWrap = styled.div`
     position: absolute;
-    right: 113%;
+    left: 113%;
     top: 50%;
     font-size: .9em;
     background: #444;
@@ -19,33 +19,31 @@ const Tooltip = ({volume, ...rest}) => {
 }
 const VolumeLevel = styled.div`
     /* transition: top .1s; */
-    top: ${(props: any) => Math.ceil((1 - props.volume) * 100) + '%'};
+    right: ${(props: any) => Math.ceil((1 - props.volume) * 100) + '%'};
     bottom: 0;
     left: 0;
+    top: 0;
     background: #502E13;
     box-shadow: inset 0 1px 0 0 #402814, inset 0 2px 0 0 #EA6A10, inset 0 3px 0 0 #402814;
-    right: 0;
+    /* right: 0; */
     position: absolute;
 `
 const VolumeWrap = styled.div`
     position: relative;
     border: 1px solid #222;
-    height: 1.4rem;
-    width: 1.3rem;
     border-radius: .2em;
     background: #222;
-    width: 5em;
-    height: 15em;
+    height: 5em;
+    width: 185px;
 `
 const Container = styled.div`
-    display: flex;
     position: fixed;
-    align-items: center;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
     justify-content: flex-start;
     top: ${(props: any) => props.top}px;
     left: ${(props: any) => props.left}px;
-    height: ${(props: any) => props.height}px;
-    /* right: 0; */
 `
 const Color = styled.div`
     width: 1em;
@@ -57,7 +55,7 @@ const Color = styled.div`
     border: 1px solid rgba(0, 0, 0, 0.33);
 `
 const TrackInfo = styled.div`
-    padding-left: 1em;
+    margin-top: 1em;
     font-size: 1.2em;
     display: flex;
     align-items: center;
@@ -66,9 +64,10 @@ const TrackInfo = styled.div`
 export const TrackVolumePopup = ( props ) => {
     const { track, mouse } = props
     const containerProps = {
-        top: track.visibleRect.y,
-        height: track.visibleRect.h,
-        left: mouse.x
+        // top: track.visibleRect.y,
+        // height: track.visibleRect.h,
+        left: Math.max(0, mouse.x - 125),
+        top: mouse.y
     }
     return <Container {...containerProps}>
         <VolumeWrap >
