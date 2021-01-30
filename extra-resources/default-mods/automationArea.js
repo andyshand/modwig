@@ -475,6 +475,29 @@ Mod.registerAction({
     }
 })
 
+Mod.registerAction({
+    title: `Expand/Collapse Helected Group Track`,
+    id: `toggle-hovered-group-track-expanded`,
+    description: `Expands of collapses the hovered group track with the mouse.`,
+    category: 'arranger',
+    contexts: ['-browser'],
+    defaultSetting: {
+        keys: ["Shift", "G"]
+    },
+    action: async () => {
+        const tracks = UI.MainWindow.getArrangerTracks()
+        if (tracks === null || tracks.length === 0) {
+            return log('No tracks found, spoopy...')
+        }
+        const mousePos = Mouse.getPosition()
+        const inside = tracks.find(t => mousePos.y >= t.rect.y && mousePos.y < t.rect.y + t.rect.h)
+        if (!inside) {
+            return showMessage(`Couldn't find hovered track`)
+        }
+        inside.toggleExpandedWithMouse()
+    }
+})
+
 let down3 = false
 Keyboard.on('keyup', e => {
     if (e.lowerKey === '3') {
@@ -504,14 +527,14 @@ Mod.registerAction({
     action: async () => {
         Mod.runAction('focusArranger')
         const uiLayout = UI.MainWindow.getLayoutState()
-        showMessage('hewllo')
         if (uiLayout.inspector) {
-            await Mouse.click(0, UI.bwToScreen({
+            // showMessage(JSON.stringify(uiLayout.inspector))
+            await Mouse.click(0, {
                 x: uiLayout.inspector.rect.x + UI.scale(100),
                 y: uiLayout.inspector.rect.y + UI.scale(60),
                 Meta: true,
-                // returnAfter: true
-            }))
+                returnAfter: true
+            })
             Mod.setEnteringValue(true)
         } else {
             showMessage('Inspector not open')    
