@@ -28,19 +28,30 @@ int AXIS_Y = 1;
 std::experimental::optional<BitwigLayout> prevLayout;
 
 // These are colors for midtones 28, black level 36
-MWColor trackSelectedColorActive = MWColor{141, 141, 141};
+// BenQ screen
+// MWColor trackSelectedColorActive = MWColor{141, 141, 141};
+// MWColor trackSelectedColorInactive = MWColor{97, 97, 97};
+// MWColor trackColor = MWColor{97, 97, 97};
+// MWColor panelBorder = MWColor{104, 104, 104};
+// MWColor trackAutomationBg = MWColor{34, 34, 34};
+// MWColor trackDivider = MWColor{6, 6, 6};
+// MWColor panelBorderInactive = MWColor{68, 68, 68};
+// MWColor panelOpenIcon = MWColor{240, 109, 39};
+// MWColor modalBgColor = MWColor{35, 35, 35};
+
+MWColor trackSelectedColorActive = MWColor{97, 97, 97};
 MWColor trackSelectedColorInactive = MWColor{97, 97, 97};
-MWColor trackColor = MWColor{97, 97, 97};
+MWColor trackColor = MWColor{68, 68, 68};
 MWColor panelBorder = MWColor{104, 104, 104};
 MWColor trackAutomationBg = MWColor{34, 34, 34};
 MWColor trackDivider = MWColor{6, 6, 6};
 MWColor panelBorderInactive = MWColor{68, 68, 68};
-MWColor panelOpenIcon = MWColor{240, 109, 39};
-MWColor panelClosedIcon = MWColor{190, 190, 190};
-MWColor panelButtonHover = MWColor{255, 255, 255};
+MWColor panelOpenIcon = MWColor{236, 113, 37};
+MWColor modalBgColor = MWColor{35, 35, 35};
 
 const std::string 
     BITWIG_HEADER_HEIGHT = "BITWIG_HEADER_HEIGHT",
+    BITWIG_HEADER_TOOLBAR_HEIGHT = "BITWIG_HEADER_TOOLBAR_HEIGHT",
     BITWIG_FOOTER_HEIGHT = "BITWIG_FOOTER_HEIGHT",
     INSPECTOR_WIDTH = "INSPECTOR_WIDTH",
     ARRANGER_HEADER_HEIGHT = "ARRANGER_HEADER_HEIGHT",
@@ -50,6 +61,7 @@ const std::string
     MINIMUM_TRACK_HEIGHT = "MINIMUM_TRACK_HEIGHT";
 std::map<std::string, int> constants = {
     {BITWIG_HEADER_HEIGHT, 82},
+    {BITWIG_HEADER_TOOLBAR_HEIGHT, 48},
     {BITWIG_FOOTER_HEIGHT, 36},
     {INSPECTOR_WIDTH, 170},
     {ARRANGER_HEADER_HEIGHT, 42},
@@ -332,6 +344,18 @@ Napi::Value BitwigWindow::GetTrackInsetAtPoint(const Napi::CallbackInfo &info) {
     return Napi::Number::New(env, result.x);
 }
 
+int BitwigWindow::getMainPanelStartY() {
+    auto frame = this->lastBWFrame.frame;
+    auto headerHeight = getConstant(BITWIG_HEADER_HEIGHT);
+    if (frame.w <= 1440) {
+        // TODO check exact height of switch, but toolbar will dock down below when there's not enough room for it
+        // Could be dynamic 😬  may need to do some pixel hunting
+        auto toolbarHeight = getConstant(BITWIG_HEADER_TOOLBAR_HEIGHT);
+        return headerHeight + toolbarHeight;
+    }
+    return headerHeight;
+}
+
 BitwigLayout BitwigWindow::getLayoutState() {
     if (prevLayout) {
         return *prevLayout;
@@ -342,37 +366,49 @@ BitwigLayout BitwigWindow::getLayoutState() {
     auto tracks = std::vector<ArrangerTrack>();
 
     auto frame = this->lastBWFrame.frame;
-    if (screenshot->colorAt(frame.fromBottomLeft(scale(2), scale(2))).r == 35) {
+    if (screenshot->colorAt(frame.fromBottomLeft(scale(2), scale(2))).r == modalBgColor.r) {
         layout.modalOpen = true;
         return layout;
     }
 
     auto inspectorOpen = screenshot->colorAt(frame.fromBottomLeft(scale(20), scale(17))).r == panelOpenIcon.r;
+    auto arrangerStartY = this->getMainPanelStartY();
     if (inspectorOpen) {
         layout.inspector = Inspector{
             .rect = MWRect{
                 0,
-                getConstant(BITWIG_HEADER_HEIGHT, true),
+                scale(arrangerStartY),
                 getConstant(INSPECTOR_WIDTH, true),
-                frame.h - scale(getConstant(BITWIG_HEADER_HEIGHT) + getConstant(BITWIG_FOOTER_HEIGHT))
+                frame.h - scale(arrangerStartY + getConstant(BITWIG_FOOTER_HEIGHT))
             }
         };
     }
 
     auto arrangerStartX = inspectorOpen ? getConstant(INSPECTOR_WIDTH) : 4;
-    auto arrangerStartY = getConstant(BITWIG_HEADER_HEIGHT);
     auto arrangerTrackStartY = 42;
     auto minimumPossibleTrackWidth = 210;
 
     std::string panelOpen = "";
-    if (screenshot->colorAt(frame.fromBottomLeft(scale(271), scale(20))).isWithinRange(panelOpenIcon)) {
-        panelOpen = "device";
-    } else if (screenshot->colorAt(frame.fromBottomLeft(scale(309), scale(20))).isWithinRange(panelOpenIcon)) {
-        panelOpen = "mixer";
-    } else if (screenshot->colorAt(frame.fromBottomLeft(scale(250), scale(17))).isWithinRange(MWColor{153, 78, 32})) { 
-        panelOpen = "automation"; // FIX ME
-    } else if (screenshot->colorAt(frame.fromBottomLeft(scale(211), scale(14))).isWithinRange(panelOpenIcon)) {
-        panelOpen = "detail";
+    if (uiScale == 1) {
+        if (screenshot->colorAt(frame.fromBottomLeft(scale(276), scale(20))).isWithinRange(panelOpenIcon)) {
+            panelOpen = "device";
+        } else if (screenshot->colorAt(frame.fromBottomLeft(scale(309), scale(20))).isWithinRange(panelOpenIcon)) {
+            panelOpen = "mixer";
+        } else if (screenshot->colorAt(frame.fromBottomLeft(scale(250), scale(17))).isWithinRange(MWColor{153, 78, 32})) { 
+            panelOpen = "automation"; // FIX ME
+        } else if (screenshot->colorAt(frame.fromBottomLeft(scale(224), scale(18))).isWithinRange(panelOpenIcon)) {
+            panelOpen = "detail";
+        }
+    } else if (uiScale == 1.25) {
+        if (screenshot->colorAt(frame.fromBottomLeft(scale(271), scale(20))).isWithinRange(panelOpenIcon)) {
+            panelOpen = "device";
+        } else if (screenshot->colorAt(frame.fromBottomLeft(scale(309), scale(20))).isWithinRange(panelOpenIcon)) {
+            panelOpen = "mixer";
+        } else if (screenshot->colorAt(frame.fromBottomLeft(scale(250), scale(17))).isWithinRange(MWColor{153, 78, 32})) { 
+            panelOpen = "automation"; // FIX ME
+        } else if (screenshot->colorAt(frame.fromBottomLeft(scale(211), scale(14))).isWithinRange(panelOpenIcon)) {
+            panelOpen = "detail";
+        }
     }
 
     auto arrangerViewHeightPX = frame.h - scale(arrangerStartY + getConstant(BITWIG_FOOTER_HEIGHT));
@@ -418,7 +454,7 @@ BitwigLayout BitwigWindow::getLayoutState() {
     layout.arranger = Arranger{
         MWRect{
             scale(arrangerStartX),
-            getConstant(BITWIG_HEADER_HEIGHT, true),
+            scale(arrangerStartY),
             frame.w - scale(arrangerStartX),
             arrangerViewHeightPX
         }
@@ -442,7 +478,7 @@ Napi::Value BitwigWindow::GetArrangerTracks(const Napi::CallbackInfo &info) {
     }
 
     auto arrangerStartX = layout.inspector ? 170 : 4;
-    auto arrangerStartY = getConstant(BITWIG_HEADER_HEIGHT);
+    auto arrangerStartY = this->getMainPanelStartY();
     auto arrangerTrackStartY = 42;
     auto minimumPossibleTrackWidth = 210;
     // Includes border at top, but not bottom, since first track starts with top border
@@ -458,7 +494,7 @@ Napi::Value BitwigWindow::GetArrangerTracks(const Napi::CallbackInfo &info) {
     auto endOfTrackWidthPoint = screenshot->seekUntilColor(
         startSearchPoint,
         [](MWColor color) {
-            return color.r == 6;
+            return color.r == trackDivider.r;
         },
         AXIS_X,
         DIRECTION_RIGHT,
@@ -474,7 +510,7 @@ Napi::Value BitwigWindow::GetArrangerTracks(const Napi::CallbackInfo &info) {
                 startSearchPoint.y + scale(5)
             },
             [](MWColor color) {
-                return color.r == 6;
+                return color.r == trackDivider.r;
             },
             AXIS_X,
             DIRECTION_RIGHT,

@@ -13,7 +13,7 @@ const open = position => {
         },
         width: 1200,
         height: 70,
-        y: 250,
+        y: MainDisplay.getDimensions().h * .4,
         timeout: 600
     })
 }

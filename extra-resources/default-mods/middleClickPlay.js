@@ -57,7 +57,7 @@ function playWithEvent(event) {
             // Arranger panel
             return {
                 x: event.x, 
-                y: UI.scale(91)
+                y: uiLayout.arranger.rect.y + UI.scale(8)
             }
         } else if (uiLayout.editor?.type === 'detail' && Rect.containsPoint(uiLayout.editor.rect, mousePosBefore)) {
             // Detail panel

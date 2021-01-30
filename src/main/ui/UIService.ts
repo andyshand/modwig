@@ -104,12 +104,32 @@ export class UIService extends BESService {
         const proto = this.uiMainWindow
         const ArrangerTrack = {
             async selectWithMouse() {
-                return uiService.Mouse.click({
-                    x: (this.rect.x + this.rect.w) - uiService.scale(5),
-                    y: this.visibleRect.y + uiService.scale(5),
+                const opts = {
+                    x: (this.rect.x + this.rect.w) - uiService.scale(7),
+                    y: this.visibleRect.y + uiService.scale(7),
                     avoidPluginWindows: true,
                     returnAfter: true
-                })
+                }
+                uiService.log(opts)
+                return uiService.Mouse.click(opts)
+            },
+            async toggleExpandedWithMouse() {
+                const folderIconWidth = uiService.scale(18)
+                // Click a few from the left hand side in increments of the folder icon width
+                // so we only hit it once. Quicker than working out where it is
+                const startPos = _Mouse.getPosition()
+                const opts = {
+                    y: this.visibleRect.y + uiService.scale(this.isLargeTrackHeight ? 32 : 14),
+                    avoidPluginWindows: true
+                }
+                for (let i = 0; i < 5; i++) {
+                    const x = this.visibleRect.x + uiService.scale(10) + i * folderIconWidth
+                    uiService.Mouse.click({
+                        ...opts,
+                        x
+                    })
+                }
+                _Mouse.setPosition(startPos.x, startPos.y)
             }
         }
         proto.getArrangerTracks = (...args) => {

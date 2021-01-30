@@ -263,15 +263,15 @@ async function restoreFocusedPluginWindowToTop(newTrack) {
 Bitwig.on('selectedTrackChanged', debounce(async (track, prev) => {
     prevPluginCount = 0
     sameCount = 0
-    restoreFocusedPluginWindowToTop(track)
+    restoreFocusedPluginWindowToTop(track.name)
 
     // log('Auto open is: ' + await autoOpen.getValue())
     if (await autoOpen.getValue()) {
-        if (track in openedPluginsForTracks) {
+        if (track.name in openedPluginsForTracks) {
             log('Track already has plugins opened')
             return
         }
-        openedPluginsForTracks[track] = true
-        restoreOpenedPluginsForTrack(track)
+        openedPluginsForTracks[track.name] = true
+        restoreOpenedPluginsForTrack(track.name)
     }
 }, 250))

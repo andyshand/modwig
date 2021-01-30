@@ -115,6 +115,7 @@ class BitwigWindow: public Napi::ObjectWrap<BitwigWindow> {
     WindowInfo getFrame();
     ImageDeets* updateScreenshot();
     BitwigLayout getLayoutState();
+    int getMainPanelStartY();
     BitwigWindow(const Napi::CallbackInfo &info);
 
     // BitwigUIComponent arranger;

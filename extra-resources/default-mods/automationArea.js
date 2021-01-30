@@ -453,6 +453,28 @@ Mod.registerAction({
     }
 })
 
+Mod.registerAction({
+    title: `Expand/Collapse Selected Group Track`,
+    id: `toggle-group-track-expanded`,
+    description: `Expands of collapses the selected group track with the mouse.`,
+    category: 'arranger',
+    contexts: ['-browser'],
+    defaultSetting: {
+        keys: ["G"]
+    },
+    action: async () => {
+        const tracks = UI.MainWindow.getArrangerTracks()
+        if (tracks === null || tracks.length === 0) {
+            return log('No tracks found, spoopy...')
+        }
+        const selected = tracks.find(t => t.selected)
+        if (!selected) {
+            return showMessage(`Couldn't find selected track`)
+        }
+        selected.toggleExpandedWithMouse()
+    }
+})
+
 let down3 = false
 Keyboard.on('keyup', e => {
     if (e.lowerKey === '3') {
@@ -481,13 +503,19 @@ Mod.registerAction({
     description: 'Focuses the automation value field in the inspector for quickly setting value of selected automation.',
     action: async () => {
         Mod.runAction('focusArranger')
-        await Mouse.click(0, UI.bwToScreen({
-            x: 140,
-            y: 140,
-            Meta: true,
-            returnAfter: true
-        }))
-        Mod.setEnteringValue(true)
+        const uiLayout = UI.MainWindow.getLayoutState()
+        showMessage('hewllo')
+        if (uiLayout.inspector) {
+            await Mouse.click(0, UI.bwToScreen({
+                x: uiLayout.inspector.rect.x + UI.scale(100),
+                y: uiLayout.inspector.rect.y + UI.scale(60),
+                Meta: true,
+                // returnAfter: true
+            }))
+            Mod.setEnteringValue(true)
+        } else {
+            showMessage('Inspector not open')    
+        }
     }
 })
 
