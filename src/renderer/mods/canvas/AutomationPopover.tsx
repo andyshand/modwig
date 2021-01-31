@@ -8,6 +8,7 @@ const TooltipWrap = styled.div`
     border: 1px solid #CCC;
     white-space: nowrap;
     padding: .3em .7em;
+    transform: translateX(-120%);
 `
 const Guide = styled.div`
     position: fixed;
@@ -31,7 +32,7 @@ export const AutomationPopover = ( props ) => {
             top: `${mouse.y}px`,
             left: `${mouse.x}px`
         }}>
-            {db}<span style={{opacity: .5, paddingLeft: '.5em'}}>{Math.round(100 - (yRatio * 100))}%</span>
+            <span style={{opacity: .5, paddingRight: '.5em'}}>{Math.round(100 - (yRatio * 100))}%</span>{db}
         </TooltipWrap>
         <Guide style={{
             top: `${mouse.y}px`,

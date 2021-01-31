@@ -132,8 +132,8 @@ function makeWindowOpener() {
                }
                tryLoadURL()
            `).then((result) => {
-               logWithTime(result)
-               logWithTime('Showing window')
+            //    logWithTime(result)
+            //    logWithTime('Showing window')
                floatingWindowInfo!.window.setOpacity(1)
                floatingWindowInfo!.window.showInactive()
    

@@ -82,10 +82,15 @@ let automationTracks
 
 UI.on('activeToolChanged', tool => {
     if (tool === 3) {
+        const mousePos = Mouse.getPosition()
         automationTracks = UI.MainWindow.getArrangerTracks()
-    } else {
+        checkInside(mousePos)
+        maybeShowPopover(mousePos)
+    } else if (automationTracks) {
+        const mousePos = Mouse.getPosition()
         automationTracks = null
         automationLevelsInsideT = null
+        maybeShowPopover(mousePos)
     }
 })
 
@@ -122,11 +127,11 @@ Mouse.on('mousemove', async event => {
     }
 })
 
-Mouse.on('mousemove', throttle(async event => {
+async function checkInside(mousePos) {
     if (automationTracks) {
         // log(automationTracks)
         const insideT = automationTracks.find(t => {
-            return t.automationOpen && Rect.containsY(t.visibleRect, event.y)
+            return t.automationOpen && Rect.containsY(t.visibleRect, mousePos.y)
         })
         // log('inside', insideT)
         if (insideT) {
@@ -142,30 +147,24 @@ Mouse.on('mousemove', throttle(async event => {
                 rect: automationRect
             }
             log('automation', automationRect)
-            if (Rect.containsY(automationRect, event.y)) {
+            if (Rect.containsY(automationRect, mousePos.y)) {
                 automationLevelsInsideT = insideT
             }
         } else {
             automationLevelsInsideT = null
         }
     }
-}, 500))
+}
 
-Mouse.on('scroll', debounce(() => {
-    if (automationTracks) {
-        automationTracks = UI.MainWindow.getArrangerTracks()
-    }
-}), 250)
-
-Mouse.on('mousemove', throttle(async event => {
+async function maybeShowPopover (mousePos) {
     if (automationLevelsInsideT && Bitwig.isActiveApplication() && !Bitwig.isPluginWindowActive) {
         log('should be here')
         showNotification({
             type: 'hoverLevels',
             track: automationLevelsInsideT,
             mouse: {
-                x: event.x,
-                y: event.y
+                x: mousePos.x,
+                y: mousePos.y
             }
         })
     } else {
@@ -174,7 +173,17 @@ Mouse.on('mousemove', throttle(async event => {
             track: null
         })
     }
-}, 33))
+}
+
+Mouse.on('mousemove', throttle(checkInside, 500))
+
+Mouse.on('scroll', debounce(() => {
+    if (automationTracks) {
+        automationTracks = UI.MainWindow.getArrangerTracks()
+    }
+}), 250)
+
+Mouse.on('mousemove', throttle(maybeShowPopover, 50))
     
 Mouse.on('mouseup', async event => {
     mouseDown = false
