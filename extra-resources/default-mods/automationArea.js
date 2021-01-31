@@ -339,7 +339,7 @@ async function showTrackVolumeAutomation(currentTrack) {
         avoidPluginWindows: true,
         // For whatever reason the click here happens after returning the mouse,
         // so we need to wait a little. So many timeouts :(
-        returnAfter: 100
+        returnAfter: true
     })
     if (!targetT.automationOpen) {
         showAutomationImpl(false)
@@ -412,9 +412,46 @@ Mod.registerAction({
         await Mouse.click(0, {
             ...clickAt,
             avoidPluginWindows: true,
-            // For whatever reason the click here happens after returning the mouse,
-            // so we need to wait a little. So many timeouts :(
-            returnAfter: 100
+            returnAfter: true
+        })
+    }
+})
+
+Mod.registerAction({
+    title: `Toggle automation for hovered track`,
+    id: `toggle-hovered-track-automation`,
+    description: `Toggles the automation section for the currently hovered over track`,
+    category: 'arranger',
+    contexts: ['-browser'],
+    defaultSetting: {
+        keys: ["Shift", "A"]
+    },
+    action: async () => {
+        const tracks = UI.MainWindow.getArrangerTracks()
+        if (tracks === null || tracks.length === 0) {
+            return log('No tracks found, spoopy...')
+        }
+    
+        const mousePos = Mouse.getPosition()
+        const getTargetTrack = () => {
+            return tracks.find(t => mousePos.y >= t.rect.y && mousePos.y < t.rect.y + t.rect.h)
+        }
+        const targetT = getTargetTrack()
+        if (!targetT) {
+            return showMessage(`Couldn't find track`)
+        }
+        
+        const clickAt = targetT.isLargeTrackHeight ? {
+            x: targetT.rect.x + targetT.rect.w - UI.scale(26), 
+            y: targetT.rect.y + UI.scale(36),
+        } : {
+            x: targetT.rect.x + targetT.rect.w - UI.scale(44), 
+            y: targetT.rect.y + UI.scale(7),
+        }
+        await Mouse.click(0, {
+            ...clickAt,
+            avoidPluginWindows: true,
+            returnAfter: true
         })
     }
 })
