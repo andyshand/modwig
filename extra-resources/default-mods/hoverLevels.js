@@ -46,7 +46,7 @@ const throttledShowNotification = throttle(notif => {
 }, 20)
 
 Mouse.on('mousedown', async event => {
-    if (event.button === 3 && event.Shift && !event.intersectsPluginWindows()) {
+    if (event.button === 3 && event.Shift) {
         const trackIndex = trackIndexForEvent(event)
         const t = lastTracks[trackIndex]
         log(t)

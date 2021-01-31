@@ -40,6 +40,7 @@ export class TrayService extends BESService {
                 show: false,
                 titleBarStyle: 'hiddenInset',
                 webPreferences: {
+                    enableRemoteModule: true,
                     webSecurity: false,
                     nodeIntegration: true,
                 }

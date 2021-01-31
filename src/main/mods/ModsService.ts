@@ -63,7 +63,8 @@ export function updateCanvas(state) {
 function makeWindowOpener() {
     let floatingWindowInfo: {
         window: BrowserWindow,
-        path: string
+        path: string,
+        lastOptions: string
     } | undefined
     let fadeOutTimeout: any
     return function openFloatingWindow(path, options: {x?: number, y?: number, data?: any, timeout?: number, width: number, height: number}) {
@@ -74,10 +75,15 @@ function makeWindowOpener() {
        const debug = false
     //    logWithTime(`Opening floating window with path: ${path} and options: `, options)
     //    logWithTime(`Floating window info: `, floatingWindowInfo)
+
+       const optsStr = (_ as any).omit(options, 'data')
+    //    logWithTime(optsStr)
        if (!floatingWindowInfo || path !== floatingWindowInfo.path) {
+           logWithTime('Opening new window')
            floatingWindowInfo?.window.close()
            floatingWindowInfo = {
                path,
+               lastOptions: optsStr,
                window: new BrowserWindow({ 
                    width: options.width, 
                    height: options.height, 
@@ -92,8 +98,9 @@ function makeWindowOpener() {
                    transparent: true,
                    fullscreenable: false,
                    webPreferences: {
+                       enableRemoteModule: true,
                        webSecurity: false,
-                       nodeIntegration: true,
+                       nodeIntegration: true
                    }
                })
            }
@@ -107,17 +114,24 @@ function makeWindowOpener() {
        if (options.data) {
            floatingWindowInfo!.window.webContents.executeJavaScript(`
                 window.tryLoadURL = (tries = 0) => {
+                   const path = \`${path}\`
                    window.data = ${JSON.stringify(options.data)}
-                   if (window.loadURL) {
-                       window.loadURL(\`${path}\`)
+                   if (window.didUpdateState && window.didUpdateState(path)) {
+                       return 'updatedState'
+                   } else if (window.loadURL) {
+                       window.loadURL(path)
+                       return 'loadedUrl'
                    } else if (tries < 10) {
                        setTimeout(() => tryLoadURL(tries + 1), 100)
+                       return 'trying again'
                    } else {
                        console.error(\`Couldn't find loadURL on window, something went wrong\`)
+                       return 'no loadURL'
                    }
                }
                tryLoadURL()
-           `).then(() => {
+           `).then((result) => {
+               logWithTime(result)
                logWithTime('Showing window')
                floatingWindowInfo!.window.setOpacity(1)
                floatingWindowInfo!.window.showInactive()
@@ -224,7 +238,7 @@ export class ModsService extends BESService {
 
     logTimeout 
     eventLogger = ({msg, modId}) => {
-        if (process.env.NO_LOG) {
+        if (process.env.DEBUG !== 'true') {
             return
         }
 
@@ -247,8 +261,10 @@ export class ModsService extends BESService {
     }
 
     logForMod(modId: string, ...args: any[]) {
-        this.logForModWebOnly(modId, ...args)
-        logWithTime(colors.green(modId), ...args)
+        if (process.env.DEBUG === 'true') {
+            this.logForModWebOnly(modId, ...args)
+            logWithTime(colors.green(modId), ...args)
+        }
     }
 
     logForModWebOnly(modId: string, ...args: any[]) {
@@ -568,7 +584,7 @@ export class ModsService extends BESService {
                         key: actualKey,
                         mod: mod.id
                     }
-                    this.log(`Registering setting for ${mod.id}: `, setting)
+                    this.log(`Registering setting for ${mod.id}: `, setting.name)
                     this.settingsService.insertSettingIfNotExist(setting)
                     this.settingKeyInfo[actualKey] = {
                         name: settingSpec.name,
@@ -722,6 +738,8 @@ export class ModsService extends BESService {
                         date: new Date().getTime(),
                         ...notification,
                     }   
+                    
+                
                 ]
             },
             width: 2560,
@@ -754,6 +772,7 @@ export class ModsService extends BESService {
         })
         interceptPacket('tracks', undefined, async ({ data: tracks }) => {
             this.tracks = tracks
+            // this.log(tracks)
         })
         interceptPacket('device', undefined, async ({ data: device }) => {
             this.currDevice = device
@@ -917,10 +936,16 @@ export class ModsService extends BESService {
 
             await createDirIfNotExist(controllerDestFolder)
             for (const file of await fs.readdir(controllerSrcFolder)) {
-                const src = path.join(controllerSrcFolder, file)
+                const src = (await fs.readFile(path.join(controllerSrcFolder, file))).toString().replace(
+                    /process\.env\.([a-zA-Z_-][a-zA-Z-_0-9]+)/g,
+                    (match, name) => {
+                        // this.log(match, name)
+                        return JSON.stringify(process.env[name])
+                    }
+                )
                 const dest = path.join(controllerDestFolder, file)
-                if (!(await filesAreEqual(src, dest))){
-                    await fs.copyFile(src, dest)
+                if ((await fs.readFile(dest)).toString() !== src){
+                    await fs.writeFile(dest, src)
                 }
             }
         } catch (e) {

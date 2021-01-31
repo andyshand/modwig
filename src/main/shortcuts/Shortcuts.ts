@@ -896,6 +896,8 @@ export class ShortcutsService extends BESService {
             frame: false, 
             show: false,
             webPreferences: {
+                enableRemoteModule: true,
+                webSecurity: false,
                 nodeIntegration: true,
             }
         })

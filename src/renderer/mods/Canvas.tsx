@@ -6,6 +6,7 @@ import { faBolt, faInfo } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Spinner } from '../core/Spinner'
 import { TrackVolumePopup } from './canvas/TrackVolumePopup'
+const { clipboard } = require('electron')
 
 const Wrap = styled.div`
     position: fixed;
@@ -130,7 +131,7 @@ export class Canvas extends ModwigComponent<any> {
         // Different types of static notification
         volume: null
     }
-    componentWillReceiveProps(nextProps) {
+    UNSAFE_componentWillReceiveProps(nextProps) {
         let newProgressIds = new Set()
         let stateAdditions: any = {}
         const newNotifications = (nextProps.notifications || []).map(notif => {
@@ -141,6 +142,9 @@ export class Canvas extends ModwigComponent<any> {
                     delete notif.timeout
                     return notif
                 }
+            }
+            if (notif.copy) {
+                clipboard.writeText(notif.content)
             }
             if (notif.type === 'volume') {
                 stateAdditions.volume = notif

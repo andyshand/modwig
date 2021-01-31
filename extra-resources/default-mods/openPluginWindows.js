@@ -170,7 +170,7 @@ Mouse.on('mouseup', async event => {
                 focusedPlugin: intersects.id
             })
         }
-    } else if (event.button === 3) { 
+    } else if (event.button === 3 && event.noModifiers()) { 
         const intersection = event.intersectsPluginWindows()
         if (intersection) {
             if (!intersection.focused) {

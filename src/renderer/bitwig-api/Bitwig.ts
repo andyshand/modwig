@@ -25,6 +25,7 @@ let state = {
   }
 }
 
+const logInOut = false
 let nextId = 0
 let nextPacketId = 0
 type PacketListenerInfo = {cb: (packet: any) => void, id: number}
@@ -43,7 +44,9 @@ let responseListeners: {[id: string]: Function} = {}
 function sendQueuedPackets() {
   if (ws.readyState === 1) {
     for (const {packet, callback: cb} of queued) {
-      console.log("sending: ", packet)
+      if (logInOut) {
+        console.log("sending: ", packet)
+      }
       packet.id = nextPacketId++
       ws.send(JSON.stringify(packet))
       if (cb) {
@@ -67,7 +70,9 @@ export function sendPromise(newPacket) : Promise<any> {
 
 ws.onmessage = (event) => {
   const packet = JSON.parse(event.data)
-  console.log("Received: ", packet)
+  if (logInOut) {
+    console.log("Received: ", packet)
+  }
   const { type, id } = packet
   if (id in responseListeners) {
     try {

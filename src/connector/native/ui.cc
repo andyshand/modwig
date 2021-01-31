@@ -39,7 +39,7 @@ std::experimental::optional<BitwigLayout> prevLayout;
 // MWColor panelOpenIcon = MWColor{240, 109, 39};
 // MWColor modalBgColor = MWColor{35, 35, 35};
 
-MWColor trackSelectedColorActive = MWColor{97, 97, 97};
+MWColor trackSelectedColorActive = MWColor{141, 141, 141};
 MWColor trackSelectedColorInactive = MWColor{97, 97, 97};
 MWColor trackColor = MWColor{68, 68, 68};
 MWColor panelBorder = MWColor{104, 104, 104};

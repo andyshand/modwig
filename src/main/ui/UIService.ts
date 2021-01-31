@@ -177,7 +177,7 @@ export class UIService extends BESService {
                         const id = Keyboard.on(event, (...args) => {
                             this.apiEventRouter.emit(event, ...args)
                         })
-                        this.log(`Id for ${event} is ${id}`)
+                        // this.log(`Id for ${event} is ${id}`)
                         this.idsByEventType[event] = id
                     }
                 },

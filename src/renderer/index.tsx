@@ -2,7 +2,7 @@ import './core/styles.css'
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 const { app } = require('electron').remote
-import { Switch, Route, HashRouter, useHistory } from 'react-router-dom'
+import { Switch, Route, HashRouter, useHistory, useLocation } from 'react-router-dom'
 import { css } from 'linaria'
 import { ValueEntryView } from './value-entry/ValueEntryView';
 import { SearchPanel } from './search/SearchPanel';
@@ -12,6 +12,7 @@ import { NumpadWindow } from './core/numpad-window/NumpadWindow';
 import { Message } from './core/message/Message';
 import { TransportNavPopup } from './mods/TransportNavPopup';
 import { Canvas } from './mods/Canvas';
+import { useState } from 'react';
 
 function removeAllListeners() {
     app.removeAllListeners('browser-window-focus')
@@ -145,6 +146,16 @@ const GlobalStyle = css`
  */
 const windowDataAsProps = (Component) => {
     return () => {
+        const [, updateState] = useState({})
+        const location = useLocation()
+        // If the path is the same as requested, skip setting history and just set state directly
+        ;(window as any).didUpdateState = (path) => {
+            if (location.pathname === path) {
+                updateState({})
+                return true
+            }
+            return false
+        }    
         const windowData = (window as any).data
         if (!windowData) {
             return <div>No data ready</div>

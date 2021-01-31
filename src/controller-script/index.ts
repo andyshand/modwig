@@ -9,6 +9,7 @@ loadAPI(12);
 load('es5-shim.min.js')
 load('json3.min.js')
 load('Object2.js')
+const debug = process.env.DEBUG === 'true'
 
 class EventEmitter<T> {
     nextId = 0
@@ -65,9 +66,11 @@ const toUTF8Array = str => {
 }
 
 const log = (msg: string) => {
-    const d = new Date()
-    const pad0 = input => ('0' + input).substr(-2)
-    println(`${d.getHours()}:${pad0(d.getMinutes())}:${pad0(d.getSeconds())}:` + msg)
+    if (debug) {
+        const d = new Date()
+        const pad0 = input => ('0' + input).substr(-2)
+        println(`${d.getHours()}:${pad0(d.getMinutes())}:${pad0(d.getSeconds())}:` + msg)
+    }
 }
 
 const FX_TRACK_BANK_SIZE = 16
@@ -288,7 +291,9 @@ class GlobalController extends Controller {
             }
             return {
                 type: 'track/update',
-                data: this.createTrackInfo(track)
+                data: {
+                    volumeString: track.volume().displayedValue().get()
+                }
             }
         })
         packetManager.listen('track/get', ({ data: { name }}) => {
@@ -1147,14 +1152,16 @@ function init() {
             settings,
             runAction,
             log: (msg: string, modId?: string) => {
-                deps.packetManager.send({
-                    type: 'bitwig/log',
-                    data: {
-                        msg,
-                        modId
-                    }
-                })
-                println(msg)
+                if (debug) {
+                    deps.packetManager.send({
+                        type: 'bitwig/log',
+                        data: {
+                            msg,
+                            modId
+                        }
+                    })
+                    println(msg)
+                }
             },
             findTrackByName: deps.globalController.findTrackByName.bind(deps.globalController),
             transport,

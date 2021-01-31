@@ -6,19 +6,24 @@
  * @noReload
  */
 
-let threshold = 40
-let isRecording = false
-transport.isArrangerRecordEnabled().addValueObserver(value => {
-    isRecording = value
-})
-
 const colors = {
     ORANGE: [1, 0.5137255191802979, 0.24313725531101227],
     RED: [0.8509804010391235, 0.18039216101169586, 0.1411764770746231],
     YELLOW: [0.8941176533699036, 0.7176470756530762, 0.30588236451148987],
     BRIGHT_YELLOW: [1, 1, 0.47843137383461],
     LIGHT_BLUE: [0.2666666805744171, 0.7843137383460999, 1],
+    BLUE: [0, 0.6000000238418579, 0.8509804010391235],
     BROWN: [0.6392157077789307, 0.4745098054409027, 0.26274511218070984],
+    GREYISH: [
+        0.5254902243614197,
+        0.5372549295425415,
+        0.6745098233222961
+    ],
+    GREEN: [
+        0.24313725531101227,
+        0.7333333492279053,
+        0.3843137323856354
+    ],
     DARK_GREY: [0.3294117748737335, 0.3294117748737335, 0.3294117748737335],
     LIGHT_GREY: [0.47843137383461, 0.47843137383461, 0.47843137383461],
     BG_GREY: [0.47843137383461, 0.47843137383461, 0.47843137383461],
@@ -46,6 +51,18 @@ const makeMatcher = (tests) => {
 const sets = [
     [
         makeMatcher([
+            'instr'
+        ]), 
+        colors.BLUE
+    ],
+    [
+        makeMatcher([
+            'drum'
+        ]), 
+        colors.GREEN
+    ],
+    [
+        makeMatcher([
             'kick',
             'kik',
             'snare'
@@ -62,7 +79,6 @@ const sets = [
     ],
     [
         makeMatcher([
-            'drum',
             'tom',
             'clap',
             'rim',
@@ -151,8 +167,8 @@ function getTrackDefaultColor(t) {
             return color
         }
     }
-    cachedDefaultColorsByTrackName[name] = colors.BLACK
-    return colors.BLACK
+    cachedDefaultColorsByTrackName[name] = colors.GREYISH
+    return colors.GREYISH
 }
 
 function colorsSame(a, b) {
@@ -172,56 +188,23 @@ function setColorIfNotAlready(t, color, trackName) {
     }
 }
 
-let paused = false
-let selectedTrackName = ''
-cursorTrack.name().addValueObserver(name => {
-    selectedTrackName = name
-})
-
 tracks.forEach((t, i) => {
-    let trackName = t.name().get()
     t.name().addValueObserver(name => {
-        trackName = name
-    })
-
-    t.addVuMeterObserver(128, -1, true, val => {
-        if (!Mod.enabled) {
+        if (Mod.enabled && name && name.length > 0) {
             const defaultColor = getTrackDefaultColor(t)
-            setColorIfNotAlready(t, defaultColor, trackName)
-            return
-        }
-        if (paused || isRecording) {
-            return
-        }        
-        if (trackName === selectedTrackName || val > threshold) {
-            const defaultColor = getTrackDefaultColor(t)
-            setColorIfNotAlready(t, defaultColor, trackName)
-        } else {
-            setColorIfNotAlready(t, colors.BG_GREY, trackName)
+            setColorIfNotAlready(t, defaultColor, name)
         }
     })
-})
-
-packetManager.listen('color-tracks-on-activity/pause', () => {
-    paused = true
-    // if (Mod.enabled) {
-    //     showMessage('Pausing color changes while undoing/redoing')
-    // }
-})
-packetManager.listen('color-tracks-on-activity/unpause', () => {
-    // if (paused && Mod.enabled) {
-    //     showMessage('Resuming color changes')
-    // }
-    paused = false
-})
-packetManager.listen('color-tracks-on-activity/threshold', packet => {
-    threshold = Math.min(128, Math.max(0, threshold + packet.data))
-    showMessage("Threshold set to " + Math.round((threshold / 128) * 100) + '%')
 })
 
 // cursorTrack.color().markInterested()
 // cursorTrack.color().addValueObserver(() => {
-//     log(cursorTrack.color().red())
-//     log(cursorTrack.color().green())
-//     log(cursorTrack.color().blue())
+//     showNotification({
+//         content: `
+//             ${cursorTrack.color().red()},
+//             ${cursorTrack.color().green()},
+//             ${cursorTrack.color().blue()}
+//         `,
+//         copy: true
+//     })
 // })

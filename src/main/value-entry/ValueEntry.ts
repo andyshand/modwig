@@ -17,7 +17,9 @@ export function setupValueEntry() {
         width: 275, 
         height: 80, 
         webPreferences: {
-            nodeIntegration: true
+            enableRemoteModule: true,
+            webSecurity: false,
+            nodeIntegration: true,
         },
         frame: false, 
         show: false,

@@ -91,14 +91,14 @@ export class TrackVolume extends React.Component<TrackVolumeProps> {
     }
     currTrack = null 
 
-    componentWillReceiveProps(nextProps) {
+    UNSAFE_componentWillReceiveProps(nextProps) {
         if (!this.currTrack || nextProps.track.id !== this.currTrack.id) {
             this.setState({localVolume: nextProps.track.volume})
             this.currTrack = nextProps.track
         }
     }
     componentDidMount() {
-        this.componentWillReceiveProps(this.props)
+        this.UNSAFE_componentWillReceiveProps(this.props)
     }
     onMouseDown = event => {
         this.setState({mouseDown: true})

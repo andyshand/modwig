@@ -266,7 +266,7 @@ export class TrackSearchView extends React.Component<SearchProps> {
     isSelected = (result: SearchResult) => {
         return result.track.id === this.state.selectedTrackId
     }
-    componentWillReceiveProps(nextProps) {
+    UNSAFE_componentWillReceiveProps(nextProps) {
         if (JSON.stringify(nextProps.options) !== JSON.stringify(this.props.options)) {
             this.recreateSearcher(null, nextProps.options)
             this.calculateResults(nextProps.query)

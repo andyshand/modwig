@@ -55,7 +55,9 @@ export class BESService {
     activate() : any {}
 
     log(...args) {
-        logWithTime(colors.brightMagenta(`${this.constructor.name}:`), ...args)
+        if (process.env.DEBUG === 'true') {
+            logWithTime(colors.brightMagenta(`${this.constructor.name}:`), ...args)
+        }
     }
 }
 
