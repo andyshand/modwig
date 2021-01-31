@@ -6,6 +6,7 @@ import { faBolt, faInfo } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Spinner } from '../core/Spinner'
 import { TrackVolumePopup } from './canvas/TrackVolumePopup'
+import { AutomationPopover } from './canvas/AutomationPopover'
 const { clipboard } = require('electron')
 
 const Wrap = styled.div`
@@ -129,7 +130,8 @@ export class Canvas extends ModwigComponent<any> {
         enteringValue: false,
 
         // Different types of static notification
-        volume: null
+        volume: null,
+        automationLevel: null
     }
     UNSAFE_componentWillReceiveProps(nextProps) {
         let newProgressIds = new Set()
@@ -148,6 +150,10 @@ export class Canvas extends ModwigComponent<any> {
             }
             if (notif.type === 'volume') {
                 stateAdditions.volume = notif
+                return null
+            }
+            if (notif.type === 'hoverLevels') {
+                stateAdditions.automationLevel = notif
                 return null
             }
             return {
@@ -215,12 +221,13 @@ export class Canvas extends ModwigComponent<any> {
             <canvas ref={this.canvasRef} />
             {this.renderNotifications()}
             <Static>
-                {/* {this.state.browserIsOpen ? <div>Browser Open</div> : null}
+                {this.state.browserIsOpen ? <div>Browser Open</div> : null}
                 {this.state.enteringValue ? <div>Entering Value</div> : null}
                 <div><div style={{
                     marginRight: '.4rem', marginTop: '.3rem', width: '.5rem', height: '.5rem', borderRadius: '1000px', background: 'rgb(230,89,13)'
-                }}/> modwig active</div> */}
+                }}/> modwig active</div>
                 {this.state.volume && this.state.volume.track ? <TrackVolumePopup {...this.state.volume} /> : null}
+                {this.state.automationLevel && this.state.automationLevel.track ? <AutomationPopover {...this.state.automationLevel} /> : null}
             </Static>
         </Wrap>
     }

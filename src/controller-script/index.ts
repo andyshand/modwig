@@ -10,6 +10,7 @@ load('es5-shim.min.js')
 load('json3.min.js')
 load('Object2.js')
 const debug = process.env.DEBUG === 'true'
+const debugAsync = process.env.DEBUG_ASYNC === 'true'
 
 class EventEmitter<T> {
     nextId = 0
@@ -98,7 +99,9 @@ class PacketError {
 
 function setTimeout2(fn, wait, name = 'Unnamed') : any {
     host.scheduleTask(() => {
-        log(`Running scheduled task: ${name}`)
+        if (debugAsync) {
+            log(`Running scheduled task: ${name}`)
+        }
         fn()
     }, wait)
 }

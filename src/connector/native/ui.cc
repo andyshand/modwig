@@ -60,11 +60,11 @@ const std::string
     MINIMUM_DOUBLE_TRACK_HEIGHT = "MINIMUM_DOUBLE_TRACK_HEIGHT",
     MINIMUM_TRACK_HEIGHT = "MINIMUM_TRACK_HEIGHT";
 std::map<std::string, int> constants = {
-    {BITWIG_HEADER_HEIGHT, 82},
+    {BITWIG_HEADER_HEIGHT, 83},
     {BITWIG_HEADER_TOOLBAR_HEIGHT, 48},
     {BITWIG_FOOTER_HEIGHT, 36},
     {INSPECTOR_WIDTH, 170},
-    {ARRANGER_HEADER_HEIGHT, 42},
+    {ARRANGER_HEADER_HEIGHT, 45},
     {ARRANGER_FOOTER_HEIGHT, 26},
     {AUTOMATION_LANE_MINIMUM_HEIGHT, 53},
     {MINIMUM_DOUBLE_TRACK_HEIGHT, 45},
@@ -550,7 +550,6 @@ Napi::Value BitwigWindow::GetArrangerTracks(const Napi::CallbackInfo &info) {
         };
         track.selected = trackBGColor.r == trackSelectedColorActive.r || trackBGColor.r == trackSelectedColorInactive.r;
 
-        int hiddenY = 0;
         // If we've hit automation straight away, the whole track "header" is offscreen, not much use
         // to us. We could maybe inform the user of this, but for simplicity just leave it out for now.
         bool skipTrack = trackBGColor.r <= trackAutomationBg.r;
@@ -568,28 +567,7 @@ Napi::Value BitwigWindow::GetArrangerTracks(const Napi::CallbackInfo &info) {
             // If this is the first track, it could have been cut off, meaning the minimum height has no real meaning.
             // It could be 5 pixels high, only showing the bottom 5 pixels for example. Otherwise, any track after the first
             // should be showing full height (unless it's the last??? hmmm....)
-            auto ySearchOffsetPX = trackI == 0 ? scale(2) : minimumTrackHeightPX;
-            
-            if (trackI == 0 && !skipTrack) {
-                // First track could be cut off, work out how much by adding minimum height to automation start
-                auto automationStart = screenshot->seekUntilColor(
-                    XYPoint{
-                        xSearchPX, 
-                        y
-                    },
-                    [](MWColor color) {
-                        return color.r == trackAutomationBg.r;
-                    },
-                    AXIS_Y,
-                    DIRECTION_DOWN,
-                    2
-                );
-                if (automationStart) {
-                    // Difference between visible y and actual start y
-                    hiddenY = y - ((*automationStart).y - minimumTrackHeightPX);
-                }
-            }
-
+            auto ySearchOffsetPX = trackI == 0 ? scale(2) : minimumTrackHeightPX;    
             end = screenshot->seekUntilColor(
                 XYPoint{
                     xSearchPX, 
@@ -617,9 +595,9 @@ Napi::Value BitwigWindow::GetArrangerTracks(const Napi::CallbackInfo &info) {
             };
             track.rect = MWRect{
                 scale(arrangerStartX),
-                y - hiddenY,
+                y,
                 trackWidthPX,
-                (end.y - y) + hiddenY
+                (end.y - y)
             };
             tracks.push_back(track);
         }
@@ -751,6 +729,18 @@ Napi::Value getSizeInfo(const Napi::CallbackInfo &info) {
     return Napi::Number::New(env, constants[str]);
 }
 
+Napi::Value js_getConstant(const Napi::CallbackInfo &info) {
+    Napi::Env env = info.Env();
+    std::string str = info[0].As<Napi::String>();
+    return Napi::Number::New(env, getConstant("MINIMUM_DOUBLE_TRACK_HEIGHT"));
+}
+
+Napi::Value js_getScaledConstant(const Napi::CallbackInfo &info) {
+    Napi::Env env = info.Env();
+    std::string str = info[0].As<Napi::String>();
+    return Napi::Number::New(env, getConstant("MINIMUM_DOUBLE_TRACK_HEIGHT") * uiScale);
+}
+
 Napi::Value InitUI(Napi::Env env, Napi::Object exports) {
     Napi::Object obj = Napi::Object::New(env);
 
@@ -758,6 +748,8 @@ Napi::Value InitUI(Napi::Env env, Napi::Object exports) {
     obj.Set(Napi::String::New(env, "updateUILayoutInfo"), Napi::Function::New(env, updateUILayoutInfo));
     obj.Set(Napi::String::New(env, "invalidateLayout"), Napi::Function::New(env, invalidateLayout));
     obj.Set(Napi::String::New(env, "getSizeInfo"), Napi::Function::New(env, getSizeInfo));
+    obj.Set(Napi::String::New(env, "getConstant"), Napi::Function::New(env, js_getConstant));
+    obj.Set(Napi::String::New(env, "getScaledConstant"), Napi::Function::New(env, js_getScaledConstant));
     exports.Set("UI", obj);
     return exports;
 }

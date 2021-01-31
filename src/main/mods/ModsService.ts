@@ -89,6 +89,7 @@ function makeWindowOpener() {
                    height: options.height, 
                    opacity: 1,
                    frame: false,
+                   hasShadow: false,
                    show: false,
                    alwaysOnTop: true,
                    focusable: debug,
@@ -428,6 +429,14 @@ export class ModsService extends BESService {
                         && point.x < rect.x + rect.w 
                         && point.y >= rect.y
                         && point.y < rect.y + rect.h
+                },
+                containsX(rect, x) {
+                    return x >= rect.x 
+                        && x < rect.x + rect.w
+                },
+                containsY(rect, y) {
+                    return y >= rect.y
+                        && y < rect.y + rect.h
                 }
             },
             Mouse: uiApi.Mouse,

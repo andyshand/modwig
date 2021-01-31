@@ -44,8 +44,10 @@ const throttledShowNotification = throttle(notif => {
         showNotification(notif)
     }
 }, 20)
+let mouseDown = false
 
 Mouse.on('mousedown', async event => {
+    mouseDown = true
     if (event.button === 3 && event.Shift) {
         const trackIndex = trackIndexForEvent(event)
         const t = lastTracks[trackIndex]
@@ -73,6 +75,18 @@ Mouse.on('mousedown', async event => {
             Mouse.setCursorVisibility(false)
         }
     }    
+})
+
+let automationLevelsInsideT
+let automationTracks
+
+UI.on('activeToolChanged', tool => {
+    if (tool === 3) {
+        automationTracks = UI.MainWindow.getArrangerTracks()
+    } else {
+        automationTracks = null
+        automationLevelsInsideT = null
+    }
 })
 
 Mouse.on('mousemove', async event => {
@@ -107,8 +121,63 @@ Mouse.on('mousemove', async event => {
         }
     }
 })
+
+Mouse.on('mousemove', throttle(async event => {
+    if (automationTracks) {
+        // log(automationTracks)
+        const insideT = automationTracks.find(t => {
+            return t.automationOpen && Rect.containsY(t.visibleRect, event.y)
+        })
+        // log('inside', insideT)
+        if (insideT) {
+            const minimumTrackHeight = UI.getSizeInfo("minimumTrackHeight")
+            const automationContentInset = UI.scale(3)
+            const automationRect = {
+                x: insideT.rect.x,
+                y: insideT.rect.y + minimumTrackHeight + automationContentInset,
+                w: insideT.rect.w,
+                h: insideT.rect.h - minimumTrackHeight - (automationContentInset * 2)
+            }
+            insideT.automation = {
+                rect: automationRect
+            }
+            log('automation', automationRect)
+            if (Rect.containsY(automationRect, event.y)) {
+                automationLevelsInsideT = insideT
+            }
+        } else {
+            automationLevelsInsideT = null
+        }
+    }
+}, 500))
+
+Mouse.on('scroll', debounce(() => {
+    if (automationTracks) {
+        automationTracks = UI.MainWindow.getArrangerTracks()
+    }
+}), 250)
+
+Mouse.on('mousemove', throttle(async event => {
+    if (automationLevelsInsideT && Bitwig.isActiveApplication() && !Bitwig.isPluginWindowActive) {
+        log('should be here')
+        showNotification({
+            type: 'hoverLevels',
+            track: automationLevelsInsideT,
+            mouse: {
+                x: event.x,
+                y: event.y
+            }
+        })
+    } else {
+        showNotification({
+            type: 'hoverLevels',
+            track: null
+        })
+    }
+}, 33))
     
 Mouse.on('mouseup', async event => {
+    mouseDown = false
     if (event.button === 3 && track) {
         showNotification({
             ...notifBase,
@@ -120,3 +189,5 @@ Mouse.on('mouseup', async event => {
         Mouse.setPosition(downPos.x, downPos.y)
     }
 })
+
+
