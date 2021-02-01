@@ -221,11 +221,11 @@ export class Canvas extends ModwigComponent<any> {
             <canvas ref={this.canvasRef} />
             {this.renderNotifications()}
             <Static>
-                {this.state.browserIsOpen ? <div>Browser Open</div> : null}
+                {/* {this.state.browserIsOpen ? <div>Browser Open</div> : null}
                 {this.state.enteringValue ? <div>Entering Value</div> : null}
                 <div><div style={{
                     marginRight: '.4rem', marginTop: '.3rem', width: '.5rem', height: '.5rem', borderRadius: '1000px', background: 'rgb(230,89,13)'
-                }}/> modwig active</div>
+                }}/> modwig active</div> */}
                 {this.state.volume && this.state.volume.track ? <TrackVolumePopup {...this.state.volume} /> : null}
                 {this.state.automationLevel && this.state.automationLevel.track ? <AutomationPopover {...this.state.automationLevel} /> : null}
             </Static>
