@@ -10,3 +10,9 @@ Feel free to fork and pull request with any fixes. If you're looking for any gui
     - `npm run watch` to autocompile Typescript for main process
     - `npm run start` to start Electron (and restart on changes)
     - `npm run watch:controller` to autocompile Typescript for the controller script (Optional)
+
+## Env variables
+
+- DEBUG - "true" to enable in depth logging
+- DEBUG_ASYNC - "true" to log async calls (setTimeout etc...) from Bitwig controller script
+- NODE_ENV - should always be 'dev' when running in development
