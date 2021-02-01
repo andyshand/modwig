@@ -10,6 +10,7 @@ let lastTracks = null
 // Keep track of which track we soloed
 let soloedIndex = -1
 let pauseMouseMove = false
+let isMute = false
 
 function trackIndexForEvent(mousePositionXY) {
     if (!lastTracks) {
@@ -24,13 +25,12 @@ async function toggleSolo(index, opts = {}) {
         return showMessage(`Couldn't find track`)
     }    
     const clickAt = targetT.isLargeTrackHeight ? {
-        x: targetT.rect.x + targetT.rect.w - UI.scale(54), 
+        x: targetT.rect.x + targetT.rect.w - UI.scale(isMute ? 30 : 54), 
         y: targetT.rect.y + UI.scale(10),
     } : {
-        x: targetT.rect.x + targetT.rect.w - UI.scale(90), 
+        x: targetT.rect.x + targetT.rect.w - UI.scale(isMute ? 60 : 90), 
         y: targetT.rect.y + UI.scale(7),
-    }
-    
+    }        
     await Mouse.click(0, {
         ...clickAt,
         avoidPluginWindows: true,
@@ -54,13 +54,14 @@ Mouse.on('scroll', event => {
 
 Mouse.on('mousedown', async event => {
     // log('mousedown', event)
-    if (event.button === 3 && event.noModifiers() && !event.intersectsPluginWindows()) {
+    if (event.button === 3 && (event.noModifiers() || event.Alt) && !event.intersectsPluginWindows()) {
         const trackIndex = trackIndexForEvent(event)
         // log(lastTracks, trackIndex)
         // showMessage(`Soloing track index ${trackIndex}`)
         if (lastTracks[trackIndex]) {
             downAt = new Date()
             soloedIndex = trackIndex
+            isMute = event.Alt
             await toggleSolo(trackIndex)
             log('soloed')
         }
@@ -95,7 +96,11 @@ Mouse.on('mouseup', async event => {
             if (!soloed.selected) {
                 await soloed.selectWithMouse()
             }
-            Bitwig.runAction('clear_solo')
+            if (isMute) {
+                toggleSolo(soloedIndex)
+            } else {
+                Bitwig.runAction('clear_solo')
+            }
         }
         lastTracks = null
         soloedIndex = -1

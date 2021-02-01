@@ -418,6 +418,46 @@ Mod.registerAction({
 })
 
 Mod.registerAction({
+    title: `Mute hovered track`,
+    id: `mute-hovered-track`,
+    description: `Mutes the track the mouse cursor is currently over`,
+    category: 'arranger',
+    contexts: ['-browser'],
+    defaultSetting: {
+        keys: ["Shift", "M"]
+    },
+    action: async () => {
+        const tracks = UI.MainWindow.getArrangerTracks()
+        if (tracks === null || tracks.length === 0) {
+            return log('No tracks found, spoopy...')
+        }
+    
+        const mousePos = Mouse.getPosition()
+        const getTargetTrack = () => {
+            return tracks.find(t => mousePos.y >= t.rect.y && mousePos.y < t.rect.y + t.rect.h)
+        }
+        const targetT = getTargetTrack()
+        if (!targetT) {
+            return showMessage(`Couldn't find track`)
+        }
+        log(targetT)
+        
+        const clickAt = targetT.isLargeTrackHeight ? {
+            x: targetT.rect.x + targetT.rect.w - UI.scale(30), 
+            y: targetT.rect.y + UI.scale(10),
+        } : {
+            x: targetT.rect.x + targetT.rect.w - UI.scale(60), 
+            y: targetT.rect.y + UI.scale(7),
+        }
+        await Mouse.click(0, {
+            ...clickAt,
+            avoidPluginWindows: true,
+            returnAfter: true
+        })
+    }
+})
+
+Mod.registerAction({
     title: `Toggle automation for hovered track`,
     id: `toggle-hovered-track-automation`,
     description: `Toggles the automation section for the currently hovered over track`,

@@ -4,14 +4,16 @@ import { styled } from 'linaria/react'
 const TooltipWrap = styled.div`
     position: fixed;
     font-size: .86em;
-    background: #292929;
+    background: #222;
     border: 1px solid #CCC;
     white-space: nowrap;
     padding: .3em .7em;
+    opacity: 0.9;
     transform: translateX(-120%);
 `
 const Guide = styled.div`
     position: fixed;
+    opacity: 0.6;
     background: #888;
     height: 3px;
 `
