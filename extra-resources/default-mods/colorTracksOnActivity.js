@@ -1,6 +1,6 @@
 /**
- * @name Color Tracks on Activity
+ * @name Auto-color tracks
  * @id color-tracks-on-activity
- * @description Gives more control over auto arm to disable while mods are doing their thing.
+ * @description Automatically colour tracks based on their names
  * @category global
  */
