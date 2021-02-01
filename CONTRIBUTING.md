@@ -16,3 +16,4 @@ Feel free to fork and pull request with any fixes. If you're looking for any gui
 - DEBUG - "true" to enable in depth logging
 - DEBUG_ASYNC - "true" to log async calls (setTimeout etc...) from Bitwig controller script
 - NODE_ENV - should always be 'dev' when running in development
+- QUIET_START - "true" to stop Preferences from opening on startup
