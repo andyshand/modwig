@@ -10,7 +10,7 @@ import { SettingsService } from "../core/SettingsService"
 import { promises as fs } from 'fs'
 import * as path from 'path'
 import { Setting } from "../db/entities/Setting"
-import { createDirIfNotExist, exists as fileExists, filesAreEqual, getTempDirectory, writeStrFile } from "../core/Files"
+import { createDirIfNotExist, exists, exists as fileExists, filesAreEqual, getTempDirectory, writeStrFile } from "../core/Files"
 import { logWithTime } from "../core/Log"
 import { ShortcutsService } from "../shortcuts/Shortcuts"
 import { debounce, wait } from '../../connector/shared/engine/Debounce'
@@ -953,7 +953,7 @@ export class ModsService extends BESService {
                     }
                 )
                 const dest = path.join(controllerDestFolder, file)
-                if ((await fs.readFile(dest)).toString() !== src){
+                if (!(await exists(dest)) || (await fs.readFile(dest)).toString() !== src){
                     await fs.writeFile(dest, src)
                 }
             }

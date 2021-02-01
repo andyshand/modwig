@@ -9,6 +9,7 @@ let lastEvent = null
 let lastTracks = null
 let track = null
 let downPos
+let restoreAutomationControlAfter = false
 
 function trackIndexForEvent(event) {
     if (!lastTracks) {
@@ -49,6 +50,7 @@ let mouseDown = false
 Mouse.on('mousedown', async event => {
     mouseDown = true
     if (event.button === 3 && event.Shift) {
+        restoreAutomationControlAfter = event.Meta
         const trackIndex = trackIndexForEvent(event)
         const t = lastTracks[trackIndex]
         log(t)
@@ -192,6 +194,9 @@ Mouse.on('mouseup', async event => {
             ...notifBase,
             track: null
         })
+        if (restoreAutomationControlAfter) {
+            Bitwig.runAction('restore_automation_control')
+        }
         lastTracks = null
         track = null
         Mouse.setCursorVisibility(true)
