@@ -118,43 +118,51 @@ Mod.registerAction({
 
         const display = MainDisplay.getDimensions()
         const startX = 500;
-    
-        let x = startX, y = 0;
-        let nextRowY = y;
-        let out = []
-
-        for (const window of pluginWindows) {
-            if (x + window.w > display.w) {
-                // next row
-                x = startX;
-                y = nextRowY;
-            }
-
-            out.push({
-                id: window.id,
-                x,
-                y,
-                // needed for maxX/maxY
-                w: window.w,
-                h: window.h
-            })
-            
-            x += window.w;
-            nextRowY = Math.max(nextRowY, y + window.h);
-        }
-
-        const maxX = Math.max.apply(null, out.map(pos => pos.x + pos.w))
-        const maxY = Math.max.apply(null, out.map(pos => pos.y + pos.h))
         const finalPositions = {}
 
-        const offsetX = (display.w - maxX) / 2
-        const offsetY = (display.h - maxY) / 2
-        for (const pos of out) {
-            finalPositions[pos.id] = {
-                // x: pos.x + offsetX,
-                // y: pos.y + offsetY
-                x: pos.x,
-                y: pos.y + offsetY
+        if (pluginWindows.length === 1) {
+            // If just one window, put it right in the center
+            const window = pluginWindows[0]
+            finalPositions[pluginWindows[0].id] = {
+                x: display.w * .5 - window.w / 2,
+                y: display.h * .43 - window.h / 2
+            }
+        } else {
+            let x = startX, y = 0;
+            let nextRowY = y;
+            let out = []
+    
+    
+            for (const window of pluginWindows) {
+                if (x + window.w > display.w) {
+                    // next row
+                    x = startX;
+                    y = nextRowY;
+                }
+    
+                out.push({
+                    id: window.id,
+                    x,
+                    y,
+                    // needed for maxX/maxY
+                    w: window.w,
+                    h: window.h
+                })
+                
+                x += window.w;
+                nextRowY = Math.max(nextRowY, y + window.h);
+            }
+    
+            const maxX = Math.max.apply(null, out.map(pos => pos.x + pos.w))
+            const maxY = Math.max.apply(null, out.map(pos => pos.y + pos.h))
+    
+            const offsetX = (display.w - maxX) / 2
+            const offsetY = (display.h - maxY) / 2
+            for (const pos of out) {
+                finalPositions[pos.id] = {
+                    x: pos.x,
+                    y: pos.y + offsetY
+                }
             }
         }
 
