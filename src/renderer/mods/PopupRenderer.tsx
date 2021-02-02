@@ -47,7 +47,7 @@ export const PopupRenderer = (props) => {
             send({type: 'api/popups/close-all'})
         }
     }
-    return <Wrap id="test" onClick={onWrapClick}>
+    return <Wrap id="test" onMouseDown={onWrapClick}>
         {popups.map(popup => {
             const Component = ComponentMap[popup.component] || (() => {
                 return <NotFound>Component {popup.component} Not Found</NotFound>
