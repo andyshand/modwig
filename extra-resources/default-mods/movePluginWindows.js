@@ -17,13 +17,16 @@ const repositionLabels = () => {
         while(i<L && a1.charAt(i)=== a2.charAt(i)) i++;
         return a1.substring(0, i);
     }
-    const inCommon = positions.length === 1 ? '' : sharedStart(positions.map(p => p.id))
+    let inCommon = positions.length === 1 ? '' : sharedStart(positions.map(p => p.id))
+    if (positions.length === 1) {
+        inCommon = positions[0].id.split(' / ').slice(-3).join(' / ')
+    }
     for (const window of positions) {
         Popup.openPopup({
             id: window.id,
             component: 'PluginWindowWrap',
             props: {
-                content: window.id.substr(inCommon.length)
+                content: positions.length === 1 ? inCommon : window.id.substr(inCommon.length)
             },
             rect: window,
             clickable: false,
@@ -31,6 +34,15 @@ const repositionLabels = () => {
         })
     }
 }
+
+Mod.registerAction({
+    title: "Show Plugin Window Labels",
+    id: "show-plugin-window-labels",
+    description: `Shows labels to easily identify plugin windows`,
+    action: () => {
+        repositionLabels()
+    }
+})
 
 Mod.registerAction({
     title: "Move Plugin Windows Offscreen",
@@ -188,5 +200,3 @@ Mouse.on('mouseup', event => {
     draggingWindowId = null
     initialPositions = {}
 })
-
-Bitwig.on('selectedTrackChanged', debounce(repositionLabels, 250))

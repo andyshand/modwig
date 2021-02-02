@@ -247,6 +247,8 @@ async function restoreFocusedPluginWindowToTop(newTrack) {
             // Every time we have more plugins, the last one could have opened over the the other
             sameCount = 0
             Bitwig.focusPluginWindow(focusedPlugin)
+            
+            setTimeout(() => Mod.runAction(`show-plugin-window-labels`), 250)
             // showMessage(`Restoring focus of ${focusedPlugin}`)
             prevPluginCount = pluginOpenCount
             // Check again shortly (probs maximum time it could take to reopen a floating window?)
