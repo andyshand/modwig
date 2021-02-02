@@ -133,7 +133,7 @@ export class PopupService extends BESService {
             popups: inert
         })
         // We always want to show the inert canvas because its used for other stuff than just popups e.g. notifications
-        this.canvas.window.showInactive() 
+        this.canvas.window.showInactive()
         
         // Clickable popups
         const clickable = Object.values(this.currentPopups).filter(p => {
@@ -254,29 +254,40 @@ export class PopupService extends BESService {
         }
     }
 
-    closePopup(id: string) {
+    closePopup(id: string, noRefresh = false) {
         if (!(id in this.currentPopups)) {
-            return this.log(`Tried to close popup that didn't exist (id: ${id})`)
+            // this.log(`Tried to close popup that didn't exist (id: ${id})`)
+            return
+        }
+        const data = this.currentPopups[id]
+        if (data.closeTimeout) {
+            clearTimeout(data.closeTimeout)
         }
         delete this.currentPopups[id]
-        this.refreshPopups()
-        if (Object.keys(this.currentPopups).length === 0 && this.mouseListenerIds.length > 0) {
-            this.removeMouseListeners()
+        if (!noRefresh) {
+            this.refreshPopups()
+            if (Object.keys(this.currentPopups).length === 0 && this.mouseListenerIds.length > 0) {
+                this.removeMouseListeners()
+            }
         }
     }
 
     closeAllPopups() {
-        this.currentPopups = {}
+        for (const id in this.currentPopups) {
+            this.closePopup(id, true)
+        }
         this.removeMouseListeners()
         this.refreshPopups()
         Bitwig.makeMainWindowActive();
     }
 
     getApi({ makeEmitterEvents, onReloadMods }) {
+        const maybeStillOpenForMod: any[] = []
         const api = {
             Popup: {
                 openPopup: (popup: PopupSpec) => {
                     const id = popup.id
+                    maybeStillOpenForMod.push(id)
                     this.openPopup(popup)
                     onReloadMods(() => {
                         if (id in this.currentPopups) {
@@ -284,10 +295,19 @@ export class PopupService extends BESService {
                         }
                     })
                 }, 
-                closePopup: this.closePopup
+                closePopup: this.closePopup,
+                closeAll: () => {
+                    for (const id of maybeStillOpenForMod) {
+                        this.closePopup(id)
+                    }
+                }
             }
         }
         return api
+    }
+
+    ensureCanvasShown() {
+
     }
 
     async activate() {
@@ -305,8 +325,16 @@ export class PopupService extends BESService {
         })
 
         Keyboard.on('keyup', event => {
-            if (event.lowerKey === 'Escape') {
-                this.closeAllPopups()
+            if (Bitwig.isActiveApplication()) {
+                if (event.lowerKey === 'Escape') {
+                    this.closeAllPopups()
+                }
+                this.canvas.window.showInactive()
+            }
+        })
+        Keyboard.on('mouseup', event => {
+            if (Bitwig.isActiveApplication()) {
+                this.canvas.window.showInactive()
             }
         })
     }

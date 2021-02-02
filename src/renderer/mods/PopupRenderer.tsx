@@ -1,7 +1,9 @@
 import React from 'react'
 import { styled } from 'linaria/react'
 import { TransportNavPopup } from './TransportNavPopup'
+import { PopupLabel } from './popups/PopupLabel'
 import { send } from '../bitwig-api/Bitwig'
+import { PluginWindowWrap } from './popups/PluginWindowWrap'
 
 const Wrap = styled.div`
     position: fixed;
@@ -32,7 +34,9 @@ const NotFound = styled.div`
     justify-content: center;
 `
 const ComponentMap = {
-    TransportNavPopup
+    TransportNavPopup,
+    PopupLabel,
+    PluginWindowWrap
 }
 
 export const PopupRenderer = (props) => {

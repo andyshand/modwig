@@ -337,7 +337,7 @@ export class UIService extends BESService {
                     h,
                     ...rest
                 }
-                event._intersectsPluginWindows = true
+                event._intersectsPluginWindows = out
                 return out
             }
         }

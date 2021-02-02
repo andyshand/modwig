@@ -58,7 +58,7 @@ const maybeOpenPopup = async position => {
                 h: dimensions.h * .06,
             },
             clickable: true,
-            timeout: 600,
+            timeout: 1000,
             onReceivedData: (data) => {
                 const { i, action } = data
                 log(data)

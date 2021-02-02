@@ -5,6 +5,33 @@
  * @category devices
  */
 
+const repositionLabels = () => {
+    Popup.closeAll()
+    const positions = Object.values(Bitwig.getPluginWindowsPosition())
+    if (positions.length === 0) {
+        return
+    }
+    const sharedStart = (array) => {
+        var A= array.concat().sort(), 
+        a1= A[0], a2= A[A.length-1], L= a1.length, i= 0;
+        while(i<L && a1.charAt(i)=== a2.charAt(i)) i++;
+        return a1.substring(0, i);
+    }
+    const inCommon = positions.length === 1 ? '' : sharedStart(positions.map(p => p.id))
+    for (const window of positions) {
+        Popup.openPopup({
+            id: window.id,
+            component: 'PluginWindowWrap',
+            props: {
+                content: window.id.substr(inCommon.length)
+            },
+            rect: window,
+            clickable: false,
+            timeout: 2000
+        })
+    }
+}
+
 Mod.registerAction({
     title: "Move Plugin Windows Offscreen",
     id: "move-plugin-windows-offscreen",
@@ -37,6 +64,7 @@ Mod.registerAction({
         })
 
         Bitwig.setPluginWindowsPosition(_.indexBy(offscreenPositions, 'id'))
+        repositionLabels()
     }
 })
 
@@ -58,6 +86,7 @@ Mod.registerAction({
             positions,
             state: 'onscreen'
         })
+        repositionLabels()
     }
 })
 
@@ -122,6 +151,7 @@ Mod.registerAction({
             positions: finalPositions,
             state: 'onscreen'
         })
+        repositionLabels()
     }
 })
 
@@ -130,10 +160,12 @@ let draggingWindowId = null
 let initialPositions = {}
 
 Mouse.on('mousedown', event => {
+    Popup.closeAll()
     if (event.button !== 1) {
         return
     }
     const pluginWindowHit = event.intersectsPluginWindows()
+    log(pluginWindowHit)
     if (pluginWindowHit) {
         draggingWindowId = pluginWindowHit.id
         initialPositions = Bitwig.getPluginWindowsPosition()
@@ -150,8 +182,11 @@ Mouse.on('mouseup', event => {
             y: pos.y + event.y - downEvent.y
         }
         Bitwig.setPluginWindowsPosition(initialPositions)
+        repositionLabels()
     }
     downEvent = null
     draggingWindowId = null
     initialPositions = {}
 })
+
+Bitwig.on('selectedTrackChanged', debounce(repositionLabels, 250))
