@@ -10,6 +10,7 @@ const Shortcut = styled.div`
 `
 const Position = styled.div`
     align-self: center;
+    color: #444;
     
 `
 const MarkerItem = styled.div`
@@ -21,13 +22,12 @@ const MarkerItem = styled.div`
     align-items: flex-start;
     justify-content: space-between;
     border-left: 5px solid ${props => props.disabled ? 'rgba(255,255,255,0.1)' : props.marker.color};
-    padding: .6em;
+    padding: .4em .6em;
     cursor: pointer;
     &:hover {
         background: #222;
     }
     overflow: hidden;
-    font-size: 1em;
     user-select: none;
     color: ${(props: any) => props.active ? 'white' : (props.disabled ? 'rgba(255, 255, 255, .1)' : '#888')};
     background: rgba(25, 25, 25, 0.95);
@@ -53,7 +53,7 @@ const TransportWrap = styled.div`
     width: 100%;
     left: 0;
     top: 0;
-    font-size: 1.1rem;
+    font-size: 1.0rem;
     color: white;
     &:before, &:after {
         content: "";
@@ -102,17 +102,18 @@ export const TransportNavPopup = ({ cueMarkers, position, sendData, popup }) => 
                     right: nextMarker ? '' : 0
                 },
                 disabled: marker.disabled,
+                onDoubleClick: event => {
+                    // Launch
+                    sendData({
+                        action: 'launch',
+                        i
+                    })
+                },
                 onClick: event => {
                     if (event.altKey) {
                         // Toggle disabled
                         sendData({
                             action: 'toggle',
-                            i
-                        })
-                    } else {
-                        // Launch
-                        sendData({
-                            action: 'launch',
                             i
                         })
                     }

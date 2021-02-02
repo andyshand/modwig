@@ -270,6 +270,7 @@ export class ModsService extends BESService {
         })
 
         const api = {
+            _,
             Popup: popupApi.Popup,
             id: thisApiId,
             log: (...args) => {

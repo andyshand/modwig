@@ -37,7 +37,7 @@ const amounts = [
 const maybeOpenPopup = async position => {
     if (showPopup.value) {
         const dimensions = MainDisplay.getDimensions()
-        const width = dimensions.w * .8
+        const width = dimensions.w * .6
         log('Opening popup')
         Popup.openPopup({
             id: 'transport-nav-popup',
@@ -55,7 +55,7 @@ const maybeOpenPopup = async position => {
                 x: dimensions.w / 2 - width / 2,
                 y: dimensions.h * .4,
                 w: width,
-                h: dimensions.h * .06,
+                h: width * .06,
             },
             clickable: true,
             timeout: 1000,

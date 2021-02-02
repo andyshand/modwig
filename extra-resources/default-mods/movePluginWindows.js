@@ -21,12 +21,16 @@ const repositionLabels = () => {
     if (positions.length === 1) {
         inCommon = positions[0].id.split(' / ').slice(-3).join(' / ')
     }
+    const takeOffLastAndRemoveDuplicates = str => {
+        const parts = str.split(' / ')
+        return _.uniq(parts.slice(0, parts.length - 1)).join(' / ')
+    }
     for (const window of positions) {
         Popup.openPopup({
             id: window.id,
             component: 'PluginWindowWrap',
             props: {
-                content: positions.length === 1 ? inCommon : window.id.substr(inCommon.length)
+                content: takeOffLastAndRemoveDuplicates(positions.length === 1 ? inCommon : window.id.substr(inCommon.length))
             },
             rect: window,
             clickable: false,
@@ -111,7 +115,7 @@ Mod.registerAction({
         keys: ["F2"]
     },
     action: () => {        
-        const pluginWindows = Object.values(Bitwig.getPluginWindowsPosition())
+        const pluginWindows = Object.values(Bitwig.getPluginWindowsPosition()).sort((a, b) => a.id < b.id ? -1 : 1)
         if (pluginWindows.length === 0) {
             return
         }
@@ -131,7 +135,7 @@ Mod.registerAction({
             let x = startX, y = 0;
             let nextRowY = y;
             let out = []
-    
+
     
             for (const window of pluginWindows) {
                 if (x + window.w > display.w) {
