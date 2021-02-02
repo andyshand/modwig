@@ -76,7 +76,7 @@ Mod.registerAction({
         })
 
         Bitwig.setPluginWindowsPosition(_.indexBy(offscreenPositions, 'id'))
-        repositionLabels()
+        Popup.closeAll()
     }
 })
 
