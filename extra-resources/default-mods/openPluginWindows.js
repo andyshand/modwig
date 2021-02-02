@@ -5,7 +5,7 @@
  * @category global
  */
 
-const autoOpen = Mod.registerSetting({
+const autoOpen = await Mod.registerSetting({
     id: 'auto-open',
     name: 'Automatically reopen plugins from last session',
     description: `When selecting a track, plugin windows that were open last session (or last run of Modwig) are reopened. Try not to interact with the device view while plugins are being opened as this may prevent the search from working correctly.`

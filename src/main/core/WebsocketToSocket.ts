@@ -1,5 +1,4 @@
 import { SOCKET_PORT, WEBSOCKET_PORT } from '../../connector/shared/Constants';
-import { showMessage } from '../mods/ModsService';
 import { logWithTime } from "./Log";
 import { BESService, getService, makeEvent } from "./Service";
 const colors = require('colors');
@@ -111,7 +110,7 @@ export class SocketMiddlemanService extends BESService {
                 bitwigClient = new net.Socket();
                 bitwigClient.connect(SOCKET_PORT, '127.0.0.1', () => {
                     this.log('Connected to Bitwig');
-                    showMessage('Connected to Bitwig')
+                    // showMessage('Connected to Bitwig')
                     this.events.connected.emit(true)
                     this.bitwigConnected = true;
                 });
@@ -121,7 +120,7 @@ export class SocketMiddlemanService extends BESService {
                 })
                 bitwigClient.on('close', () => {
                     this.log('Connection to Bitwig closed, reconnecting...');
-                    showMessage('Connection to Bitwig closed, reconnecting...')
+                    // showMessage('Connection to Bitwig closed, reconnecting...')
                     this.bitwigConnected = false;
                     bitwigClient = null
                     this.events.connected.emit(false)

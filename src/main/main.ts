@@ -8,6 +8,7 @@ import { protocol } from "electron";
 import { ModsService } from "./mods/ModsService";
 import { BitwigService } from "./bitwig/BitwigService";
 import { UIService } from "./ui/UIService";
+import { PopupService } from "./popup/PopupService";
 
 app.whenReady().then(async () => {
 
@@ -31,6 +32,7 @@ app.whenReady().then(async () => {
       type: 'string',
     })
 
+    const popupService = await registerService(PopupService)
     const shortcutsService = await registerService(ShortcutsService)
     const bitwigService = await registerService(BitwigService)
     const uiService = await registerService(UIService)

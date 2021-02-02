@@ -13,6 +13,7 @@ import { Message } from './core/message/Message';
 import { TransportNavPopup } from './mods/TransportNavPopup';
 import { Canvas } from './mods/Canvas';
 import { useState } from 'react';
+import { ClickableCanvas } from './mods/ClickableCanvas';
 
 function removeAllListeners() {
     app.removeAllListeners('browser-window-focus')
@@ -155,7 +156,7 @@ const windowDataAsProps = (Component) => {
                 return true
             }
             return false
-        }    
+        }
         const windowData = (window as any).data
         if (!windowData) {
             return <div>No data ready</div>
@@ -176,6 +177,7 @@ ReactDOM.render(
             <Route path="/message" component={windowDataAsProps(Message)} />
             <Route path="/transport-nav-popup" component={windowDataAsProps(TransportNavPopup)} />
             <Route path="/canvas" component={windowDataAsProps(Canvas)} />
+            <Route path="/clickable-canvas" component={windowDataAsProps(ClickableCanvas)} />
             <Route path="/loading" component={() => {
                 const history = useHistory();
                 ;(window as any).loadURL = url => history.push(url)

@@ -7,6 +7,7 @@ import { url } from "../core/Url"
 import { SettingsService } from "../core/SettingsService"
 import { ModsService } from "../mods/ModsService"
 import { returnMouseAfter, whenActiveListener } from "../../connector/shared/EventUtils"
+import { PopupService } from "../popup/PopupService"
 const colors = require('colors')
 
 const { Keyboard, Mouse, MainWindow, Bitwig } = require('bindings')('bes')
@@ -57,6 +58,8 @@ export interface ActionSpec extends BaseActionSpec  {
 type AnyActionSpec = ActionSpec | TempActionSpec
 
 export class ShortcutsService extends BESService {
+    popupService = getService<PopupService>("PopupService")
+
     browserIsOpen
     enteringValue = false
     spotlightOpen = false
@@ -645,22 +648,6 @@ export class ShortcutsService extends BESService {
                         })
                     }
                 },
-                ...this.repeatActionWithRange('launchArrangerCueMarker', 1, 20, i => {
-                    return {
-                        defaultSetting: {
-                            keys: ["Meta", String(i)]
-                        },
-                        contexts: ['-browser'],
-                        action: () => {
-                            sendPacketToBitwig({
-                                type: 'action',
-                                data: [
-                                    `launch_arranger_cue_marker${i}`
-                                ]
-                            })
-                        }
-                    }
-                }),
                 focusTrackHeaderArea: {
                     defaultSetting: {
                         keys: ['T']
@@ -1022,7 +1009,7 @@ export class ShortcutsService extends BESService {
                 return
             }
 
-            if (Bitwig.isActiveApplication() && !this.enteringValue) {
+            if ((Bitwig.isActiveApplication() || this.popupService.clickableCanvas.window.isFocused()) && !this.enteringValue) {
                 if (this.browserIsOpen && /^[a-z0-9]{1}$/.test(lowerKey) && noMods) {
                     // Typing in browser
                     this.browserText += lowerKey

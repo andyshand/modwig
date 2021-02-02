@@ -158,6 +158,7 @@ async function checkInside(mousePos) {
     }
 }
 
+let lastWasNull = false
 async function maybeShowPopover (mousePos) {
     if (automationLevelsInsideT && Bitwig.isActiveApplication() && !Bitwig.isPluginWindowActive) {
         log('should be here')
@@ -169,11 +170,13 @@ async function maybeShowPopover (mousePos) {
                 y: mousePos.y
             }
         })
-    } else {
+        lastWasNull = false
+    } else if (!lastWasNull) {
         showNotification({
             type: 'hoverLevels',
             track: null
         })
+        lastWasNull = true
     }
 }
 

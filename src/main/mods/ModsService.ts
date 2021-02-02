@@ -1,25 +1,26 @@
 import { sendPacketToBitwig, interceptPacket, sendPacketToBrowser, addAPIMethod, sendPacketToBitwigPromise, SocketMiddlemanService } from "../core/WebsocketToSocket"
 import { BESService, getService, makeEvent } from "../core/Service"
-import { returnMouseAfter, whenActiveListener } from "../../connector/shared/EventUtils"
+import { whenActiveListener } from "../../connector/shared/EventUtils"
 import { getDb } from "../db"
 import { ProjectTrack } from "../db/entities/ProjectTrack"
 import { clamp } from "../../connector/shared/Math"
 import { Project } from "../db/entities/Project"
 import { getResourcePath } from '../../connector/shared/ResourcePath'
+import { containsPoint, containsX, containsY } from '../../connector/shared/Rect'
 import { SettingsService } from "../core/SettingsService"
 import { promises as fs } from 'fs'
 import * as path from 'path'
 import { Setting } from "../db/entities/Setting"
-import { createDirIfNotExist, exists, exists as fileExists, filesAreEqual, getTempDirectory, writeStrFile } from "../core/Files"
+import { createDirIfNotExist, exists as fileExists, getTempDirectory, writeStrFile } from "../core/Files"
 import { logWithTime } from "../core/Log"
 import { ShortcutsService } from "../shortcuts/Shortcuts"
 import { debounce, wait } from '../../connector/shared/engine/Debounce'
 import _ from 'underscore'
-import { BrowserWindow, clipboard } from "electron"
-import { url } from "../core/Url"
+import { clipboard } from "electron"
 import { normalizeBitwigAction } from "./actionMap"
 import { UIService } from "../ui/UIService"
 import { BitwigService } from "../bitwig/BitwigService"
+import { PopupService } from "../popup/PopupService"
 const chokidar = require('chokidar')
 const colors = require('colors');
 
@@ -31,138 +32,6 @@ const KeyboardEvent = {
 
 let nextId = 0
 let modsLoading = false
-
-export function showMessage(msg, { timeout } = { timeout: 5000 }) {
-    openCanvasWindow(`/canvas`, {
-        data: {
-            notifications: [
-                {
-                    content: msg,
-                    id: nextId++,
-                    timeout,
-                    date: new Date().getTime()
-                }   
-            ]
-        },
-        width: 2560,
-        height: 1440
-    })
-}
-
-export function updateCanvas(state) {
-    openCanvasWindow(`/canvas`, {
-        data: state,
-        width: 2560,
-        height: 1440
-    })
-}
-
-/**
-* Opens a floating window for a short amount of time, fading out afterwards. Meant for brief display of contextual information
-*/
-function makeWindowOpener() {
-    let floatingWindowInfo: {
-        window: BrowserWindow,
-        path: string,
-        lastOptions: string
-    } | undefined
-    let fadeOutTimeout: any
-    return function openFloatingWindow(path, options: {x?: number, y?: number, data?: any, timeout?: number, width: number, height: number}) {
-       if (fadeOutTimeout) {
-           clearTimeout(fadeOutTimeout)
-       }
-   
-       const debug = false
-    //    logWithTime(`Opening floating window with path: ${path} and options: `, options)
-    //    logWithTime(`Floating window info: `, floatingWindowInfo)
-
-       const optsStr = (_ as any).omit(options, 'data')
-    //    logWithTime(optsStr)
-       if (!floatingWindowInfo || path !== floatingWindowInfo.path) {
-           logWithTime('Opening new window')
-           floatingWindowInfo?.window.close()
-           floatingWindowInfo = {
-               path,
-               lastOptions: optsStr,
-               window: new BrowserWindow({ 
-                   width: options.width, 
-                   height: options.height, 
-                   opacity: 1,
-                   frame: false,
-                   hasShadow: false,
-                   show: false,
-                   alwaysOnTop: true,
-                   focusable: debug,
-                   closable: debug,
-                   x: options.x ?? MainWindow.getMainScreen().w / 2 - options.width / 2,
-                   y: options.y ?? MainWindow.getMainScreen().h / 2 - options.height / 2,
-                   transparent: true,
-                   fullscreenable: false,
-                   webPreferences: {
-                       enableRemoteModule: true,
-                       webSecurity: false,
-                       nodeIntegration: true
-                   }
-               })
-           }
-           if (!debug) {
-            floatingWindowInfo.window.setIgnoreMouseEvents(true);
-           }
-           floatingWindowInfo.window.loadURL(url(`/#/loading`))
-           // ;(floatingWindowInfo!.window as any).toggleDevTools()    
-       }
-   
-       if (options.data) {
-           floatingWindowInfo!.window.webContents.executeJavaScript(`
-                window.tryLoadURL = (tries = 0) => {
-                   const path = \`${path}\`
-                   window.data = ${JSON.stringify(options.data)}
-                   if (window.didUpdateState && window.didUpdateState(path)) {
-                       return 'updatedState'
-                   } else if (window.loadURL) {
-                       window.loadURL(path)
-                       return 'loadedUrl'
-                   } else if (tries < 10) {
-                       setTimeout(() => tryLoadURL(tries + 1), 100)
-                       return 'trying again'
-                   } else {
-                       console.error(\`Couldn't find loadURL on window, something went wrong\`)
-                       return 'no loadURL'
-                   }
-               }
-               tryLoadURL()
-           `).then((result) => {
-            //    logWithTime(result)
-            //    logWithTime('Showing window')
-               floatingWindowInfo!.window.setOpacity(1)
-               floatingWindowInfo!.window.showInactive()
-   
-               function doFadeOut(opacity: number = 1) {
-                   const newOpacity = opacity - .1
-                   if (newOpacity <= 0) {
-                       floatingWindowInfo!.window.hide()
-                   } else {   
-                       floatingWindowInfo!.window.setOpacity(newOpacity)
-                       fadeOutTimeout = setTimeout(() => {
-                           doFadeOut(newOpacity)
-                       }, 50)
-                   }
-               }
-           
-               if (options.timeout && !debug) {
-                fadeOutTimeout = setTimeout(() => {
-                    doFadeOut(1)
-                }, options.timeout)
-                }
-           }).catch(e => {
-               logWithTime(colors.red(e))
-           })
-       }
-   }
-}
-
-const openFloatingWindow = makeWindowOpener()
-const openCanvasWindow = makeWindowOpener()
 
 const { Keyboard, Mouse, MainWindow, Bitwig, UI } = require('bindings')('bes')
 
@@ -202,6 +71,7 @@ export class ModsService extends BESService {
     suckitService = getService<SocketMiddlemanService>("SocketMiddlemanService")
     uiService = getService<UIService>("UIService")
     bitwigService = getService<BitwigService>("BitwigService")
+    popupService = getService<PopupService>("PopupService")
 
     // Internal state
     currProject: string | null = null
@@ -394,8 +264,13 @@ export class ModsService extends BESService {
             makeEmitterEvents, 
             onReloadMods: cb => this.onReloadMods.push(cb) 
         })
+        const popupApi = this.popupService.getApi({
+            makeEmitterEvents, 
+            onReloadMods: cb => this.onReloadMods.push(cb) 
+        })
 
         const api = {
+            Popup: popupApi.Popup,
             id: thisApiId,
             log: (...args) => {
                 this.logForMod(mod.id, ...args)
@@ -424,20 +299,9 @@ export class ModsService extends BESService {
             Shortcuts: this.shortcutsService.getApi(),
             whenActiveListener: whenActiveListener,
             Rect: {
-                containsPoint(rect, point) {
-                    return point.x >= rect.x 
-                        && point.x < rect.x + rect.w 
-                        && point.y >= rect.y
-                        && point.y < rect.y + rect.h
-                },
-                containsX(rect, x) {
-                    return x >= rect.x 
-                        && x < rect.x + rect.w
-                },
-                containsY(rect, y) {
-                    return y >= rect.y
-                        && y < rect.y + rect.h
-                }
+                containsPoint,
+                containsX,
+                containsY
             },
             Mouse: uiApi.Mouse,
             UI: uiApi.UI,
@@ -488,7 +352,7 @@ export class ModsService extends BESService {
                     const pluginWindows = Bitwig.getPluginWindowsPosition()
                     return Object.values(pluginWindows).find((w: any) => w.focused)
                 },
-                showMessage: showMessage,
+                showMessage: this.popupService.showMessage,
                 intersectsPluginWindows: event => this.uiService.eventIntersectsPluginWindows(event),
                 ...makeEmitterEvents({
                     selectedTrackChanged: this.events.selectedTrackChanged,
@@ -568,7 +432,6 @@ export class ModsService extends BESService {
                 },
             },
             Mod: {
-                _openFloatingWindow: openFloatingWindow,
                 setEnteringValue: val => {
                     this.shortcutsService.enteringValue = val
                 },
@@ -580,7 +443,10 @@ export class ModsService extends BESService {
                         api.Mod.runAction(action)
                     }
                 },
-                registerSetting: settingSpec => {
+                /**
+                 * Must be called with await to ensure non async value is ready to go
+                 */
+                registerSetting: async settingSpec => {
                     const defaultValue = JSON.stringify(settingSpec.value ?? {})
                     const actualKey = `mod/${mod.id}/${settingSpec.id}`
                     const type = settingSpec.type ?? 'boolean'
@@ -600,11 +466,26 @@ export class ModsService extends BESService {
                         description: settingSpec.description
                     }
 
-                    return {
+                    const settingApi = {
+                        value: false,
                         getValue: async () => {
-                            return (await that.settingsService.getSettingValue(actualKey)).enabled
+                            const val = (await that.settingsService.getSettingValue(actualKey)).enabled
+                            settingApi.value = val
+                            return val
+                        },
+                        setValue: async (value) => {
+                            that.settingsService.setSettingValue(actualKey, { enabled: value })
+                            settingApi.value = value
+                        },
+                        toggleValue: async () => {
+                            settingApi.value = !settingApi.value
+                            settingApi.setValue(!(await settingApi.getValue()))
                         }
                     }
+
+                    // Non async access, updated whenever we set
+                    settingApi.value = await settingApi.getValue()
+                    return settingApi
                 },
                 registerAction: (action) => {
                     action.category = action.category || mod.category
@@ -619,6 +500,13 @@ export class ModsService extends BESService {
                             }
                         }
                     }, modsLoading)
+                }, 
+                registerActionsWithRange: (name, start, end, cb) => {
+                    for (let i = start; i <= end; i++) {
+                        const action = cb(i)
+                        action.id = name + i
+                        api.Mod.registerAction(action)
+                    }
                 },
                 _registerShortcut: (keys: string[], runner: Function) => {
                     this.shortcutsService.registerAction({
@@ -670,7 +558,7 @@ export class ModsService extends BESService {
             },
             debounce,
             throttle: (_ as any).throttle,
-            showNotification: (notif) => this.showNotification(notif)
+            showNotification: (notif) => this.popupService.showNotification(notif)
         }
         const wrapFunctionsWithTryCatch = (value, key?: string) => {
             if (typeof value === 'object') {
@@ -737,31 +625,12 @@ export class ModsService extends BESService {
         }) as any
     }
 
-    showNotification(notification) {
-        openCanvasWindow(`/canvas`, {
-            data: {
-                notifications: [
-                    {
-                        id: nextId++,
-                        timeout: notification.timeout ?? 3000,
-                        date: new Date().getTime(),
-                        ...notification,
-                    }   
-                    
-                
-                ]
-            },
-            width: 2560,
-            height: 1440
-        })
-    }
-
     async activate() {
         interceptPacket('message', undefined, async ({ data: { msg } }) => {
-            showMessage(msg)
+            this.popupService.showMessage(msg)
         })
         interceptPacket('notification', undefined, async ({ data: notif }) => {
-            this.showNotification(notif)
+            this.popupService.showNotification(notif)
         })
         interceptPacket('project', undefined, async ({ data: { name: projectName, hasActiveEngine, selectedTrack } }) => {
             const projectChanged = this.currProject !== projectName
@@ -868,7 +737,7 @@ export class ModsService extends BESService {
                     const modData = this.latestModsMap[key]
                     const value = JSON.parse(setting.value)
                     const reload = !modData.noReload
-                    showMessage(`${modData.name}: ${value.enabled ? 'Enabled' : 'Disabled'}`)
+                    this.popupService.showMessage(`${modData.name}: ${value.enabled ? 'Enabled' : 'Disabled'}`)
 
                     if (reload) {
                         this.refreshMods()
@@ -886,7 +755,7 @@ export class ModsService extends BESService {
                     }
                     const value = JSON.parse(setting.value)
                     if (setting.type === 'boolean') {
-                        showMessage(`${info.name}: ${value.enabled ? 'Enabled' : 'Disabled'}`)
+                        this.popupService.showMessage(`${info.name}: ${value.enabled ? 'Enabled' : 'Disabled'}`)
                     }
                 }      
             }
@@ -896,13 +765,13 @@ export class ModsService extends BESService {
         refreshFolderWatcher()
 
         this.shortcutsService.events.enteringValue.listen(enteringValue => {
-            updateCanvas({
+            this.popupService.updateCanvas({
                 enteringValue
             })
         })
         
         this.shortcutsService.events.actionTriggered.listen(((action, context) => {
-            this.showNotification({
+            this.popupService.showNotification({
                 type: 'actionTriggered',
                 data: {
                     title: action.title || action.id,
@@ -912,7 +781,7 @@ export class ModsService extends BESService {
         }) as any)
 
         this.bitwigService.events.browserOpen.listen(isOpen => {
-            updateCanvas({
+            this.popupService.updateCanvas({
                 browserIsOpen: isOpen
             })
         })
@@ -953,7 +822,7 @@ export class ModsService extends BESService {
                     }
                 )
                 const dest = path.join(controllerDestFolder, file)
-                if (!(await exists(dest)) || (await fs.readFile(dest)).toString() !== src){
+                if (!(await fileExists(dest)) || (await fs.readFile(dest)).toString() !== src){
                     await fs.writeFile(dest, src)
                 }
             }
@@ -1049,7 +918,7 @@ export class ModsService extends BESService {
     staticApi = {
         wait: wait,
         clamp: clamp,
-        showMessage
+        showMessage: this.popupService.showMessage
     }
 
     async refreshLocalMods() {
@@ -1077,7 +946,7 @@ export class ModsService extends BESService {
                     
                         let thisModI = enabledMods.length         
                         fileOut += `
-function mod${thisModI}({ ${[...Object.keys(api), ...Object.keys(this.staticApi)].join(', ')} }) {
+async function mod${thisModI}({ ${[...Object.keys(api), ...Object.keys(this.staticApi)].join(', ')} }) {
 ${mod.contents}
 }
 `
@@ -1188,9 +1057,9 @@ modsImpl(api)
         await this.refreshLocalMods()
         await this.refreshBitwigMods(localOnly)
         if (this.refreshCount === 0) {
-            showMessage(`${Object.keys(this.latestModsMap).length} Mods loaded`)
+            this.popupService.showMessage(`${Object.keys(this.latestModsMap).length} Mods loaded`)
         } else {
-            showMessage(`Reloaded ${localOnly ? 'local' : 'all'} mods (${Object.keys(this.latestModsMap).length} loaded)`)
+            this.popupService.showMessage(`Reloaded ${localOnly ? 'local' : 'all'} mods (${Object.keys(this.latestModsMap).length} loaded)`)
         }
         this.refreshCount++
 

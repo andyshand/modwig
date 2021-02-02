@@ -7,6 +7,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Spinner } from '../core/Spinner'
 import { TrackVolumePopup } from './canvas/TrackVolumePopup'
 import { AutomationPopover } from './canvas/AutomationPopover'
+import { PopupRenderer } from './PopupRenderer'
 const { clipboard } = require('electron')
 
 const Wrap = styled.div`
@@ -131,7 +132,8 @@ export class Canvas extends ModwigComponent<any> {
 
         // Different types of static notification
         volume: null,
-        automationLevel: null
+        automationLevel: null,
+        popups: []
     }
     UNSAFE_componentWillReceiveProps(nextProps) {
         let newProgressIds = new Set()
@@ -217,18 +219,21 @@ export class Canvas extends ModwigComponent<any> {
         </NotificatinosWrap>
     }
     render() {
-        return <Wrap>
-            <canvas ref={this.canvasRef} />
-            {this.renderNotifications()}
-            <Static>
-                {/* {this.state.browserIsOpen ? <div>Browser Open</div> : null}
-                {this.state.enteringValue ? <div>Entering Value</div> : null}
-                <div><div style={{
-                    marginRight: '.4rem', marginTop: '.3rem', width: '.5rem', height: '.5rem', borderRadius: '1000px', background: 'rgb(230,89,13)'
-                }}/> modwig active</div> */}
-                {this.state.volume && this.state.volume.track ? <TrackVolumePopup {...this.state.volume} /> : null}
-                {this.state.automationLevel && this.state.automationLevel.track ? <AutomationPopover {...this.state.automationLevel} /> : null}
-            </Static>
-        </Wrap>
+        return <>
+            <Wrap>
+                <canvas ref={this.canvasRef} />
+                {this.renderNotifications()}
+                <Static>
+                    {/* {this.state.browserIsOpen ? <div>Browser Open</div> : null}
+                    {this.state.enteringValue ? <div>Entering Value</div> : null}
+                    <div><div style={{
+                        marginRight: '.4rem', marginTop: '.3rem', width: '.5rem', height: '.5rem', borderRadius: '1000px', background: 'rgb(230,89,13)'
+                    }}/> modwig active</div> */}
+                    {this.state.volume && this.state.volume.track ? <TrackVolumePopup {...this.state.volume} /> : null}
+                    {this.state.automationLevel && this.state.automationLevel.track ? <AutomationPopover {...this.state.automationLevel} /> : null}
+                </Static>
+            </Wrap>
+            <PopupRenderer popups={this.state.popups} />
+        </>
     }
 }

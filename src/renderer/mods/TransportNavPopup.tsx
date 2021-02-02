@@ -1,48 +1,65 @@
 import React from 'react'
 import { styled } from 'linaria/react'
+import { shortcutToTextDescription } from '../settings/helpers/settingTitle'
 
+const Name = styled.div`
+    /* align-self: flex-start; */
+`
+const Shortcut = styled.div`
+    /* align-self: center; */
+`
+const Position = styled.div`
+    align-self: center;
+    
+`
 const MarkerItem = styled.div`
     position: absolute;
-    left: ${(props: any) => Math.round(props.percentX * 100)}%;
     top: 0;
-    bottom: .1em;
-    border-left: 3px solid ${props => props.marker.color};
-    padding-left: .6em;
-    padding-top: .4em;
-    color: ${(props: any) => props.active ? 'white' : '#666'};
+    display: flex;
+    flex-wrap: nowrap;
+    bottom: .2em;
+    align-items: flex-start;
+    justify-content: space-between;
+    border-left: 5px solid ${props => props.disabled ? 'rgba(255,255,255,0.1)' : props.marker.color};
+    padding: .6em;
+    cursor: pointer;
+    &:hover {
+        background: #222;
+    }
+    overflow: hidden;
+    font-size: 1em;
+    user-select: none;
+    color: ${(props: any) => props.active ? 'white' : (props.disabled ? 'rgba(255, 255, 255, .1)' : '#888')};
+    background: rgba(25, 25, 25, 0.95);
     >:nth-child(1) {
-        font-size: .8em;
+        display: flex;
+        height: 100%;
+        flex-direction: column;
+        justify-content: space-between;
+        align-items: flex-start;
     }
     >:nth-child(2) {
-        font-size: .8em;
-        margin-top: .3em;
-        padding-left: .6em;
+        display: flex;
+        height: 100%;
+        flex-direction: column;
+        justify-content: flex-end;
+        align-items: flex-end;
     }
-    &:before {
-        content: "";
-        display: table;
-        position: absolute;
-        border-radius: 1000px;
-        width: .3em;
-        height: .3em;
-        top: 2em;
-        background: ${props => props.marker.color};
-    }
-   
 ` as any
 
 const TransportWrap = styled.div`
-    position: fixed;
+    position: absolute;
     height: 100%;
     width: 100%;
+    left: 0;
+    top: 0;
     font-size: 1.1rem;
-    background: rgba(25, 25, 25, 0.8);
     color: white;
     &:before, &:after {
         content: "";
         position: absolute;
         bottom: 0;
-        height: .1em;
+        height: .2em;
         left: 0;
         transition: width .2s;
     }
@@ -56,7 +73,7 @@ const TransportWrap = styled.div`
     }
 `
 
-export const TransportNavPopup = ({ cueMarkers, position }) => {
+export const TransportNavPopup = ({ cueMarkers, position, sendData, popup }) => {
     const range = [0, (cueMarkers.slice(-1)[0]?.position ?? position) + (4 * 8)]
     const rangeAmount = range[1] - range[0]
     const isActiveMarker = (marker, i, arr) => {
@@ -66,12 +83,50 @@ export const TransportNavPopup = ({ cueMarkers, position }) => {
     const activeMarker = cueMarkers.find(isActiveMarker) || {position: 0, name: 'Start Placeholder', color: '#444'}
     const coverUpToX = activeMarker.position / rangeAmount
 
-    console.log(cueMarkers, position)
+    // console.log(cueMarkers, position)
+    let shortcutIndex = -1
     return <TransportWrap positionPercentX={position / rangeAmount} coverUpToX={coverUpToX}>
         {cueMarkers.map((marker, i, arr) => {
-            return <MarkerItem active={marker.position === activeMarker.position} key={i + marker.name} marker={marker} percentX={marker.position / rangeAmount}>
-                <div>{marker.name} ({i + 1})</div>
-                <div>{(marker.position / 4) + 1}</div>
+            let nextMarker = arr[i + 1]
+            if (!marker.disabled) {
+                shortcutIndex++
+            }
+            const props = {
+                active: marker.position === activeMarker.position,
+                key: i + marker.name,
+                marker,
+                percentX: marker.position / rangeAmount,
+                style: {
+                    left: `${((marker.position / rangeAmount) * 100).toFixed(2)}%`,
+                    width: nextMarker ? `${(((nextMarker.position - marker.position) / rangeAmount) * 100).toFixed(2)}%` : '',
+                    right: nextMarker ? '' : 0
+                },
+                disabled: marker.disabled,
+                onClick: event => {
+                    if (event.altKey) {
+                        // Toggle disabled
+                        sendData({
+                            action: 'toggle',
+                            i
+                        })
+                    } else {
+                        // Launch
+                        sendData({
+                            action: 'launch',
+                            i
+                        })
+                    }
+                }
+            }
+            
+            return <MarkerItem {...props}>
+                <div>
+                    <Name>{marker.name}</Name>
+                    <Shortcut>{marker.disabled ? '' : `⌘${shortcutIndex + 1}`}</Shortcut>
+                </div>
+                <div>
+                    <Position>{(marker.position / 4) + 1}</Position>
+                </div>
             </MarkerItem>
         })}
     </TransportWrap>
