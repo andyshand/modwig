@@ -9,6 +9,7 @@ let lastEvent = null
 let lastTracks = null
 let track = null
 let downPos
+let volumeStartedAt = 0
 let restoreAutomationControlAfter = false
 
 function trackIndexForEvent(event) {
@@ -26,12 +27,14 @@ function startWithTrack(t) {
     track = t
     log('Starting with track: ', track)
     downPos = Mouse.getPosition()
+    volumeStartedAt = t.volume
     notifBase = {
         type: 'volume',
         mouse: {
             x: downPos.x,
             y: downPos.y
-        }
+        },
+        volumeStartedAt
     }
     // Mouse.setPosition(downPos.x, MainDisplay.getDimensions().h / 2)
     showNotification({

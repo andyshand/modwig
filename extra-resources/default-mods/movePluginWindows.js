@@ -23,6 +23,9 @@ const repositionLabels = () => {
     }
     const takeOffLastAndRemoveDuplicates = str => {
         const parts = str.split(' / ')
+        if (parts.length === 1) {
+            return str
+        }
         return _.uniq(parts.slice(0, parts.length - 1)).join(' / ')
     }
     for (const window of positions) {

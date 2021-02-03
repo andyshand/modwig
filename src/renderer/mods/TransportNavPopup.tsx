@@ -30,7 +30,7 @@ const MarkerItem = styled.div`
     overflow: hidden;
     user-select: none;
     color: ${(props: any) => props.active ? 'white' : (props.disabled ? 'rgba(255, 255, 255, .1)' : '#888')};
-    background: rgba(25, 25, 25, 0.95);
+    background: #222;
     >:nth-child(1) {
         display: flex;
         height: 100%;
