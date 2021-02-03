@@ -178,7 +178,7 @@ class PacketManager {
                     }
                     log(`Received packet of type: ${packet.type}`)
                     // log('send response???')
-                    let noAutoRespond = false
+                    let noAutoRespond = packet.oneWay || false
                     let errors = []
                     if (warnNoListeners) {
                         host.showPopupNotification('No listeners attached for packet type: ' + packet.type)
@@ -291,12 +291,6 @@ class GlobalController extends Controller {
             }
             if (mute !== undefined) {
                 track.mute().set(mute)
-            }
-            return {
-                type: 'track/update',
-                data: {
-                    volumeString: track.volume().displayedValue().get()
-                }
             }
         })
         packetManager.listen('track/get', ({ data: { name }}) => {

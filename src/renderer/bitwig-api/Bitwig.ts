@@ -58,7 +58,7 @@ function sendQueuedPackets() {
 }
 
 export function send(newPacket: any, callback?: Function) {
-  queued.push({packet: newPacket, callback})
+  queued.push({packet: {...newPacket, oneWay: true}, callback})
   sendQueuedPackets()
 }
 

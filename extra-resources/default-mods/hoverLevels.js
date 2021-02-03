@@ -105,27 +105,13 @@ Mouse.on('mousemove', async event => {
             ...notifBase,
             track
         })
-
-        let volumeNow = track.volume
-
-        // Volume string will be 1 iteration out of date but its ok
-        const { data } = await Bitwig.sendPacketPromise({
+        Bitwig.sendPacket({
             type: 'track/update',
             data: {
                 name: track.name,
                 volume: track.volume
             }
         })
-        // log(data)
-
-        // We awaited, so track may not exist anymore (from mouseup)
-        if (track && volumeNow === track.volume) {
-            track.volumeString = data.volumeString
-            throttledShowNotification({
-                ...notifBase,
-                track
-            })
-        }
     }
 })
 

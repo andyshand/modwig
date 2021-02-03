@@ -1,5 +1,6 @@
 import React from 'react'
 import { styled } from 'linaria/react'
+import { getVolumeString } from '../../bitwig-api/tracks'
 
 const TooltipWrap = styled.div`
     position: absolute;
@@ -24,7 +25,7 @@ const VolumeLevel = styled.div`
     left: 0;
     top: 0;
     background: #502E13;
-    box-shadow: inset 0 1px 0 0 #402814, inset 0 2px 0 0 #EA6A10, inset 0 3px 0 0 #402814;
+    box-shadow: inset -1px 0 0 0 #402814, inset -2px 0 0 0 #EA6A10, inset -3px 0 0 0 #402814;
     /* right: 0; */
     position: absolute;
 `
@@ -64,14 +65,12 @@ const TrackInfo = styled.div`
 export const TrackVolumePopup = ( props ) => {
     const { track, mouse } = props
     const containerProps = {
-        // top: track.visibleRect.y,
-        // height: track.visibleRect.h,
         left: Math.max(0, mouse.x - 125),
         top: mouse.y
     }
     return <Container {...containerProps}>
         <VolumeWrap >
-            <Tooltip volume={track.volumeString ?? 0} />
+            <Tooltip volume={getVolumeString(track.volume)} />
             <VolumeLevel volume={track.volume} />
         </VolumeWrap>
         <TrackInfo>
