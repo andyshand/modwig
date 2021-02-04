@@ -4,6 +4,7 @@ import { TransportNavPopup } from './TransportNavPopup'
 import { PopupLabel } from './popups/PopupLabel'
 import { send } from '../bitwig-api/Bitwig'
 import { PluginWindowWrap } from './popups/PluginWindowWrap'
+import { TrackOverlay } from './popups/TrackOverlay'
 
 const Wrap = styled.div`
     position: fixed;
@@ -34,9 +35,10 @@ const NotFound = styled.div`
     justify-content: center;
 `
 const ComponentMap = {
-    TransportNavPopup,
-    PopupLabel,
-    PluginWindowWrap
+    TransportNavPopup: TransportNavPopup,
+    PopupLabel: PopupLabel,
+    PluginWindowWrap: PluginWindowWrap,
+    TrackOverlay: TrackOverlay
 }
 
 export const PopupRenderer = (props) => {

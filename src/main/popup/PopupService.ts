@@ -8,6 +8,7 @@ import { BitwigService } from "../bitwig/BitwigService"
 import { BrowserWindow } from "electron"
 import { logWithTime } from "../core/Log"
 import { url } from "../core/Url"
+import { UIService } from "../ui/UIService"
 const colors = require('colors');
 const { Keyboard, Bitwig, UI, Mouse, MainWindow } = require('bindings')('bes')
 let nextId = 0
@@ -54,7 +55,7 @@ export class PopupService extends BESService {
     currentPopups: {[id: string] : OpenPopup} = {
 
     }
-    mouseListenerIds: any[] = []
+    mouseListenerRemoveCbs: Function[] = []
     canvas = this.openWindow({focusable: false, path: '/canvas'})
     clickableCanvas = this.openWindow({focusable: true, path: '/clickable-canvas'})
 
@@ -149,7 +150,7 @@ export class PopupService extends BESService {
         }
     }
 
-    showMessage(msg, { timeout } = { timeout: 5000 }) {
+    showMessage = (msg, { timeout } = { timeout: 5000 }) => {
         this.canvas.sendProps({
             notifications: [
                 {
@@ -162,7 +163,7 @@ export class PopupService extends BESService {
         })
     }
 
-    showNotification(notification) {
+    showNotification = (notification) => {
         this.canvas.sendProps({
             notifications: [
                 {
@@ -177,7 +178,7 @@ export class PopupService extends BESService {
         })
     }
     
-    updateCanvas(state) {
+    updateCanvas = (state) => {
         this.canvas.sendProps(state)
     }
 
@@ -209,11 +210,12 @@ export class PopupService extends BESService {
                 }
             }
         }
-        this.mouseListenerIds.push(Keyboard.on('mousemove', (_ as any).throttle(event => {
+        const uiSevice = getService<UIService>("UIService")
+        this.mouseListenerRemoveCbs.push(uiSevice.Mouse.on('mousemove', (_ as any).throttle(event => {
             // Mouse move
             // checkIntersection(event)
         }, 100)))
-        this.mouseListenerIds.push(Keyboard.on('mouseup', event => {
+        this.mouseListenerRemoveCbs.push(uiSevice.Mouse.on('mouseup', event => {
             // Mouse up
             if (event.button === 0) {
                 checkIntersection(event)
@@ -223,13 +225,13 @@ export class PopupService extends BESService {
 
     removeMouseListeners() {
         this.log('Removing mouse listeners')
-        for (const id of this.mouseListenerIds) {
-            Keyboard.off(id)
+        for (const cb of this.mouseListenerRemoveCbs) {
+            cb()
         }
-        this.mouseListenerIds = []
+        this.mouseListenerRemoveCbs = []
     }
 
-    openPopup(popup: PopupSpec) {
+    openPopup = (popup: PopupSpec) => {
         const wasIn = popup.id in this.currentPopups
         const prevData = this.currentPopups[popup.id]
         const data: OpenPopup = prevData || {
@@ -239,7 +241,7 @@ export class PopupService extends BESService {
         data.popup = popup
         this.currentPopups[popup.id] = data
         this.refreshPopups()
-        if (!wasIn && this.mouseListenerIds.length === 0) {
+        if (!wasIn && this.mouseListenerRemoveCbs.length === 0) {
             this.addMouseListeners()
         }
         if (typeof popup.timeout === 'number' && !data.clickedAt) {
@@ -254,7 +256,7 @@ export class PopupService extends BESService {
         }
     }
 
-    closePopup(id: string, noRefresh = false) {
+    closePopup = (id: string, noRefresh = false) => {
         if (!(id in this.currentPopups)) {
             // this.log(`Tried to close popup that didn't exist (id: ${id})`)
             return
@@ -266,13 +268,13 @@ export class PopupService extends BESService {
         delete this.currentPopups[id]
         if (!noRefresh) {
             this.refreshPopups()
-            if (Object.keys(this.currentPopups).length === 0 && this.mouseListenerIds.length > 0) {
+            if (Object.keys(this.currentPopups).length === 0 && this.mouseListenerRemoveCbs.length > 0) {
                 this.removeMouseListeners()
             }
         }
     }
 
-    closeAllPopups() {
+    closeAllPopups = () => {
         for (const id in this.currentPopups) {
             this.closePopup(id, true)
         }
@@ -323,8 +325,11 @@ export class PopupService extends BESService {
         addAPIMethod('api/popups/close-all', async data => {
             this.closeAllPopups()
         })
+    }
 
-        Keyboard.on('keyup', event => {
+    async postActivate() {
+        const uiService = getService<UIService>("UIService")
+        uiService.Mouse.on('keyup', event => {
             if (Bitwig.isActiveApplication()) {
                 if (event.lowerKey === 'Escape') {
                     this.closeAllPopups()
@@ -332,7 +337,7 @@ export class PopupService extends BESService {
                 this.canvas.window.showInactive()
             }
         })
-        Keyboard.on('mouseup', event => {
+        uiService.Mouse.on('mouseup', event => {
             if (Bitwig.isActiveApplication()) {
                 this.canvas.window.showInactive()
             }

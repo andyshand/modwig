@@ -8,6 +8,7 @@ import { SettingsService } from "../core/SettingsService"
 import { ModsService } from "../mods/ModsService"
 import { returnMouseAfter, whenActiveListener } from "../../connector/shared/EventUtils"
 import { PopupService } from "../popup/PopupService"
+import { UIService } from "../ui/UIService"
 const colors = require('colors')
 
 const { Keyboard, Mouse, MainWindow, Bitwig } = require('bindings')('bes')
@@ -67,6 +68,7 @@ export class ShortcutsService extends BESService {
     tabSwitcherOpen = false
     pausedHolders = 0
 
+    mouseIsDownMightBeDragging = false
     browserText = ''
     actions = this.getActions()
     tempActions: {[id: string]: TempActionSpec} = {}
@@ -912,17 +914,7 @@ export class ShortcutsService extends BESService {
             return keys.reverse()
         }   
 
-
-        let mouseIsDownMightBeDragging = false
         let shortcutCodeWhileMouseDown = ''
-        Keyboard.on('mouseup', event => {
-            this.setEnteringValue(false)
-            mouseIsDownMightBeDragging = false
-        })
-        Keyboard.on('mousedown', event => {
-            mouseIsDownMightBeDragging = true
-        })
-
         let previousEvent
 
         Keyboard.on('keyup', event => {
@@ -958,7 +950,7 @@ export class ShortcutsService extends BESService {
 
             // Don't process shortcuts when dragging (this was to stop shift + 2 being picked up as a shortcut when dragging to make
             // an off-grid time selection)
-            if (mouseIsDownMightBeDragging && !isNaN(parseInt(event.lowerKey, 10)) && !(Meta || Shift || Alt || Control)) {
+            if (this.mouseIsDownMightBeDragging && !isNaN(parseInt(event.lowerKey, 10)) && !(Meta || Shift || Alt || Control)) {
                 // Also store code pressed while dragging so that upon release the shortcut doesn't get triggered until next keypress
                 // (as keydown events will continue to come in as key repeats)
                 shortcutCodeWhileMouseDown = this.makeShortcutValueCode(partialState)
@@ -1049,6 +1041,17 @@ export class ShortcutsService extends BESService {
             } else if ((enteringBefore === this.enteringValue) && (lowerKey === 'Enter' || lowerKey === 'Escape' || lowerKey === "NumpadEnter")) {
                 this.setEnteringValue(false)
             }
+        })
+    }
+
+    postActivate() {
+        const uiService = getService<UIService>("UIService")
+        uiService.Mouse.on('mouseup', event => {
+            this.setEnteringValue(false)
+            this.mouseIsDownMightBeDragging = false
+        })
+        uiService.Mouse.on('mousedown', event => {
+            this.mouseIsDownMightBeDragging = true
         })
     }
 }

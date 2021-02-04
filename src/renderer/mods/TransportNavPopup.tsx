@@ -21,7 +21,7 @@ const MarkerItem = styled.div`
     bottom: .2em;
     align-items: flex-start;
     justify-content: space-between;
-    border-left: 5px solid ${props => props.disabled ? 'rgba(255,255,255,0.1)' : props.marker.color};
+    border-left: 5px solid ${props => props.disabled ? 'rgba(255,255,255,0.04)' : props.marker.color};
     padding: .4em .6em;
     cursor: pointer;
     &:hover {
@@ -29,7 +29,7 @@ const MarkerItem = styled.div`
     }
     overflow: hidden;
     user-select: none;
-    color: ${(props: any) => props.active ? 'white' : (props.disabled ? 'rgba(255, 255, 255, .1)' : '#888')};
+    color: ${(props: any) => props.active ? 'white' : (props.disabled ? 'rgba(255, 255, 255, .04)' : '#888')};
     background: #222;
     >:nth-child(1) {
         display: flex;

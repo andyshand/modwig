@@ -31,6 +31,25 @@ async function toggleSolo(index, opts = {}) {
         x: targetT.rect.x + targetT.rect.w - UI.scale(isMute ? 60 : 90), 
         y: targetT.rect.y + UI.scale(7),
     }        
+    if (index === soloedIndex) {
+        Popup.closeAll()
+        const state = UI.MainWindow.getLayoutState()
+        Popup.openPopup({
+            id: 'muteorsolo',
+            component: 'TrackOverlay',
+            props: {
+                content: isMute ? 'Muted' : 'Soloed'
+            },
+            rect: {
+                x: targetT.rect.x + targetT.rect.w,
+                y: targetT.rect.y,
+                w: state.arranger.rect.w - targetT.rect.w,
+                h: targetT.rect.h
+            },
+            clickable: false
+        })
+    }
+
     await Mouse.click(0, {
         ...clickAt,
         avoidPluginWindows: true,
@@ -89,9 +108,9 @@ Mouse.on('mouseup', async event => {
     // log('mouseup', event)
     if (event.button === 3) {
         // We held click for a while, unsolo the previously solo'd track
-        // const timeDif = new Date() - downAt
-        // log(timeDif)
-        if (soloedIndex >= 0) {
+        const timeDif = new Date() - downAt
+
+        if (timeDif > 500 && soloedIndex >= 0) {
             let soloed = lastTracks[soloedIndex]
             if (!soloed.selected) {
                 await soloed.selectWithMouse()
@@ -103,8 +122,10 @@ Mouse.on('mouseup', async event => {
                 // Bitwig.runAction('clear_solo')
             }
         }
+
         lastTracks = null
         soloedIndex = -1
         downAt = null
+        Popup.closeAll()
     }
 })

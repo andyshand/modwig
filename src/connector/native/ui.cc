@@ -455,7 +455,7 @@ BitwigLayout BitwigWindow::getLayoutState() {
         MWRect{
             scale(arrangerStartX),
             scale(arrangerStartY),
-            frame.w - scale(arrangerStartX),
+            frame.w - scale(arrangerStartX) - scale(28),// 28 === scrollbar
             arrangerViewHeightPX
         }
     };

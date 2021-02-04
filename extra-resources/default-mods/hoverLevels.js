@@ -53,7 +53,7 @@ let mouseDown = false
 Mouse.on('mousedown', async event => {
     mouseDown = true
     if (event.button === 3 && event.Shift) {
-        restoreAutomationControlAfter = event.Meta
+        restoreAutomationControlAfter = false // event.Meta
         const trackIndex = trackIndexForEvent(event)
         const t = lastTracks[trackIndex]
         log(t)

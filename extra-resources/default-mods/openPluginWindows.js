@@ -32,8 +32,8 @@ Mod.registerAction({
             'q',
             'qe',
             'qw',
-            '5m',
-            'c2',
+            // '5m',
+            // 'c2',
         ])
     }
 })

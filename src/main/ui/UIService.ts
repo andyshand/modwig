@@ -29,10 +29,8 @@ export class UIService extends BESService {
     uiScale = 1
     apiEventRouter = new EventRouter<any>()
     idsByEventType: {[type: string] : number} = {}
-    hasOnReloadModsCb = false
     modalWasOpen = false
     Mouse
-    addedExtras = false
 
     // Events
     events = {       
@@ -70,6 +68,22 @@ export class UIService extends BESService {
                 } else {
                     return doIt()
                 }
+            },
+            on: (event, cb) => {
+                const id = this.apiEventRouter.on(event, cb)
+                if (!this.idsByEventType[event]) {
+                    const id = Keyboard.on(event, (...args) => {
+                        this.apiEventRouter.emit(event, ...args)
+                    })
+                    // this.log(`Id for ${event} is ${id}`)
+                    this.idsByEventType[event] = id
+                }
+                return () => {
+                    this.Mouse.off(event, id)
+                }
+            },
+            off: (event, id) => {
+                this.apiEventRouter.off(event, id)
             },
             avoidingPluginWindows: async (pointOpts, cb) => {
                 if (!this.eventIntersectsPluginWindows(pointOpts)) {
@@ -136,28 +150,11 @@ export class UIService extends BESService {
             const results = proto._getArrangerTracks(...args)
             return results ? results.map(obj => Object.setPrototypeOf(obj, ArrangerTrack)) : null
         }
-        this.addedExtras = true
     }
 
     getApi({ makeEmitterEvents, onReloadMods }) {
-        if (!this.addedExtras) {
-            this.addExtras()
-        }
-
         const that = this
-        if (!this.hasOnReloadModsCb) {
-            this.hasOnReloadModsCb = true
-            onReloadMods(() => {
-                this.log('Reloading mods', this.idsByEventType)
-                for (const eventName in this.idsByEventType) {
-                    Keyboard.off(this.idsByEventType[eventName])
-                    this.log('Removed id ' + this.idsByEventType[eventName])
-                }
-                this.idsByEventType = {}
-                this.apiEventRouter.clear()
-                this.hasOnReloadModsCb = false
-            })
-        }
+
         const MouseEvent = {
             intersectsPluginWindows() {
                 return that.eventIntersectsPluginWindows(this)
@@ -172,14 +169,12 @@ export class UIService extends BESService {
                 ..._Mouse,
                 ...this.Mouse,
                 _on: (event, cb) => {
-                    this.apiEventRouter.listen(event, cb)
-                    if (!this.idsByEventType[event]) {
-                        const id = Keyboard.on(event, (...args) => {
-                            this.apiEventRouter.emit(event, ...args)
-                        })
-                        // this.log(`Id for ${event} is ${id}`)
-                        this.idsByEventType[event] = id
-                    }
+                    const removeListener = this.Mouse.on(event, cb)
+                    onReloadMods(() => {
+                        this.log('Should be removing listener')
+                        removeListener()
+                    })
+                    return removeListener
                 },
                 on: (eventName: string, cb: Function) => {
                     const wrappedCb = async (event, ...rest) => {
@@ -286,7 +281,19 @@ export class UIService extends BESService {
             this.checkIfModalOpen()
         })
 
-        Keyboard.on('mouseup', event => {
+        this.settingsService.onSettingValueChange('uiScale', val => {
+            this.uiScale = parseInt(val, 10) / 100
+            UI.updateUILayoutInfo({scale: parseInt(val, 10) / 100})
+            this.log(`Ui scale set to ${this.uiScale}`)
+        })
+
+        interceptPacket('ui', undefined, (packet) => {
+            this.log('Updating UI from packet: ', packet)
+            UI.updateUILayoutInfo(packet.data)
+        })
+
+        this.addExtras()
+        this.Mouse.on('mouseup', event => {
             // Layout could have always changed on mouse up
             UI.invalidateLayout()
 
@@ -306,19 +313,6 @@ export class UIService extends BESService {
             
             this.checkIfModalOpen()
         })
-
-        this.settingsService.onSettingValueChange('uiScale', val => {
-            this.uiScale = parseInt(val, 10) / 100
-            UI.updateUILayoutInfo({scale: parseInt(val, 10) / 100})
-            this.log(`Ui scale set to ${this.uiScale}`)
-        })
-
-        interceptPacket('ui', undefined, (packet) => {
-            this.log('Updating UI from packet: ', packet)
-            UI.updateUILayoutInfo(packet.data)
-        })
-
-        // this.addExtras()
     }
 
     eventIntersectsPluginWindows(event) {

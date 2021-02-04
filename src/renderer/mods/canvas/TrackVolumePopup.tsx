@@ -49,8 +49,11 @@ const VolumeWrap = styled.div`
 `
 const Container = styled.div`
     position: fixed;
+    /* padding: .2em; */
+    background: #1a1a1a;
     display: flex;
     flex-direction: column;
+    border-radius: .2em;
     align-items: flex-start;
     justify-content: flex-start;
     top: ${(props: any) => props.top}px;
@@ -66,9 +69,9 @@ const Color = styled.div`
     border: 1px solid rgba(0, 0, 0, 0.33);
 `
 const TrackInfo = styled.div`
-    margin-top: 1em;
-    font-size: 1.2em;
+    font-size: 1.1em;
     display: flex;
+    padding: .3em 0;
     align-items: center;
 `
 

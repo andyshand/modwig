@@ -22,18 +22,22 @@ export class EventEmitter<T> {
 
 export class EventRouter<T> {
     nextId = 0
-    listenersByEvent: {[event: string]: Function[]} = {}
-    listen(eventName: string, cb: (data: T) => void) {
+    listenersByEvent: {[event: string]: {[id: number]: Function}} = {}
+    on(eventName: string, cb: (data: T) => void) {
         if (!this.listenersByEvent[eventName]) {
-            this.listenersByEvent[eventName] = []
+            this.listenersByEvent[eventName] = {}
         }
-        this.listenersByEvent[eventName].push(cb)
+        let id = this.nextId++
+        this.listenersByEvent[eventName][id] = cb  
+        return id
     }
-    clear() {
-        this.listenersByEvent = {}
+    off(eventName: string, id: number) {
+        if (this.listenersByEvent[eventName]) {
+            delete this.listenersByEvent[eventName][id]
+        }
     }
     emit(eventName: string, ...values: any[]) {
-        for (const cb of (this.listenersByEvent[eventName] || [])) {
+        for (const cb of Object.values(this.listenersByEvent[eventName] || {})) {
             cb(...values)
         }
     }
@@ -53,6 +57,8 @@ export class BESService {
      * make it unresponsive
      */
     activate() : any {}
+
+    postActivate() : any {}
 
     log(...args) {
         if (process.env.DEBUG === 'true') {

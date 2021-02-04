@@ -9,6 +9,7 @@ import { ModsService } from "./mods/ModsService";
 import { BitwigService } from "./bitwig/BitwigService";
 import { UIService } from "./ui/UIService";
 import { PopupService } from "./popup/PopupService";
+import { bitwigActionMap } from "./mods/actionMap";
 
 app.whenReady().then(async () => {
 
@@ -20,24 +21,30 @@ app.whenReady().then(async () => {
       });
     });
 
+    const services = {
+      socketMiddleMan: await registerService(SocketMiddlemanService),
+      settingsService: await registerService<SettingsService>(SettingsService),
+      popupService: await registerService(PopupService),
+      shortcutsService: await registerService(ShortcutsService),
+      bitwigService: await registerService(BitwigService),
+      uiService: await registerService(UIService),
+      modsService: await registerService(ModsService),
+      trayService: await registerService(TrayService)
+    }
+
     // Service creation order is manually controlled atm, but each
     // has dependencies
     // TODO automate this - is error prone
-    const socketMiddleMan = await registerService(SocketMiddlemanService)
-    const settingsService = await registerService<SettingsService>(SettingsService)
-    settingsService.insertSettingIfNotExist({
+    services.settingsService.insertSettingIfNotExist({
       key: 'userLibraryPath',
       value: '',
       category: 'internal',
       type: 'string',
     })
 
-    const popupService = await registerService(PopupService)
-    const shortcutsService = await registerService(ShortcutsService)
-    const bitwigService = await registerService(BitwigService)
-    const uiService = await registerService(UIService)
-    const modsService = await registerService(ModsService)
-    const trayService = await registerService(TrayService)
+    for (const key in services){
+      services[key].postActivate()
+    }
   } catch (e) {
     console.error(e)  
   }
