@@ -211,10 +211,10 @@ export class PopupService extends BESService {
             }
         }
         const uiSevice = getService<UIService>("UIService")
-        this.mouseListenerRemoveCbs.push(uiSevice.Mouse.on('mousemove', (_ as any).throttle(event => {
+        // this.mouseListenerRemoveCbs.push(uiSevice.Mouse.on('mousemove', (_ as any).throttle(event => {
             // Mouse move
             // checkIntersection(event)
-        }, 100)))
+        // }, 100)))
         this.mouseListenerRemoveCbs.push(uiSevice.Mouse.on('mouseup', event => {
             // Mouse up
             if (event.button === 0) {
@@ -224,11 +224,11 @@ export class PopupService extends BESService {
     }
 
     removeMouseListeners() {
-        this.log('Removing mouse listeners')
-        for (const cb of this.mouseListenerRemoveCbs) {
-            cb()
-        }
-        this.mouseListenerRemoveCbs = []
+        // this.log('Removing mouse listeners')
+        // for (const cb of this.mouseListenerRemoveCbs) {
+        //     cb()
+        // }
+        // this.mouseListenerRemoveCbs = []
     }
 
     openPopup = (popup: PopupSpec) => {
@@ -330,7 +330,7 @@ export class PopupService extends BESService {
     async postActivate() {
         const uiService = getService<UIService>("UIService")
         uiService.Mouse.on('keyup', event => {
-            if (Bitwig.isActiveApplication()) {
+            if (Bitwig.isActiveApplication() || Bitwig.isActiveApplication("Electron") || Bitwig.isActiveApplication("Modwig")) {
                 if (event.lowerKey === 'Escape') {
                     this.closeAllPopups()
                 }

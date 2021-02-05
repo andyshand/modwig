@@ -68,11 +68,19 @@ const Color = styled.div`
     border-radius: 1000px;
     border: 1px solid rgba(0, 0, 0, 0.33);
 `
+const Name = styled.div`
+    max-width: 9em;
+    font-size: .9em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+`
 const TrackInfo = styled.div`
     font-size: 1.1em;
     display: flex;
     padding: .3em 0;
     align-items: center;
+    justify-content: center;
 `
 
 export const TrackVolumePopup = ( props ) => {
@@ -91,7 +99,7 @@ export const TrackVolumePopup = ( props ) => {
         <Tooltip volume={getVolumeString(track.volume) + (diff !== 0 ? diffString: '')} />
         <TrackInfo>
             <Color color={track.color} />
-            {track.name}
+            <Name>{track.name}</Name>
             {/* {mouse.x} */}
             {/* {JSON.stringify(props)} */}
         </TrackInfo>
