@@ -11,6 +11,22 @@ const autoOpen = await Mod.registerSetting({
     description: `When selecting a track, plugin windows that were open last session (or last run of Modwig) are reopened. Try not to interact with the device view while plugins are being opened as this may prevent the search from working correctly.`
 })
 
+async function hasTrackOpenedPlugins(trackName) {
+    const data = await Db.getCurrentProjectData()
+    return (data.openedPluginsForTracks?.[trackName] ?? false) && data.pid === Bitwig.getPid()
+}
+
+async function setTrackHasOpenedPlugins(trackName) {
+    let data = await Db.getCurrentProjectData()
+    const pidNow = Bitwig.getPid()
+    if (data.pid !== pidNow) {
+        data.openedPluginsForTracks = {}
+        data.pid = pidNow
+    }
+    data.openedPluginsForTracks[trackName] = true
+    await Db.setCurrentProjectData(data)
+}
+
 Mod.registerAction({
     title: "Restore Open Plugin Windows",
     id: "restore-open-plugin-windows",
@@ -214,17 +230,6 @@ async function restoreOpenedPluginsForTrack(track, presetNames) {
     }
 }
 
-// Ensure we only attempt to automatically restore plugin positions
-// once per project session. This obj gets reset when a new project
-// is detected
-let openedPluginsForTracks = {}
-
-Bitwig.on('activeEngineProjectChanged', async () => {
-    openedPluginsForTracks = {}    
-    log('Project Changed')
-})
-
-
 let prevPluginCount = 0
 let sameCount = 0
 
@@ -267,13 +272,12 @@ Bitwig.on('selectedTrackChanged', debounce(async (track, prev) => {
     sameCount = 0
     restoreFocusedPluginWindowToTop(track.name)
 
-    // log('Auto open is: ' + await autoOpen.getValue())
-    if (await autoOpen.getValue()) {
-        if (track.name in openedPluginsForTracks) {
+    if (autoOpen.value) {
+        if (await hasTrackOpenedPlugins(track.name)) {
             log('Track already has plugins opened')
             return
         }
-        openedPluginsForTracks[track.name] = true
         restoreOpenedPluginsForTrack(track.name)
+        setTrackHasOpenedPlugins(track.name)
     }
 }, 250))

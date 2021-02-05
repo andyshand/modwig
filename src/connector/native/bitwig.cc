@@ -276,6 +276,26 @@ Napi::Value CloseFloatingWindows(const Napi::CallbackInfo &info) {
     return Napi::Boolean::New(env, true);
 }
 
+Napi::Value GetAudioEnginePid(const Napi::CallbackInfo &info) {
+    Napi::Env env = info.Env();
+    auto pluginAXUIElement = GetPluginAXUIElement();
+    if (appDataByProcessName.count("Bitwig Plug-in Host 64") == 1) {
+        return Napi::Number::New(env, appDataByProcessName["Bitwig Plug-in Host 64"].pid);
+    } else if (appDataByProcessName.count("Bitwig Studio Engine") == 1) {
+        return Napi::Number::New(env, appDataByProcessName["Bitwig Studio Engine"].pid);
+    }
+    return Napi::Number::New(env, -1);
+}
+
+Napi::Value GetPid(const Napi::CallbackInfo &info) {
+    Napi::Env env = info.Env();
+    auto pluginAXUIElement = GetBitwigAXUIElement();
+    if (appDataByProcessName.count("Bitwig Studio") == 1) {
+        return Napi::Number::New(env, appDataByProcessName["Bitwig Studio"].pid);
+    }
+    return Napi::Number::New(env, -1);
+}
+
 Napi::Value InitBitwig(Napi::Env env, Napi::Object exports)
 {
     Napi::Object obj = Napi::Object::New(env);
@@ -288,6 +308,8 @@ Napi::Value InitBitwig(Napi::Env env, Napi::Object exports)
     obj.Set("setPluginWindowsPosition", Napi::Function::New(env, SetPluginWindowsPosition));
     obj.Set("focusPluginWindow", Napi::Function::New(env, FocusPluginWindow));
     obj.Set("getPluginWindowsCount", Napi::Function::New(env, GetPluginWindowsCount));
+    obj.Set("getAudioEnginePid", Napi::Function::New(env, GetAudioEnginePid));
+    obj.Set("getPid", Napi::Function::New(env, GetPid));
     exports.Set("Bitwig", obj);
     return exports;
 }
