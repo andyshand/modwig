@@ -22,6 +22,13 @@ export class EventEmitter<T> {
 
 export class EventRouter<T> {
     nextId = 0
+    mutedEvents = {}
+    muteEvent(eventName: string) {
+        this.mutedEvents[eventName] = true
+    }
+    unmuteEvent(eventName: string) {
+        delete this.mutedEvents[eventName]
+    }
     listenersByEvent: {[event: string]: {[id: number]: Function}} = {}
     on(eventName: string, cb: (data: T) => void) {
         if (!this.listenersByEvent[eventName]) {
@@ -37,6 +44,9 @@ export class EventRouter<T> {
         }
     }
     emit(eventName: string, ...values: any[]) {
+        if (eventName in this.mutedEvents) {
+            return logWithTime(`Event ${eventName} was muted`)
+        }
         for (const cb of Object.values(this.listenersByEvent[eventName] || {})) {
             cb(...values)
         }

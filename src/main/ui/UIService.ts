@@ -293,7 +293,15 @@ export class UIService extends BESService {
         })
 
         this.addExtras()
+        this.Mouse.on('mousedown', event => {
+            if (event.button === 0) {
+                this.apiEventRouter.muteEvent('mousedown')
+            }
+        })
         this.Mouse.on('mouseup', event => {
+            if (event.button === 0) {
+                this.apiEventRouter.unmuteEvent('mousedown')
+            }
             // Layout could have always changed on mouse up
             UI.invalidateLayout()
 
