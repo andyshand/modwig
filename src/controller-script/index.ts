@@ -141,6 +141,7 @@ class PacketManager {
         connected: makeEvent<void>(),
         disconnected: makeEvent<void>()
     }
+    queued = []
     constructor(deps: Deps) {
         const { app, globalController, showMessage } = deps
         this.connection = connection
@@ -148,10 +149,18 @@ class PacketManager {
         this.connection.setClientConnectCallback(connection => {
             log("Connected to Node");
             this.activeConnection = connection
-            setTimeout(() => {
+            setTimeout2(() => {
                 // A little delay to allow initial events to come through once all listeners are set up
                 // on either end. Really need a better way of handling this, but it works for now
                 this.events.connected.emit()
+                // for (const packet of this.queued) {
+                //     try {
+                //         this.send(packet)
+                //     } catch (e) {
+                //         println('error sending queued packet')
+                //     }
+                // }
+                // this.queued = []
             }, 500)
             this.activeConnection.setDisconnectCallback(() => {
                 this.events.disconnected.emit()
@@ -234,6 +243,8 @@ class PacketManager {
         if (this.activeConnection) {
             const asString = JSON.stringify(packet)
             this.activeConnection.send(toUTF8Array(((asString.length + asString) as any)));
+        } else {
+            this.queued.push(packet)
         }
     }
 }
@@ -1134,40 +1145,85 @@ function init() {
     })
 
     load('mods.js')
-    const makeApi = () => {
-        return {
-            tracks: {
-                forEach: ((cb) => {
-                    deps.globalController.mapTracks(cb)
-                }),
-                map: (cb) => {
-                    return deps.globalController.mapTracks(cb)
+    const getApiMaker = () => {
+        const freezeFunctions = (obj) => {
+            for (const key in obj) {
+                const d = obj[key]
+                if (typeof d === 'function') {
+                    delete obj[key]
+                    obj[`__function${key}`] = d.toString()
                 }
-            },
-            cursorTrack: deps.globalController.cursorTrack,
-            // cursorSiblingsTrackBank: deps.globalController.cursorSiblingsTrackBank,
-            settings,
-            runAction,
-            log: (msg: string, modId?: string) => {
-                if (debug) {
+            }
+            return obj
+        }
+        return mod => {
+            const api = {
+                tracks: {
+                    forEach: ((cb) => {
+                        deps.globalController.mapTracks(cb)
+                    }),
+                    map: (cb) => {
+                        return deps.globalController.mapTracks(cb)
+                    }
+                },
+                cursorTrack: deps.globalController.cursorTrack,
+                // cursorSiblingsTrackBank: deps.globalController.cursorSiblingsTrackBank,
+                settings,
+                runAction,
+                log: (msg: string, modId?: string) => {
+                    if (debug) {
+                        deps.packetManager.send({
+                            type: 'bitwig/log',
+                            data: {
+                                msg,
+                                modId
+                            }
+                        })
+                        println(msg)
+                    }
+                },
+                findTrackByName: deps.globalController.findTrackByName.bind(deps.globalController),
+                transport,
+                ...deps,
+                setTimeout: setTimeout2,
+                afterUpdates: (fn) => setTimeout2(fn, 25),
+                onFlush,
+                debounce,
+                remoteApiCall: (path, ...args) => {
+                    // host.showPopupNotification(path)
                     deps.packetManager.send({
-                        type: 'bitwig/log',
+                        type: 'apiCall',
                         data: {
-                            msg,
-                            modId
+                            path,
+                            modId: mod.id,
+                            args: args.map(freezeFunctions)
                         }
                     })
-                    println(msg)
+                },
+                Mod: {
+                    registerAction: (action) => {
+                        const actionId = `${action.id}`
+                        deps.packetManager.listen(actionId, () => {
+                            action.action()
+                        })
+                        const remoteAction = {
+                            ...action,
+                            __functionaction: `() => {
+                                Bitwig.sendPacket({
+                                    type: "${actionId}"
+                                })
+                            }`
+                        }
+                        delete remoteAction.action
+                        api.remoteApiCall('Mod.registerAction', remoteAction)
+                        deps.packetManager.events.connected.listen(() => {
+                            api.remoteApiCall('Mod.registerAction', remoteAction)
+                        })
+                    }
                 }
-            },
-            findTrackByName: deps.globalController.findTrackByName.bind(deps.globalController),
-            transport,
-            ...deps,
-            setTimeout: setTimeout2,
-            afterUpdates: (fn) => setTimeout2(fn, 25),
-            onFlush,
-            debounce
-        }
+            }
+            return api
+        }        
     }
-    loadMods(makeApi())
+    loadMods(getApiMaker())
 }

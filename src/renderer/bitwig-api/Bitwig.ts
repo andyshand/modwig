@@ -177,7 +177,7 @@ if (w.pingInterval) {
 }
 w.pingInterval = setInterval(() => {
   send({type: 'ping'})
-}, 1000 * 5)
+}, 1000 * 10)
 
 // send({type: 'ping'})
 // send({type: 'ping'})

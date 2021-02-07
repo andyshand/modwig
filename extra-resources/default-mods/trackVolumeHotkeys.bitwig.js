@@ -5,7 +5,6 @@
  * @category global
  */
 
-const cursorTrack = globalController.cursorTrack
 cursorTrack.volume().modulatedValue().markInterested()
 cursorTrack.volume().value().markInterested()
 cursorTrack.volume().displayedValue().markInterested()

@@ -6,7 +6,7 @@
  */
 
  globalController.cursorTrack.name().addValueObserver(name => {
-     const masterIndex = name.indexOf('Master')
+     const masterIndex = name.search(/Master$/)
      if (masterIndex > 0) {
          const actualName = name.slice(0, masterIndex).trim()
          globalController.selectTrackWithName(actualName, false)
