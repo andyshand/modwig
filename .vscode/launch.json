@@ -28,5 +28,12 @@
       "args": [
          "/Users/andrewshand/Github/electron-quick-start-typescript/local/test.js"
       ]
-   }]
+   },
+   {
+      "name": "Attach to Main (Port 5858)",
+      "type": "node",
+      "request": "attach",
+      "port": 5858,
+      "sourceMaps": true
+    },]
   }

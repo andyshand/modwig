@@ -3,7 +3,7 @@
   "description": "Adds extra features to Bitwig",
   "main": "./dist/main/main.js",
   "scripts": {
-    "electron": "electron dist/main/main.js",
+    "electron": "electron dist/main/main.js --inspect=5858",
     "watch": "tsc -w --p tsconfig.server.json",
     "start": "npm run buildc:dev && NODE_ENV=dev nodemon -V --watch ./dist . --exec 'npm run electron'",
     "start:quiet": "npm run buildc:dev && QUIET_START=true NODE_ENV=dev nodemon -V --watch ./dist . --exec 'npm run electron'",
