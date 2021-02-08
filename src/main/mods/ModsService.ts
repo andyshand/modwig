@@ -148,6 +148,10 @@ export class ModsService extends BESService {
         // }
     }
 
+    isActive() {
+        return Bitwig.isActiveApplication() || Bitwig.isActiveApplication("Modwig") || (process.env.NODE_ENV === 'dev' && Bitwig.isActiveApplication("Electron"))
+    }
+
     async makeApi(mod) {
         const db = await getDb()
         const projectTracks = db.getRepository(ProjectTrack)
@@ -268,6 +272,22 @@ export class ModsService extends BESService {
             makeEmitterEvents, 
             onReloadMods: cb => this.onReloadMods.push(cb) 
         })
+        const wrapCbForApplication = (cb) => {
+            return (...args) => {
+                if ((mod.applications?.length ?? 0) > 0) {
+                    // Don't run cb if specified application not active
+                    const apps = mod.applications
+                    const oneActive = apps.find(a => Bitwig.isActiveApplication(a))
+                    if (!oneActive) {
+                        return
+                    }
+                } else if (!this.isActive()) {
+                    // @applications was empty, assume meant for Bitwig only
+                    return
+                }
+                return cb(...args)
+            }
+        }
 
         const api = {
             _,
@@ -287,9 +307,9 @@ export class ModsService extends BESService {
                         const eventCopy = {...event}
                         this.logForModWebOnly(mod.id, `${eventName}`)
                         Object.setPrototypeOf(eventCopy, KeyboardEvent)
-                        cb(eventCopy, ...rest)
+                        return cb(eventCopy, ...rest)
                     }
-                    wrappedOnForReloadDisconnect(Keyboard)(eventName, wrappedCb)
+                    wrappedOnForReloadDisconnect(Keyboard)(eventName, wrapCbForApplication(wrappedCb))
                 },
                 type: (str, opts?) => {
                     String(str).split('').forEach(char => {
@@ -304,7 +324,12 @@ export class ModsService extends BESService {
                 containsX,
                 containsY
             },
-            Mouse: uiApi.Mouse,
+            Mouse: {
+                ...uiApi.Mouse,
+                on: (eventName: string, cb) => {
+                    return uiApi.Mouse.on(eventName, wrapCbForApplication(cb))
+                }
+            },
             UI: uiApi.UI,
             Bitwig: addNotAlreadyIn({
                 closeFloatingWindows: Bitwig.closeFloatingWindows,
@@ -896,6 +921,7 @@ export class ModsService extends BESService {
                     const description = checkForTag('description') || ''
                     const category = checkForTag('category') ?? 'global'
                     const version = checkForTag('version') ?? '0.0.1'
+                    const applications = checkForTag('applications')?.split(',') ?? []
                     const noReload = contents.indexOf('@noReload') >= 0
                     const settingsKey = `mod/${id}`
                     const p = path.join(modsFolder, filePath)
@@ -905,6 +931,7 @@ export class ModsService extends BESService {
                     modsById[actualId] = {
                         id: actualId,
                         name,
+                        applications,
                         settingsKey,
                         description,
                         category,
