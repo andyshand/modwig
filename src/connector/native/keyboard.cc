@@ -4,18 +4,27 @@
 
 #include <CoreGraphics/CoreGraphics.h>
 #include <iostream>
+#include <vector>
 #include <forward_list>
 #include <thread>
 #include <string>
 #include <map>
 #include <string>
+#include <mutex>
 
 using std::forward_list;
 
 bool threadSetup = false;
 std::thread nativeThread;
 CFRunLoopRef runLoop;
+
+struct WaitingLoopSrc {
+    // CallbackInfo info;
+    CFRunLoopSourceRef loopSrc;
+};
 int nextId = 0;
+std::vector<WaitingLoopSrc> waitingCbInfo;
+std::mutex m;
 
 std::map<int,std::string> macKeycodeMap = {
   // Layout independent - will break on non-qwerty :(
@@ -354,21 +363,31 @@ CallbackInfo* addEventListener(EventListenerSpec spec) {
         std::cout << "Could not create event tap.";
     } else {
         CGEventTapEnable(ourInfo->tap, true);
-        ourInfo->runloopsrc = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, ourInfo->tap, 0);
         if (!threadSetup) {
             threadSetup = true;
             nativeThread = std::thread( [=] {
                 runLoop = CFRunLoopGetCurrent();
-                CFRunLoopAddSource(runLoop, ourInfo->runloopsrc, kCFRunLoopCommonModes);
-                CFRunLoopRun();
+                while (true) {
+                    CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0, true);
+                    m.lock();
+                    if (waitingCbInfo.size() > 0) {
+                        for(auto info : waitingCbInfo) {
+                            CFRunLoopAddSource(runLoop, info.loopSrc, kCFRunLoopCommonModes);
+                        }
+                    }
+                    waitingCbInfo.clear();
+                    m.unlock();
+                }
             } );
-        } else {    
-            // EXC_BAD_ACCESS: __THE_PROCESS_HAS_FORKED_AND_YOU_CANNOT_USE_THIS_COREFOUNDATION_FUNCTIONALITY___YOU_MUST_EXEC__
-            // hmm... how fix?
-            CFRunLoopAddSource(runLoop, ourInfo->runloopsrc, kCFRunLoopCommonModes);
         }
+        auto loopSrc = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, ourInfo->tap, 0);
+        m.lock();
+        callbacks.push_front(ourInfo);
+        waitingCbInfo.push_back(WaitingLoopSrc{
+            .loopSrc = loopSrc
+        });
+        m.unlock();
     }
-    callbacks.push_front(ourInfo);
     return ourInfo;
 }
 
