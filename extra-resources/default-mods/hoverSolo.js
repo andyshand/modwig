@@ -118,8 +118,8 @@ Mouse.on('mouseup', async event => {
             if (isMute) {
                 toggleSolo(soloedIndex)
             } else {
-                toggleSolo(soloedIndex)
-                // Bitwig.runAction('clear_solo')
+                // toggleSolo(soloedIndex)
+                Bitwig.runAction('clear_solo')
             }
         }
 

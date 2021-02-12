@@ -9,7 +9,6 @@ import { ModsService } from "./mods/ModsService";
 import { BitwigService } from "./bitwig/BitwigService";
 import { UIService } from "./ui/UIService";
 import { PopupService } from "./popup/PopupService";
-import { bitwigActionMap } from "./mods/actionMap";
 
 app.whenReady().then(async () => {
 

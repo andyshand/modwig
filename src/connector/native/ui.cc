@@ -686,6 +686,7 @@ ImageDeets* BitwigWindow::updateScreenshot() {
     if (latestImageDeets != nullptr) {
         delete latestImageDeets;
     }
+    // std::cout << "updating screenshot" << std::endl;
     auto image = CGWindowListCreateImage(
         CGRectNull, 
         kCGWindowListOptionIncludingWindow, 

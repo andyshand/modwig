@@ -1,10 +1,12 @@
 #include "bitwig.h"
 #include "string.h"
+#include "keyboard.h"
 #include <CoreGraphics/CoreGraphics.h>
 #include <ApplicationServices/ApplicationServices.h>
 #include <iostream>
 #include <string>
 #include <cstddef>
+#include <atomic>
 #include <map>
 #include <vector>
 using namespace std::string_literals;
@@ -14,6 +16,9 @@ struct AppData {
     pid_t pid;
 };
 std::map<std::string,AppData> appDataByProcessName = {};
+
+std::string activeApp;
+std::atomic<bool> activeAppDirty(true);
 
 bool pidIsAlive(pid_t pid)  {
     return 0 == kill(pid, 0);
@@ -233,18 +238,37 @@ bool isAXUIElementActiveApp(AXUIElementRef element) {
     return isFrontmost == kCFBooleanTrue;
 }
 
+bool isAppActive(std::string app) {
+    if (!activeAppDirty) {
+        return activeApp == app;
+    }
+    auto axUIEl = findAXUIElementByName(app);
+    auto active = isAXUIElementActiveApp(axUIEl);
+    if (active) {
+        activeApp = app;
+    }
+    return active;
+}
+
+bool isBitwigActive() {
+    return isAppActive("Bitwig Studio");
+}
+
+bool isPluginWindowActive() {
+    return isAppActive("Bitwig Plug-in Host 64") || isAppActive("Bitwig Studio Engine");
+}
+
 Napi::Value IsActiveApplication(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
     if (info[0].IsString()) {
-        auto axUIEl = findAXUIElementByName(info[0].As<Napi::String>());
         return Napi::Boolean::New(
             env, 
-            isAXUIElementActiveApp(axUIEl)
+            isAppActive(info[0].As<Napi::String>())
         );
     }
     return Napi::Boolean::New(
         env, 
-        isAXUIElementActiveApp(GetBitwigAXUIElement()) || isAXUIElementActiveApp(GetPluginAXUIElement())
+        isBitwigActive() || isPluginWindowActive()
     );
 }
 
@@ -266,7 +290,7 @@ Napi::Value IsPluginWindowActive(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
     return Napi::Boolean::New(
         env, 
-        isAXUIElementActiveApp(GetPluginAXUIElement())
+        isPluginWindowActive()
     );
 }
 
@@ -299,6 +323,25 @@ Napi::Value GetPid(const Napi::CallbackInfo &info) {
 Napi::Value InitBitwig(Napi::Env env, Napi::Object exports)
 {
     Napi::Object obj = Napi::Object::New(env);
+
+    addEventListener(EventListenerSpec{
+        "mouseup",
+        [](JSEvent* event) -> void {
+            activeAppDirty = true;
+        },
+        nullptr,
+        nullptr
+    });
+
+    addEventListener(EventListenerSpec{
+        "keyup",
+        [](JSEvent* event) -> void {
+            activeAppDirty = true;
+        },
+        nullptr,
+        nullptr
+    });
+
     obj.Set("isActiveApplication", Napi::Function::New(env, IsActiveApplication));
     obj.Set("isPluginWindowActive", Napi::Function::New(env, IsPluginWindowActive));
     obj.Set("makeMainWindowActive", Napi::Function::New(env, MakeMainWindowActive));

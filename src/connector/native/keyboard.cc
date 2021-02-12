@@ -11,6 +11,7 @@
 #include <map>
 #include <string>
 #include <mutex>
+#include <stdexcept>
 
 using std::forward_list;
 
@@ -175,6 +176,8 @@ CGEventRef eventtap_callback(CGEventTapProxy proxy, CGEventType type, CGEventRef
         return event;
     }
 
+    // std::cout << "callback" << std::endl;
+    
     CallbackInfo* e = (CallbackInfo*) refcon;    
     
     // hammerspoon says OS X disables eventtaps if it thinks they are slow or odd or just because the moon
@@ -333,6 +336,8 @@ CallbackInfo* addEventListener(EventListenerSpec spec) {
         mask = CGEventMaskBit(kCGEventLeftMouseUp) | CGEventMaskBit(kCGEventRightMouseUp) | CGEventMaskBit(kCGEventOtherMouseUp);
     } else if ("scroll" == spec.eventType) {
         mask = CGEventMaskBit(kCGEventScrollWheel);
+    } else {
+        throw std::invalid_argument("Unrecognised event type: " + spec.eventType);
     }
 
     // TODO FREE
@@ -368,7 +373,7 @@ CallbackInfo* addEventListener(EventListenerSpec spec) {
             nativeThread = std::thread( [=] {
                 runLoop = CFRunLoopGetCurrent();
                 while (true) {
-                    CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0, true);
+                    CFRunLoopRunInMode(kCFRunLoopDefaultMode, 1, true);
                     m.lock();
                     if (waitingCbInfo.size() > 0) {
                         for(auto info : waitingCbInfo) {
@@ -380,11 +385,11 @@ CallbackInfo* addEventListener(EventListenerSpec spec) {
                 }
             } );
         }
-        auto loopSrc = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, ourInfo->tap, 0);
+        ourInfo->runloopsrc = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, ourInfo->tap, 0);
         m.lock();
         callbacks.push_front(ourInfo);
         waitingCbInfo.push_back(WaitingLoopSrc{
-            .loopSrc = loopSrc
+            .loopSrc = ourInfo->runloopsrc
         });
         m.unlock();
     }
@@ -409,6 +414,7 @@ Napi::Value on(const Napi::CallbackInfo &info) {
 Napi::Value off(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
     int id = info[0].As<Napi::Number>();
+    m.lock();
     callbacks.remove_if([=](CallbackInfo *e){ 
         bool willRemove = e->id == id;     
         if (willRemove) {
@@ -417,6 +423,7 @@ Napi::Value off(const Napi::CallbackInfo &info) {
         }
         return willRemove;
     });
+    m.unlock();
     return Napi::Boolean::New(env, true);
 }
 

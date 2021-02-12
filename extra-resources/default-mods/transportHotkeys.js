@@ -12,7 +12,6 @@ const showPopup = await Mod.registerSetting({
     name: 'Show Transport Popup When Launching',
     description: `When triggering launch markers, show a popup notification of the marker's position`
 })
-log(showPopup)
 
 let launchMarkerDisabledSettings = []
 for (let i = 0; i < launchMarkerCount; i++) {
@@ -152,7 +151,7 @@ Mod.registerActionsWithRange('launch-arranger-cue-marker', 1, launchMarkerCount 
             let actualI = i - 1
             let enabledI = -1
             for (let j = 0; j < launchMarkerCount; j++) {
-                log(launchMarkerDisabledSettings[j], actualI, enabledI)
+                // log(launchMarkerDisabledSettings[j], actualI, enabledI)
                 if (!launchMarkerDisabledSettings[j].value) {
                     enabledI++
                 }

@@ -179,21 +179,29 @@ Mouse.on('scroll', debounce(() => {
 
 Mouse.on('mousemove', throttle(maybeShowPopover, 50))
     
+function stop() {
+    showNotification({
+        ...notifBase,
+        track: null
+    })
+    if (restoreAutomationControlAfter) {
+        Bitwig.runAction('restore_automation_control')
+    }
+    lastTracks = null
+    track = null
+}
+
 Mouse.on('mouseup', async event => {
     mouseDown = false
     if (event.button === 3 && track) {
-        showNotification({
-            ...notifBase,
-            track: null
-        })
-        if (restoreAutomationControlAfter) {
-            Bitwig.runAction('restore_automation_control')
-        }
-        lastTracks = null
-        track = null
+        stop()
         Mouse.setCursorVisibility(true)
         Mouse.setPosition(downPos.x, downPos.y)
     }
 })
 
-
+Mouse.on('keydown', async event => {
+    if (event.lowerKey === 'Escape' && track) {
+        stop()
+    }
+})

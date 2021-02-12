@@ -149,7 +149,7 @@ export class ModsService extends BESService {
     }
 
     isActive() {
-        return Bitwig.isActiveApplication() || Bitwig.isActiveApplication("Modwig") || (process.env.NODE_ENV === 'dev' && Bitwig.isActiveApplication("Electron"))
+        return Bitwig.isActiveApplication() || (process.env.NODE_ENV === 'dev' ? Bitwig.isActiveApplication("Electron") : Bitwig.isActiveApplication("Modwig"))
     }
 
     async makeApi(mod) {
@@ -1041,7 +1041,7 @@ module.exports = {
                         try {
                             this.log('Enabling local mod: ' + mod.id)
                             const allApi = {...api, ...this.staticApi}
-                            modsOut[`mod${i}`](allApi)
+                            await modsOut[`mod${i}`](allApi)
                         } catch (e) {
                             this.log(colors.red(`Error loading mod ${mod.id}: `), e)
                         }
