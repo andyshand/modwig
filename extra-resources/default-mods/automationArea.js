@@ -136,7 +136,7 @@ for (let i = 0; i < 100; i+= 10) {
                 await wait(100)
                 Keyboard.keyPress('NumpadEnter')
                 Mod.setEnteringValue(false)
-            }, 100)
+            }, 200)
         }
     })
 }
