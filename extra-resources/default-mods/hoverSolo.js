@@ -110,11 +110,11 @@ Mouse.on('mouseup', async event => {
         // We held click for a while, unsolo the previously solo'd track
         const timeDif = new Date() - downAt
 
+        const soloed = lastTracks[soloedIndex]
+        if (!soloed.selected) {
+            await soloed.selectWithMouse()
+        }
         if (timeDif > 500 && soloedIndex >= 0) {
-            let soloed = lastTracks[soloedIndex]
-            if (!soloed.selected) {
-                await soloed.selectWithMouse()
-            }
             if (isMute) {
                 toggleSolo(soloedIndex)
             } else {
