@@ -907,7 +907,7 @@ export class ModsService extends BESService {
             for (const filePath of files) {
                 const actualType = filePath.indexOf('bitwig.js') >= 0 ? 'bitwig' : 'local'
                 // console.log(filePath, actualType)
-                if (actualType !== type) {
+                if (filePath.substr(-3) !== '.js' || actualType !== type) {
                     continue;
                 }
                 try { 
