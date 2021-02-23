@@ -1110,6 +1110,13 @@ function init() {
             position
         })
     })
+    transport.isPlaying().markInterested()
+    transport.isPlaying().addValueObserver(playing => {
+        deps.packetManager.send({
+            type: 'transport/state',
+            data: playing ? 'playing' : 'stopped'
+        })
+    })
     
     new TrackSearchController(deps)    
     new BackForwardController(deps)    

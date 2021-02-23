@@ -25,3 +25,13 @@ Mod.registerShortcutMap({
         }
     }
 })
+
+// Bitwig.on('transportStateChanged', state => {
+//     if (state === 'playing') {
+//         Bitwig.showMessage('pressing =')
+//         Keyboard.keyDown('[')
+//     } else {
+//         Bitwig.showMessage('pressing shift =')
+//         Keyboard.keyDown(']')
+//     }
+// })

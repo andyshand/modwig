@@ -373,7 +373,7 @@ CallbackInfo* addEventListener(EventListenerSpec spec) {
             nativeThread = std::thread( [=] {
                 runLoop = CFRunLoopGetCurrent();
                 while (true) {
-                    CFRunLoopRunInMode(kCFRunLoopDefaultMode, 1, true);
+                    CFRunLoopRunInMode(kCFRunLoopDefaultMode, 3, true);
                     m.lock();
                     if (waitingCbInfo.size() > 0) {
                         for(auto info : waitingCbInfo) {

@@ -17,9 +17,11 @@ export class BitwigService extends BESService {
 
     // Internal state
     browserIsOpen = false
+    transportState = 'stopped'
 
     // Events
     events = {
+        transportStateChanged: makeEvent<string>(),
         browserOpen: makeEvent<boolean>()
     }
 
@@ -29,6 +31,14 @@ export class BitwigService extends BESService {
             const previous = this.browserIsOpen
             this.browserIsOpen = data.isOpen
             this.events.browserOpen.emit(data, previous)
+        })
+        interceptPacket('transport/state', undefined, ({ data: state }) => {
+            this.log('received transport state packet: ' + state)
+            const previous = this.transportState
+            this.transportState = state
+            if (this.transportState !== previous) {
+                this.events.transportStateChanged.emit(state, previous)
+            }
         })
     }
 }

@@ -382,9 +382,9 @@ export class ModsService extends BESService {
                 intersectsPluginWindows: event => this.uiService.eventIntersectsPluginWindows(event),
                 ...makeEmitterEvents({
                     selectedTrackChanged: this.events.selectedTrackChanged,
-                    browserOpen: this.bitwigService.events.browserOpen,
                     projectChanged: this.events.projectChanged,
-                    activeEngineProjectChanged: this.events.activeEngineProjectChanged
+                    activeEngineProjectChanged: this.events.activeEngineProjectChanged,
+                    ...this.bitwigService.events
                 })
             }, Bitwig),
             MainDisplay: {

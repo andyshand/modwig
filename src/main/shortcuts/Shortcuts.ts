@@ -74,7 +74,7 @@ export class ShortcutsService extends BESService {
     tempActions: {[id: string]: TempActionSpec} = {}
     shortcutCache: {[key: string]: {runner: Function, action?: AnyActionSpec}[]} = {}
     settingsService = getService<SettingsService>('SettingsService')
-    searchWindow: BrowserWindow
+    // searchWindow: BrowserWindow
     extraShortcuts: any[]
     events = {
         actionTriggered: makeEvent<AnyActionSpec>(),
@@ -202,11 +202,12 @@ export class ShortcutsService extends BESService {
             ...(this.actionsWithCategory('global', {
                 openTrackSearch: {
                     action: () => {
-                        this.searchWindow.show()
+                        // this.searchWindow.show()
                     }                
                 },
                 restoreAutomationControl: {
                     action: () => {
+                        Bitwig.makeMainWindowActive()
                         sendPacketToBitwig({type: 'action', data: 'restore_automation_control'})
                     } 
                 },
@@ -740,7 +741,7 @@ export class ShortcutsService extends BESService {
             this.log(`Registering temporary action: ${colors.magenta(action.id)}`)
             this.tempActions[action.id] = action
             if (!skipUpdate) {
-                this.log('Not skipping')
+                // this.log('Not skipping')
                 await this.updateShortcutCache()
             }
             return
@@ -762,7 +763,7 @@ export class ShortcutsService extends BESService {
         // this.log(action)
         this.actions[action.id] = action
         if (!skipUpdate) {
-            this.log('Not skipping')
+            // this.log('Not skipping')
             await this.updateShortcutCache()
         }
     }
@@ -879,18 +880,18 @@ export class ShortcutsService extends BESService {
     }
 
     activate() {
-        this.searchWindow = new BrowserWindow({ 
-            width: 370, 
-            height: 480, 
-            frame: false, 
-            show: false,
-            webPreferences: {
-                enableRemoteModule: true,
-                webSecurity: false,
-                nodeIntegration: true,
-            }
-        })
-        this.searchWindow.loadURL(url('/#/search'))
+        // this.searchWindow = new BrowserWindow({ 
+        //     width: 370, 
+        //     height: 480, 
+        //     frame: false, 
+        //     show: false,
+        //     webPreferences: {
+        //         enableRemoteModule: true,
+        //         webSecurity: false,
+        //         nodeIntegration: true,
+        //     }
+        // })
+        // this.searchWindow.loadURL(url('/#/search'))
 
         this.settingsService = getService('SettingsService')
         this.seedSettings()

@@ -5,6 +5,8 @@ import { PopupLabel } from './popups/PopupLabel'
 import { send } from '../bitwig-api/Bitwig'
 import { PluginWindowWrap } from './popups/PluginWindowWrap'
 import { TrackOverlay } from './popups/TrackOverlay'
+import { Timer } from './canvas/Timer'
+import { ErrorBoundary } from './canvas/ErrorBoundary'
 
 const Wrap = styled.div`
     position: fixed;
@@ -38,7 +40,8 @@ const ComponentMap = {
     TransportNavPopup: TransportNavPopup,
     PopupLabel: PopupLabel,
     PluginWindowWrap: PluginWindowWrap,
-    TrackOverlay: TrackOverlay
+    TrackOverlay: TrackOverlay,
+    Timer: Timer
 }
 
 export const PopupRenderer = (props) => {
@@ -73,7 +76,9 @@ export const PopupRenderer = (props) => {
                 width: popup.rect.w + 'px',
                 height: popup.rect.h + 'px'
             }}>
-                <Component {...componentProps} />
+                <ErrorBoundary>
+                    <Component {...componentProps} />
+                </ErrorBoundary>
             </PopupWrap>
         })}
     </Wrap>
