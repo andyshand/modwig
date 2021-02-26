@@ -7,6 +7,7 @@ import { PluginWindowWrap } from './popups/PluginWindowWrap'
 import { TrackOverlay } from './popups/TrackOverlay'
 import { Timer } from './canvas/Timer'
 import { ErrorBoundary } from './canvas/ErrorBoundary'
+import { CueProgress } from './canvas/CueProgress'
 
 const Wrap = styled.div`
     position: fixed;
@@ -41,7 +42,8 @@ const ComponentMap = {
     PopupLabel: PopupLabel,
     PluginWindowWrap: PluginWindowWrap,
     TrackOverlay: TrackOverlay,
-    Timer: Timer
+    Timer: Timer,
+    CueProgress: CueProgress
 }
 
 export const PopupRenderer = (props) => {

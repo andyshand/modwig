@@ -26,6 +26,12 @@ interface PopupSpec {
     onReceivedData?: Function
 
     /**
+     * Defaults to false, whether the popup should stay onscreen 
+     * even when "closeAll" methods are called
+     */
+    persistent?: boolean
+
+    /**
      * Defaults to false, whether the popup should be clickable
      */
     clickable?: boolean
@@ -276,9 +282,11 @@ export class PopupService extends BESService {
 
     closeAllPopups = () => {
         for (const id in this.currentPopups) {
-            this.closePopup(id, true)
+            const popupInfo = this.currentPopups[id]
+            if (!popupInfo.popup.persistent) {
+                this.closePopup(id, true)
+            }
         }
-        this.removeMouseListeners()
         this.refreshPopups()
         Bitwig.makeMainWindowActive();
     }

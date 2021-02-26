@@ -91,6 +91,7 @@ export class ModsService extends BESService {
     // Events
     events = {
         selectedTrackChanged: makeEvent<any>(),
+        cueMarkersChanged: makeEvent<any>(),
         projectChanged: makeEvent<number>(),
         modsReloaded: makeEvent<void>(),
         activeEngineProjectChanged: makeEvent<string>()
@@ -384,6 +385,7 @@ export class ModsService extends BESService {
                     selectedTrackChanged: this.events.selectedTrackChanged,
                     projectChanged: this.events.projectChanged,
                     activeEngineProjectChanged: this.events.activeEngineProjectChanged,
+                    cueMarkersChanged: this.events.cueMarkersChanged,
                     ...this.bitwigService.events
                 })
             }, Bitwig),
@@ -684,6 +686,7 @@ export class ModsService extends BESService {
         })
         interceptPacket('cue-markers', undefined, async ({ data: cueMarkers }) => {
             this.cueMarkers = cueMarkers
+            this.events.cueMarkersChanged.emit(this.cueMarkers)
         })
 
         // API endpoint to set the current log for specific websocket

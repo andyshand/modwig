@@ -7,19 +7,27 @@ const Wrap = styled.div`
     width: ${TWITCH_CHAT_WIDTH}px;
     position: fixed;
     top: ${TWITCH_CHAT_HEIGHT}px;
-    height: 100px;
+    height: 115px;
     right: 0;
     font-size: 1.7em;
     background: rgba( 0, 0, 0, .7);
     border-top: 2px solid #444;
+    overflow: hidden;
     display: flex;
     align-items: center;
-    border-bottom-left-radius: .3em;
     justify-content: center;
-    overflow: hidden;
+    flex-direction: column;
+    padding-bottom: 1.5em;
+    padding-top: 1em;
+    box-shadow: inset 0 -10px 0 0 black;
 `
 const Title = styled.div`
     margin-right: 1em;
+`
+const Flex = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: center;
 `
 const TimerProgress = styled.div`
     background: #104c91;
@@ -29,6 +37,11 @@ const TimerProgress = styled.div`
     position: absolute;
     left: 0;
     width: ${(props: any) => props.percent};
+`
+const CurrentlyWorking = styled.div`
+  font-size: .6em;
+  padding-top: .2em;
+  color: #777;
 `
 const Time = styled.div``
 
@@ -45,6 +58,7 @@ function useInterval(callback, delay) {
     function tick() {
       (savedCallback as any).current();
     }
+    
     if (delay !== null) {
       let id = setInterval(tick, delay);
       return () => clearInterval(id);
@@ -72,8 +86,12 @@ export const Timer = ({ to: toRaw, title, startedAt: startedAtRaw }) => {
     }
 
     return <Wrap>
-        <Title>{title}</Title>
-        <Time>{formatted}</Time>
+        <Flex>
+          <Title>{title}</Title>
+          <Time>{msLeft <= 0 ? 'Timer Complete 🎉' : formatted}</Time>
+        </Flex>
+        <CurrentlyWorking>currently working on
+        starjump - bounds EP</CurrentlyWorking>
         <TimerProgress percent={Math.round(fractionThrough * 100) + '%'} />
     </Wrap>
 }

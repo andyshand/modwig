@@ -385,7 +385,12 @@ class GlobalController extends Controller {
             marker.getName().markInterested()
             marker.getColor().markInterested()
             marker.position().markInterested()
-
+            marker.position().addValueObserver(pos => {
+                this.sendAllCueMarkers()
+            })
+            marker.getColor().addValueObserver(color => {
+                this.sendAllCueMarkers()
+            })
             marker.getName().addValueObserver(name => {
                 this.sendAllCueMarkers()
             })
