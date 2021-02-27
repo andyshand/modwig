@@ -3,18 +3,14 @@ import { styled } from 'linaria/react'
 import moment from 'moment'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faComments } from '@fortawesome/free-solid-svg-icons'
-import { TWITCH_CHAT_WIDTH } from './constants'
 
 export const Wrap = styled.div`
-    position: fixed;
+    position: absolute;
     top: 0;
     right: 0;
-    height: 600px;
-    width: ${TWITCH_CHAT_WIDTH}px;
+    bottom: 0;
+    left: 0;
     background: rgba( 0, 0, 0, .7);
-    /* border-radius: .3em;
-    border-top-left-radius: 0;
-    border-top-right-radius: 0; */
     font-size: 1.6em;
     display: flex;
     overflow: hidden;
@@ -29,7 +25,6 @@ export const Date = styled.span`
 export const PanelTitle = styled.div`
     text-align: center;
     padding: 1.2em 0;
-    /* font-size: .8em; */
 `
 const Messages = styled.div`
     display: flex;

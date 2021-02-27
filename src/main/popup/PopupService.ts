@@ -216,10 +216,23 @@ export class PopupService extends BESService {
                 }
             }
         }
+        const intersectsAnything = (event) => {
+            for (const id in this.currentPopups) {
+                const { popup } = this.currentPopups[id]
+                if (!popup.clickable && containsPoint(popup.rect, event)) {
+                   return true
+                }
+            }
+            return false
+        }
         const uiSevice = getService<UIService>("UIService")
         // this.mouseListenerRemoveCbs.push(uiSevice.Mouse.on('mousemove', (_ as any).throttle(event => {
-            // Mouse move
-            // checkIntersection(event)
+        //     // Mouse move
+        //     if (intersectsAnything(event)) {
+        //         this.canvas.window.setOpacity(.5)
+        //     } else {
+        //         this.canvas.window.setOpacity(1)
+        //     }
         // }, 100)))
         this.mouseListenerRemoveCbs.push(uiSevice.Mouse.on('mouseup', event => {
             // Mouse up

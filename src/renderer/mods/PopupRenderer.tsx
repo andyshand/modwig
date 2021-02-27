@@ -8,6 +8,7 @@ import { TrackOverlay } from './popups/TrackOverlay'
 import { Timer } from './canvas/Timer'
 import { ErrorBoundary } from './canvas/ErrorBoundary'
 import { CueProgress } from './canvas/CueProgress'
+import { TwitchChat } from './popups/TwitchChat'
 
 const Wrap = styled.div`
     position: fixed;
@@ -43,7 +44,8 @@ const ComponentMap = {
     PluginWindowWrap: PluginWindowWrap,
     TrackOverlay: TrackOverlay,
     Timer: Timer,
-    CueProgress: CueProgress
+    CueProgress: CueProgress,
+    TwitchChat: TwitchChat
 }
 
 export const PopupRenderer = (props) => {

@@ -8,7 +8,6 @@ import { Spinner } from '../core/Spinner'
 import { TrackVolumePopup } from './canvas/TrackVolumePopup'
 import { AutomationPopover } from './canvas/AutomationPopover'
 import { PopupRenderer } from './PopupRenderer'
-import { TwitchChat } from './canvas/TwitchChat'
 const { clipboard } = require('electron')
 
 const Wrap = styled.div`
@@ -128,7 +127,6 @@ export class Canvas extends ModwigComponent<any> {
     canvasRef = React.createRef<HTMLCanvasElement>()
     state = {
         notifications: [],
-        chatMessages: [],
         browserIsOpen: false,
         enteringValue: false,
 
@@ -140,7 +138,6 @@ export class Canvas extends ModwigComponent<any> {
     UNSAFE_componentWillReceiveProps(nextProps) {
         let newProgressIds = new Set()
         let stateAdditions: any = {
-            chatMessages: this.state.chatMessages,
         }
         const newNotifications = (nextProps.notifications || []).map(notif => {
             if (notif.type === 'progress') {
@@ -160,10 +157,6 @@ export class Canvas extends ModwigComponent<any> {
             }
             if (notif.type === 'hoverLevels') {
                 stateAdditions.automationLevel = notif
-                return null
-            }
-            if (notif.type === 'twitch') {
-                stateAdditions.chatMessages.push(notif.data)
                 return null
             }
             return {
@@ -226,15 +219,11 @@ export class Canvas extends ModwigComponent<any> {
             })}
         </NotificatinosWrap>
     }
-    renderTwitchChat() {
-        return <TwitchChat messages={this.state.chatMessages} />
-    }
     render() {
         return <>
             <Wrap>
                 <canvas ref={this.canvasRef} />
                 {this.renderNotifications()}
-                {this.renderTwitchChat()}
                 <Static>
                     {/* {this.state.browserIsOpen ? <div>Browser Open</div> : null}
                     {this.state.enteringValue ? <div>Entering Value</div> : null}

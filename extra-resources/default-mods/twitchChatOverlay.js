@@ -7,7 +7,9 @@
 
 const { ChatClient } = require("dank-twitch-irc");
 const moment = require('moment')
+const { w, h } = MainDisplay.getDimensions()
 
+let chatMessages = []
 let client = new ChatClient();
 client.on("ready", () => {
   log("Successfully connected to chat")
@@ -42,6 +44,23 @@ if (existingTimer) {
   openTimerWithProps(existingTimer)
 }
 
+const openTwitchChat = () => {
+  Popup.openPopup({
+    id: 'twitch-chat',
+    component: "TwitchChat",
+    props: {
+      messages: chatMessages
+    },
+    rect: {
+      x: w - 800,
+      y: 0,
+      w: 800,
+      h: 600,
+    },
+    persistent: true
+  })
+}
+
 client.on("PRIVMSG", async (msg) => {
   const { messageText } = msg
   if (messageText.indexOf('!') === 0 && msg.senderUserID === '442061229') {
@@ -69,15 +88,13 @@ client.on("PRIVMSG", async (msg) => {
       })
     }
   } else {
-    showNotification({
-      type: 'twitch',
-      data: {
-        ..._.clone(msg)
-      }
-    })
+    chatMessages.push(_.clone(msg))
+    chatMessages = chatMessages.slice(-100)
+    openTwitchChat()
   }
 });
 
+openTwitchChat()
 client.connect();
 client.join("theandyshand");
 
@@ -88,7 +105,6 @@ Mod.onExit(() => {
 })
 
 const openCueMarkerPopup = async (savedData) => {
-  const { w, h } = MainDisplay.getDimensions()
   if (!savedData) {
     savedData = await Db.getCurrentProjectData()
   }
@@ -108,7 +124,7 @@ const openCueMarkerPopup = async (savedData) => {
     },
     rect: {
         x: w - 800,
-        y: 600 + (savedData.timer ? 200 : 0),
+        y: 600 + 115,// (savedData.timer ? 115 : 0),
         w: 800,
         h: 300,
     },
