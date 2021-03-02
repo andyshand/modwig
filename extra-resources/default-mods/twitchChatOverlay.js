@@ -5,10 +5,27 @@
  * @category global
  */
 
+const chatHeight = 600
+const timerHeight = 115
+
 const { ChatClient } = require("dank-twitch-irc");
+const showTwitchChat = await Mod.registerSetting({
+  id: 'twitch-chat',
+  name: 'Show Twitch Chat',
+  description: `Whether to show twitch chat overlay`
+})
+const showTimer = await Mod.registerSetting({
+  id: 'timer',
+  name: 'Show Timer',
+  description: `Whether to show timer overlay`
+})
+showTwitchChat.value = true
+showTimer.value = true
+
 const moment = require('moment')
 const { w, h } = MainDisplay.getDimensions()
 
+let isFocusMode = false
 let chatMessages = []
 let client = new ChatClient();
 client.on("ready", () => {
@@ -23,7 +40,12 @@ client.on("close", (error) => {
 });
 
 const openTimerWithProps = props => {
+  if (!showTimer.value) {
+    return Popup.closePopup('timer')
+  }
   const { w, h } = MainDisplay.getDimensions()
+  isFocusMode = props.title === 'focus mode'
+  log(props.title)
   Popup.openPopup({
     id: 'timer',
     component: 'Timer',
@@ -31,20 +53,27 @@ const openTimerWithProps = props => {
     props,
     rect: {
         x: w - 800,
-        y: 600,
+        y: isFocusMode ? 0 : chatHeight,
         w: 800,
-        h: 200
+        h: timerHeight
     },
     clickable: false
   })
+  if (isFocusMode){
+    Popup.closePopup('twitch-chat')
+  }
 }
 
-const existingTimer = (await Db.getCurrentProjectData() || {}).timer
+const existingTimer = await getRunningTimer()
+isFocusMode = existingTimer?.title === 'focus mode' ?? false
 if (existingTimer) {
   openTimerWithProps(existingTimer)
 }
 
 const openTwitchChat = () => {
+  if (!showTwitchChat.value || isFocusMode) {
+    return Popup.closePopup('twitch-chat')
+  }
   Popup.openPopup({
     id: 'twitch-chat',
     component: "TwitchChat",
@@ -55,7 +84,7 @@ const openTwitchChat = () => {
       x: w - 800,
       y: 0,
       w: 800,
-      h: 600,
+      h: chatHeight,
     },
     persistent: true
   })
@@ -68,10 +97,13 @@ client.on("PRIVMSG", async (msg) => {
       const data = await Db.getCurrentProjectData()
       const parts = messageText.split(' ')
       if (parts[1] === 'stop') {
-        Db.setCurrentProjectData({
+        await Db.setCurrentProjectData({
           ...data,
           timer: null
         })
+        isFocusMode = false
+        openTwitchChat()
+        openCueMarkerPopup()
         return Popup.closePopup('timer')
       }
       const targetTime = moment(parts[1],'h:mma').toDate()
@@ -82,6 +114,7 @@ client.on("PRIVMSG", async (msg) => {
         title,
       }
       openTimerWithProps(props)
+      openCueMarkerPopup()
       Db.setCurrentProjectData({
         ...data,
         timer: props
@@ -104,11 +137,22 @@ Mod.onExit(() => {
   client = null
 })
 
+async function getRunningTimer(savedData) {
+  if (!savedData) {
+    savedData = await Db.getCurrentProjectData()
+  }
+  return savedData.timer && savedData.timer.to > new Date().getTime() 
+    ? savedData.timer 
+    : null
+}
+
 const openCueMarkerPopup = async (savedData) => {
   if (!savedData) {
     savedData = await Db.getCurrentProjectData()
   }
   // log(JSON.stringify(savedData.cueMarkers))
+  const runningTimer = await getRunningTimer(savedData)
+  log(runningTimer)
   Popup.openPopup({
     id: 'marker-progress',
     component: 'CueProgress',
@@ -124,7 +168,7 @@ const openCueMarkerPopup = async (savedData) => {
     },
     rect: {
         x: w - 800,
-        y: 600 + 115,// (savedData.timer ? 115 : 0),
+        y: (isFocusMode ? 0 : chatHeight) + (runningTimer ? timerHeight : 0),
         w: 800,
         h: 300,
     },
@@ -197,3 +241,11 @@ Bitwig.on('cueMarkersChanged', () => {
 })
 
 openCueMarkerPopup()
+
+Mod.setInterval(async () => {
+  // check timer still needs to be open
+  const timer = await getRunningTimer()
+  if (!timer) {
+    Popup.closePopup('timer')
+  }
+}, 1000 * 60 * 60)

@@ -5,8 +5,8 @@ import { styled } from 'linaria/react'
 
 const Wrap = styled.div`
     width: ${TWITCH_CHAT_WIDTH}px;
-    position: fixed;
-    top: ${TWITCH_CHAT_HEIGHT}px;
+    position: absolute;
+    top: 0;
     height: 115px;
     right: 0;
     font-size: 1.7em;
@@ -90,8 +90,7 @@ export const Timer = ({ to: toRaw, title, startedAt: startedAtRaw }) => {
           <Title>{title}</Title>
           <Time>{msLeft <= 0 ? 'Timer Complete 🎉' : formatted}</Time>
         </Flex>
-        <CurrentlyWorking>currently working on
-        starjump - bounds EP</CurrentlyWorking>
+        <CurrentlyWorking>{title === 'focus mode' ? `andy won't see your messages until focus mode is over 😳` : 'currently working on starjump - bounds EP'}</CurrentlyWorking>
         <TimerProgress percent={Math.round(fractionThrough * 100) + '%'} />
     </Wrap>
 }
