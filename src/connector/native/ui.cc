@@ -29,25 +29,25 @@ std::experimental::optional<BitwigLayout> prevLayout;
 
 // These are colors for midtones 28, black level 36
 // BenQ screen
-// MWColor trackSelectedColorActive = MWColor{141, 141, 141};
-// MWColor trackSelectedColorInactive = MWColor{97, 97, 97};
-// MWColor trackColor = MWColor{97, 97, 97};
-// MWColor panelBorder = MWColor{104, 104, 104};
-// MWColor trackAutomationBg = MWColor{34, 34, 34};
-// MWColor trackDivider = MWColor{6, 6, 6};
-// MWColor panelBorderInactive = MWColor{68, 68, 68};
-// MWColor panelOpenIcon = MWColor{240, 109, 39};
-// MWColor modalBgColor = MWColor{35, 35, 35};
-
 MWColor trackSelectedColorActive = MWColor{141, 141, 141};
 MWColor trackSelectedColorInactive = MWColor{97, 97, 97};
-MWColor trackColor = MWColor{68, 68, 68};
+MWColor trackColor = MWColor{97, 97, 97};
 MWColor panelBorder = MWColor{104, 104, 104};
 MWColor trackAutomationBg = MWColor{34, 34, 34};
 MWColor trackDivider = MWColor{6, 6, 6};
 MWColor panelBorderInactive = MWColor{68, 68, 68};
-MWColor panelOpenIcon = MWColor{236, 113, 37};
+MWColor panelOpenIcon = MWColor{240, 109, 39};
 MWColor modalBgColor = MWColor{35, 35, 35};
+
+// MWColor trackSelectedColorActive = MWColor{141, 141, 141};
+// MWColor trackSelectedColorInactive = MWColor{97, 97, 97};
+// MWColor trackColor = MWColor{68, 68, 68};
+// MWColor panelBorder = MWColor{104, 104, 104};
+// MWColor trackAutomationBg = MWColor{34, 34, 34};
+// MWColor trackDivider = MWColor{6, 6, 6};
+// MWColor panelBorderInactive = MWColor{68, 68, 68};
+// MWColor panelOpenIcon = MWColor{236, 113, 37};
+// MWColor modalBgColor = MWColor{35, 35, 35};
 
 const std::string 
     BITWIG_HEADER_HEIGHT = "BITWIG_HEADER_HEIGHT",

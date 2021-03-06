@@ -11,7 +11,7 @@ import { SettingsService } from "../core/SettingsService"
 import { promises as fs } from 'fs'
 import * as path from 'path'
 import { Setting } from "../db/entities/Setting"
-import { createDirIfNotExist, exists as fileExists, getTempDirectory, writeStrFile } from "../core/Files"
+import { createDirIfNotExist, exists as fileExists, getTempDirectory, rmRfDir, writeStrFile } from "../core/Files"
 import { logWithTime } from "../core/Log"
 import { ShortcutsService } from "../shortcuts/Shortcuts"
 import { debounce, wait } from '../../connector/shared/engine/Debounce'
@@ -87,6 +87,7 @@ export class ModsService extends BESService {
     tracks: any[] = []
     activeModApiIds: {[key: string]: any} = {}
     settingKeyInfo: {[key: string]: SettingInfo} = {}
+    modBuiltDirectory?: string = undefined
 
     // Events
     events = {
@@ -977,8 +978,6 @@ export class ModsService extends BESService {
         return (await this.settingsService.getSetting(mod.settingsKey))?.value.enabled ?? false;
     }
 
-    tempDir
-
     wrappedOnForReloadDisconnect = (parent) => {
         return (...args) => {
             const id = parent.on(...args)
@@ -999,8 +998,10 @@ export class ModsService extends BESService {
         this.activeModApiIds = {}
         modsLoading = true
 
-        if (!this.tempDir) {
-            this.tempDir = await getTempDirectory()
+        if (!this.modBuiltDirectory) {
+            this.modBuiltDirectory = getResourcePath('/built-mods')
+            await rmRfDir(this.modBuiltDirectory)
+            await createDirIfNotExist(this.modBuiltDirectory)
         }
 
         try {
@@ -1034,7 +1035,7 @@ module.exports = {
     ${enabledMods.map((_, i) => `mod${i}`).join(',\n')}
 }
 `
-                    const p = path.join(this.tempDir, `mods${nextId++}.js`)
+                    const p = path.join(this.modBuiltDirectory, `mods${nextId++}.js`)
                     await writeStrFile(fileOut, p)
                     this.log(`Mods written to ${p}`)
 

@@ -7,7 +7,11 @@ export function getResourcePath(resource = '') {
     if (isDev) {
         out = (isRenderer ? `file://` : ``) + path.join(process.cwd(), 'extra-resources', resource)
     } else {
-        out = (isRenderer ? `file://` : ``) + `${process.resourcesPath}/app/extra-resources${resource}`
+        if (process.env.BUILT_TEST) {
+            out = (isRenderer ? `file://` : ``) + `/Users/andrewshand/Github/modwig/modwig-darwin-x64/modwig.app/Contents/Resources/app/extra-resources${resource}`
+        } else {
+            out = (isRenderer ? `file://` : ``) + `${process.resourcesPath}/app/extra-resources${resource}`
+        }
     }
     return out
 }

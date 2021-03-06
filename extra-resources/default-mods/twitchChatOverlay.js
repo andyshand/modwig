@@ -19,8 +19,8 @@ const showTimer = await Mod.registerSetting({
   name: 'Show Timer',
   description: `Whether to show timer overlay`
 })
-showTwitchChat.value = true
-showTimer.value = true
+showTwitchChat.setValue(true)
+showTimer.setValue(true)
 
 const moment = require('moment')
 const { w, h } = MainDisplay.getDimensions()
@@ -62,6 +62,7 @@ const openTimerWithProps = props => {
   if (isFocusMode){
     Popup.closePopup('twitch-chat')
   }
+  openCueMarkerPopup()
 }
 
 const existingTimer = await getRunningTimer()
@@ -114,7 +115,6 @@ client.on("PRIVMSG", async (msg) => {
         title,
       }
       openTimerWithProps(props)
-      openCueMarkerPopup()
       Db.setCurrentProjectData({
         ...data,
         timer: props
@@ -146,13 +146,14 @@ async function getRunningTimer(savedData) {
     : null
 }
 
-const openCueMarkerPopup = async (savedData) => {
+async function openCueMarkerPopup(savedData) {
   if (!savedData) {
     savedData = await Db.getCurrentProjectData()
   }
   // log(JSON.stringify(savedData.cueMarkers))
   const runningTimer = await getRunningTimer(savedData)
   log(runningTimer)
+  // return false
   Popup.openPopup({
     id: 'marker-progress',
     component: 'CueProgress',

@@ -90,7 +90,7 @@ export const Timer = ({ to: toRaw, title, startedAt: startedAtRaw }) => {
           <Title>{title}</Title>
           <Time>{msLeft <= 0 ? 'Timer Complete 🎉' : formatted}</Time>
         </Flex>
-        <CurrentlyWorking>{title === 'focus mode' ? `andy won't see your messages until focus mode is over 😳` : 'currently working on starjump - bounds EP'}</CurrentlyWorking>
+        <CurrentlyWorking>{title === 'focus mode' ? `andy won't see your messages until focus mode is over 😳` : 'currently working on bounds EP'}</CurrentlyWorking>
         <TimerProgress percent={Math.round(fractionThrough * 100) + '%'} />
     </Wrap>
 }

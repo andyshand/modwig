@@ -3,6 +3,7 @@ dist
 build
 extra-resources/controller-script/bes.control.js
 extra-resources/controller-script/mods.js
+extra-resources/built-mods
 scripts/install
 .linaria-cache
 .vscode/c_cpp_properties.json

@@ -20,6 +20,13 @@ export async function exists(path: string) {
     }
 }
 
+export async function rmRfDir(path: string) {
+    if (!path || path.length === 0 || path === '/') {
+        throw new Error('Bad path')
+    }
+    return (fs.rmdir as any)(path, { recursive: true })
+}
+
 export async function filesAreEqual(pathA: string, pathB: string) {
     return (await fs.readFile(pathA)).equals(await fs.readFile(pathB))
 }
