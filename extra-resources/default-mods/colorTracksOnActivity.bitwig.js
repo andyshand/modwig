@@ -106,6 +106,7 @@ const sets = [
             'arp',
             'phone',
             'xylo',
+            'marimba',
             'glock',
             'vibra'
         ]),
