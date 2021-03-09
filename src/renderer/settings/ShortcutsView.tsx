@@ -127,7 +127,7 @@ export const ShortcutsView = ({ settings }) => {
                 {settings.map(sett => {
                     return <tr key={sett.key} onClick={() => setSelectedSetting(sett)} style={sett.key === (selectedSetting?.key ?? null) ? {background: '#111'} : {}}>
                         <td>{settingTitle(sett)}</td>
-                        <td>{sett.mod}</td>
+                        <td>{sett.modName}</td>
                         <td>{shortcutToTextDescription(sett)} {shouldShortcutWarn(sett) ? <Warning /> : null}</td>
                         {/* <td></td> */}
                     </tr>

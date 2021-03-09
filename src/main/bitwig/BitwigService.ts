@@ -3,6 +3,7 @@ import { BESService, getService, makeEvent } from "../core/Service"
 import { SettingsService } from "../core/SettingsService"
 import { ShortcutsService } from "../shortcuts/Shortcuts"
 import _ from 'underscore'
+import { PopupService } from "../popup/PopupService"
 
 const { Keyboard, Bitwig, UI } = require('bindings')('bes')
 
@@ -14,10 +15,12 @@ export class BitwigService extends BESService {
     // Other services
     settingsService = getService<SettingsService>('SettingsService')
     shortcutsService = getService<ShortcutsService>("ShortcutsService")
+    popupService = getService<PopupService>('PopupService')
 
     // Internal state
     browserIsOpen = false
     transportState = 'stopped'
+    tracks: any[] = []
 
     // Events
     events = {
@@ -40,5 +43,14 @@ export class BitwigService extends BESService {
                 this.events.transportStateChanged.emit(state, previous)
             }
         })
+        interceptPacket('tracks', undefined, (_ as any).debounce(async ({ data: tracks }) => {
+            this.tracks = tracks
+            // Check for duplicate track names
+            const uniqNames = (_ as any).uniq(this.tracks.map(t => t.name))
+            const numberOfDuplicates = tracks.length - uniqNames.length
+            if (numberOfDuplicates > 0) {
+                this.popupService.showMessage(`Modwig works best when all tracks have unique names. Check the settings for the 'Rename Tracks' action to auto-rename ${numberOfDuplicates} tracks`)
+            }
+        }, 1000))
     }
 }

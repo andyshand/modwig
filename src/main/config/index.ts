@@ -1,7 +1,7 @@
 const path = require('path')
 import { promises as fs } from 'fs'
 import { app } from 'electron'
-import { createDirIfNotExist } from '../core/Files'
+import { createDirIfNotExist, rmRfDir } from '../core/Files'
 const isRenderer = require('is-electron-renderer')
 const newUser = !!process.env.NEW_USER
 
@@ -12,7 +12,7 @@ export const storagePath = isRenderer ? '' : path.join(basePath, 'files')
 
 const createFolders = async () => {
     if (newUser && process.env.NEW_USER_CLEAN) {
-        await (fs.rmdir as any)(basePath, { recursive: true })
+        await rmRfDir(basePath)
     }
 
     await createDirIfNotExist(app.getPath('appData'))

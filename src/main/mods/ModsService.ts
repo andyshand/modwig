@@ -84,7 +84,6 @@ export class ModsService extends BESService {
     onReloadMods: Function[] = []
     refreshCount = 0
     activeEngineProject: string | null = null
-    tracks: any[] = []
     activeModApiIds: {[key: string]: any} = {}
     settingKeyInfo: {[key: string]: SettingInfo} = {}
     modBuiltDirectory?: string = undefined
@@ -342,7 +341,7 @@ export class ModsService extends BESService {
                     return Bitwig.isPluginWindowActive()
                 },
                 get tracks() {
-                    return that.tracks
+                    return that.bitwigService.tracks
                 },
                 get isBrowserOpen() {
                     return that.bitwigService.browserIsOpen
@@ -677,10 +676,6 @@ export class ModsService extends BESService {
                 this.currTrack = selectedTrack
                 this.events.selectedTrackChanged.emit(this.currTrack, prev)
             }
-        })
-        interceptPacket('tracks', undefined, async ({ data: tracks }) => {
-            this.tracks = tracks
-            // this.log(tracks)
         })
         interceptPacket('device', undefined, async ({ data: device }) => {
             this.currDevice = device
