@@ -77,7 +77,7 @@ Mouse.on('mousedown', async event => {
                 })
                 startWithTrack({...t, ...track})
             }
-            Mouse.setCursorVisibility(false)
+            // Mouse.setCursorVisibility(false)
         }
     }    
 })
@@ -195,7 +195,7 @@ Mouse.on('mouseup', async event => {
     mouseDown = false
     if (event.button === 3 && track) {
         stop()
-        Mouse.setCursorVisibility(true)
+        // Mouse.setCursorVisibility(true)
         Mouse.setPosition(downPos.x, downPos.y)
     }
 })
