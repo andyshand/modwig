@@ -16,6 +16,11 @@ export const settingTitle = setting => {
   return setting.name || setting.title || titleize(humanise(setting.key))
 }
 
+export function shouldShortcutWarn (sett) {
+  const keys = sett.value.keys || []
+  return keys.length === 1 && keys[0].length === 1 && /[a-z0-9]/i.test(keys[0])
+}
+
 export const settingShortDescription = setting => {
   if (typeof setting.description !== 'string') {
     return 'No description available.'

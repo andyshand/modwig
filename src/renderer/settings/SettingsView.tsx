@@ -10,6 +10,7 @@ import { ModLogs } from './ModLogs'
 import { SettingsFooter } from './SettingsFooter'
 import { faSearch } from '@fortawesome/free-solid-svg-icons'
 import { ModwigComponent } from '../core/ModwigComponent'
+import { ShortcutsView } from './ShortcutsView'
 const xPad = `4rem`
 const SettingsViewWrap = styled.div`
     background: #1e1e1e;
@@ -295,6 +296,9 @@ const ModsWrap = styled.div`
     height: 100%;
     overflow-y: auto;
 `
+const ContentWrap = styled.div`
+    position: relative;
+`
 const SettingItem = ({setting: sett, focused}) => {
     return <SettingItemWrap id={sett.key} focused={focused}>
         <div>
@@ -342,7 +346,7 @@ const SearchIconWrap = ({ onClick }) => {
 export class SettingsView extends ModwigComponent<Props> {
 
     state = {
-        category: 'mod',
+        category: undefined,
         settings: [],
         loading: true,
         searchQuery: '',
@@ -475,37 +479,9 @@ export class SettingsView extends ModwigComponent<Props> {
         const filteredSettings = this.state.settings.filter(s => {
             return this.state.searchQuery === '' || (s.key + s.description).toLowerCase().indexOf(this.state.searchQuery) >= 0
         })
-        const addedByMod = _.groupBy(filteredSettings, setting => setting.modName)
-        return <NavSplit>
-            <div>
-                {Object.keys(addedByMod).map(mod => {
-                    const settings = addedByMod[mod]
-                    return <SidebarSection key={mod}>
-                        <div style={{color: '#777'}}>{mod == 'null' ? 'Modwig Core' : mod}</div>
-                        <div>
-                            {settings.map(setting => {
-                                const onClick = () => {
-                                    this.setState({
-                                        focusedSettingKey: setting.key
-                                    })
-                                    document.getElementById(setting.key).scrollIntoView({behavior: 'auto', block: 'center'})
-                                }
-                                return <SidebarSetting focused={setting.key === this.state.focusedSettingKey} title={settingTitle(setting)} onClick={onClick} key={setting.key}>
-                                    <span style={{
-                                        whiteSpace: `normal`,
-                                        wordBreak: `break-word`
-                                    }}>{shortcutToTextDescription(setting)}</span>
-                                    <span>{settingTitle(setting)}</span>
-                                </SidebarSetting>
-                            })}
-                        </div>
-                    </SidebarSection>
-                })}
-            </div>
-            <div>
-                {this.renderShortcutList(addedByMod)}
-            </div>
-        </NavSplit>
+        return <ContentWrap>
+            <ShortcutsView settings={filteredSettings} />
+        </ContentWrap>
     }
 
     render() {

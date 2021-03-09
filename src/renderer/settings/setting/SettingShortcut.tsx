@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import React, {useEffect, useState} from 'react'
 import { styled } from 'linaria/react'
 import { sendPromise } from '../../bitwig-api/Bitwig'
-import { shortcutToTextDescription } from '../helpers/settingTitle'
+import { shortcutToTextDescription, shouldShortcutWarn } from '../helpers/settingTitle'
 import { Checkbox } from '../../core/Checkbox'
 
 const ShortcutInput = styled.input`
@@ -20,6 +20,7 @@ const ShortcutInput = styled.input`
 const ShortcutWrap = styled.div`
     user-select: none;
     cursor: default;
+    
 `
 const InputWrap = styled.div`
     border: 1px solid ${(props: any) => props.focused ? `#CCC` : `#272727`};
@@ -27,6 +28,9 @@ const InputWrap = styled.div`
     border-radius: 0.3rem;
     cursor: pointer;    
     position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     input {
         color: ${(props: any) => props.noShortcut ? `#555` : `#a6a6a6`};
     }
@@ -122,6 +126,12 @@ const Option = ({value, id, onChange, label}) => {
         <label htmlFor={id}>{label}</label>
     </OptionWrap>
 }
+
+const WarningText = styled.div`
+    font-size: 0.7em;
+    margin: 1em 0;
+    color: #8c8c8c;
+`
 
 export const SettingShortcut = ({setting}) => {
 
@@ -233,6 +243,7 @@ export const SettingShortcut = ({setting}) => {
             <ShortcutInput {...props} />
             <div className="setdefault"><FontAwesomeIcon onClick={() => updateValue({...value, keys: []})} icon={faTimesCircle} /></div>
         </InputWrap>
+        {shouldShortcutWarn(setting) ? <WarningText>Please note it's currently not possible to prevent single character shortcuts from triggering in text fields</WarningText> : null}
         <OptionsWrap>
             {options.map(option => {
                 return <Option {...option} />
