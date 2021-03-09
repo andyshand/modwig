@@ -34,8 +34,9 @@ const TableWrap = styled.div`
         font-size: .9em;
         /* color: #ccc; */
         color: #818181;
-        /* &:not(:first-child) { */
-        /* } */
+        &:not(:first-child) {
+            color: #555;
+        }
     }
     table {
         width: 100%;
@@ -60,8 +61,9 @@ border-left: 1px solid black;
 > div {
     padding: 2.5rem;
     >h1 {
-        font-size: 1.2em;
+        font-size: 1.1em;
         font-weight: 400;
+        color: #a7a7a7;
     }
     >p {
         margin-top: 2rem;
@@ -84,7 +86,9 @@ const InfoPanel = ({selectedSetting}) => {
             </div>
         </InfoPanelWrap>
     } else {
-        return <InfoPanelWrap>Select a setting to see more info.</InfoPanelWrap>
+        return <InfoPanelWrap>
+            {/* <div>Select a setting to see more info.</div>         */}
+        </InfoPanelWrap>
     }
 }
 
