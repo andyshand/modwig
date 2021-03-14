@@ -1,3 +1,5 @@
+
+#include <napi.h>
 #include <iostream>
 #include <string>
 #include <cstddef>
@@ -6,6 +8,7 @@
 #include <vector>
 #include <CoreGraphics/CoreGraphics.h>
 #include <ApplicationServices/ApplicationServices.h>
+#include "string.h"
 using namespace std::string_literals;
 
 struct AppData {
@@ -15,7 +18,7 @@ struct AppData {
 std::map<std::string,AppData> appDataByProcessName = {};
 
 std::string activeApp;
-std::atomic<bool> activeAppDirty(true);
+static std::atomic<bool> activeAppDirty(true);
 
 bool pidIsAlive(pid_t pid)  {
     return 0 == kill(pid, 0);

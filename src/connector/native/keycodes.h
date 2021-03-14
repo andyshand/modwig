@@ -2,7 +2,7 @@
 
 #if defined(IS_WINDOWS)
 typedef short MWKeyCode;
-#elif defined(IS_MAC)
+#elif defined(IS_MACOS)
 typedef int MWKeyCode;
 #endif
 

@@ -1,4 +1,7 @@
 #include <CoreGraphics/CoreGraphics.h>
+#include <Napi.h>
+#include "eventsource.h"
+#include "point.h"
 
 int SLEEP_TIME = 2000;
 bool middleDownDragWaiting = false;

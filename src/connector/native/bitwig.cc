@@ -2,6 +2,10 @@
 #include "string.h"
 #include "events.h"
 
+#if defined(IS_MACOS)
+static std::atomic<bool> activeAppDirty;
+#endif
+
 Napi::Value IsActiveApplication(const Napi::CallbackInfo &info);
 Napi::Value IsPluginWindowActive(const Napi::CallbackInfo &info);
 Napi::Value MakeMainWindowActive(const Napi::CallbackInfo &info);
