@@ -23,6 +23,9 @@ const SettingsViewWrap = styled.div`
         background:#444;
         border-bottom: 1px solid black;
         -webkit-app-region: drag; 
+        > * {
+            -webkit-app-region: no-drag; 
+        }
         padding-left: 84px;
         display: flex;
         justify-content: space-between;
@@ -103,6 +106,7 @@ const Tabs = styled.div`
     display: flex;
     height: 100%;
     align-items: center;
+    justify-content: flex-start;
 
 `
 const Tab = styled.div`

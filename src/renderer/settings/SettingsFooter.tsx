@@ -13,6 +13,7 @@ const Footer = styled.div`
     border-top: 1px solid black;
     -webkit-app-region: drag; 
     > * {
+        -webkit-app-region: no-drag; 
         margin-left: 1rem;
     }
 `

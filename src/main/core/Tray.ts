@@ -39,6 +39,7 @@ export class TrayService extends BESService {
                 height: 650, 
                 show: false,
                 titleBarStyle: 'hiddenInset',
+                frame: false,
                 webPreferences: {
                     enableRemoteModule: true,
                     webSecurity: false,

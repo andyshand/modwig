@@ -1,3 +1,4 @@
+#include <windows.h>
 #include "ui.h"
 #include "string.h"
 #include "rect.h"
@@ -24,9 +25,27 @@ ImageDeets* BitwigWindow::updateScreenshot() {
 };
 
 WindowInfo BitwigWindow::getFrame() {
-    return WindowInfo{
-        MWRect{ 
-            0, 0, 0, 0
+    auto outRect = MWRect();
+    EnumWindows([](HWND hWnd, LPARAM lParam) -> BOOL {
+        char buff[255];
+        GetClassName(
+            hWnd,
+            (LPTSTR) buff,
+            254
+        );
+        if (strcmp(&buff, "bitwig")) {
+            RECT rect;
+            GetWindowRect(hWnd, &rect);     
+            outRect.x = rect.left;
+            outRect.y = rect.top;
+            outRect.w = rect.right - rect.left;
+            outRect.h = rect.bottom - rect.top;
+            return FALSE;
         }
+        // continue the enumeration
+        return TRUE; 
+    }, 0);
+    return WindowInfo{
+        outRect
     };
 };

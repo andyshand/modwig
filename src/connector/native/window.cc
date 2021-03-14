@@ -23,6 +23,9 @@ Napi::Value GetMainScreen(const Napi::CallbackInfo &info) {
         
         obj.Set(Napi::String::New(env, "w"), Napi::Number::New(env, screenWidth));
         obj.Set(Napi::String::New(env, "h"), Napi::Number::New(env, screenHeight));
+    #elif defined(IS_WINDOWS)
+        obj.Set(Napi::String::New(env, "w"), Napi::Number::New(env, GetSystemMetrics(SM_CXFULLSCREEN)));
+        obj.Set(Napi::String::New(env, "h"), Napi::Number::New(env, GetSystemMetrics(SM_CYFULLSCREEN)));
     #endif
     return obj;
 }
