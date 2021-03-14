@@ -1,21 +1,21 @@
 #include <napi.h>
-#include <CoreFoundation/CoreFoundation.h>
-#include <ApplicationServices/ApplicationServices.h>
+
+#if defined(IS_MACOS)
+  #include <CoreFoundation/CoreFoundation.h>
+  #include <ApplicationServices/ApplicationServices.h>
+#endif
 
 #include "bitwig.h"
-#include "color.h"
 #include "point.h"
 #include "rect.h"
 #include "mouse.h"
-#include "keyboard.h"
-#include "screen.h"
+#include "events.h"
 #include "window.h"
 #include "ui.h"
 #include <iostream>
 
 Napi::Object InitAll(Napi::Env env, Napi::Object exports) {
   try {
-    BESColor::Init(env, exports);
     BESPoint::Init(env, exports);
     BESRect::Init(env, exports);
     InitKeyboard(env, exports);
@@ -23,7 +23,7 @@ Napi::Object InitAll(Napi::Env env, Napi::Object exports) {
     InitWindow(env, exports);
     InitBitwig(env, exports);
     InitUI(env, exports);
-    return Screenshot::Init(env, exports); 
+    return exports;
   } catch (const std::exception &e) {
     std::cerr << e.what() << std::endl;
   } catch (...){

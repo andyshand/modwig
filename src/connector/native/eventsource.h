@@ -1,5 +1,6 @@
 #pragma once
 
-#include <CoreGraphics/CoreGraphics.h>
-
-CGEventSourceRef getCGEventSource(bool modwigListeners = false);
+#if defined(IS_MACOS)
+    #include <CoreGraphics/CoreGraphics.h>
+    CGEventSourceRef getCGEventSource(bool modwigListeners = false);
+#endif

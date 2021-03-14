@@ -9,6 +9,10 @@ packager({
     asar: false,
     out: path.join(__dirname, '..', '..', 'modwig'),
     overwrite: true,
+    osxSign: {
+        identity: 'Andrew Shand',
+        keychain: 'login'
+    },
     afterPrune: [
         (buildPath, electronVersion, platform, arch, cb) => {
             const packageJSON = require(path.join(buildPath, 'package.json'))

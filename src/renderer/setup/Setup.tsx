@@ -217,6 +217,13 @@ export class Setup extends React.Component {
                 send({type: 'api/setup/accessibility'})
             }
         }
+        if (require('os').platform() === 'win32') {
+            this.onNextStep()
+            return {
+                description: null,
+                content: null
+            }
+        }
         return {
             description: <div>
                 <CenterText>

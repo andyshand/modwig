@@ -1,7 +1,7 @@
 #pragma once
 #include <napi.h>
-#include <experimental/optional>
-#include "keyboard.h"
+#include "events.h"
+#include "os.h"
 
 struct XYPoint {
     int x, y;
@@ -22,7 +22,9 @@ struct MWRect {
     XYPoint fromBottomRight(int x, int y);
 };
 struct WindowInfo {
-    CGWindowID windowId;
+    #if defined(IS_MACOS)
+        CGWindowID windowId;
+    #endif
     MWRect frame;
 };
 struct MWColor {
@@ -46,9 +48,9 @@ struct Arranger {
     Napi::Object toJSObject(Napi::Env env);
 };
 struct BitwigLayout {
-    std::experimental::optional<EditorPanel> editor;
-    std::experimental::optional<Inspector> inspector;
-    std::experimental::optional<Arranger> arranger;
+    optional<EditorPanel> editor;
+    optional<Inspector> inspector;
+    optional<Arranger> arranger;
     bool modalOpen;
     Napi::Object toJSObject(Napi::Env env);
 };
@@ -59,21 +61,24 @@ struct ArrangerTrack {
     static ArrangerTrack fromJSObject(Napi::Object obj, Napi::Env env);
 };
 struct ImageDeets {
-    CFDataRef imageData;
+    #if defined(IS_MACOS)
+        CFDataRef imageData;
+        CGImageRef imageRef;
+        CGBitmapInfo info;
+        ImageDeets(CGImageRef latestImage, WindowInfo frame);
+    #endif
+    
     size_t bytesPerRow;
     size_t bytesPerPixel;
-    CGImageRef imageRef;
-    CGBitmapInfo info;
     WindowInfo frame;
     size_t maxInclOffset;
     int width, height;
-    ImageDeets(CGImageRef latestImage, WindowInfo frame);
     ~ImageDeets();
     size_t getPixelOffset(XYPoint point);
     bool isWithinBounds(XYPoint point);
     MWColor colorAt(XYPoint point);
 
-    std::experimental::optional<XYPoint> seekUntilColor(
+    optional<XYPoint> seekUntilColor(
         XYPoint startPoint,
         std::function<bool(MWColor)> tester, 
         int changeAxis,
@@ -81,26 +86,7 @@ struct ImageDeets {
         int step = 1
     );
 };
-// class BitwigUI : public Napi::ObjectWrap<BitwigUI> {
-//     public:
-//     static Napi::FunctionReference constructor;
-//     std::string identifier = "Bitwig Window";
-//     BitwigUI* parent;
-//     void processEvent(JSEvent* event);
-//     void setFrame(MWRect frame);
-//     void ensureUpToDate();
-//     BitwigUI(const Napi::CallbackInfo &info);
-//     static Napi::Object Init(Napi::Env env, Napi::Object exports);
-// };
-// class BitwigUIComponent: public Napi::ObjectWrap<BitwigUIComponent> {
-//     public:
-//     static Napi::FunctionReference constructor;
-//     MWRect rect;
-//     Napi::Value getRect(const Napi::CallbackInfo &info);
-//     MWColor colorAt(XYPoint point);
-//     BitwigUIComponent(const Napi::CallbackInfo &info);
-//     static Napi::Object Init(Napi::Env env, Napi::Object exports);
-// };
+
 class BitwigWindow: public Napi::ObjectWrap<BitwigWindow> {
     public:
     static Napi::FunctionReference constructor;
@@ -118,8 +104,6 @@ class BitwigWindow: public Napi::ObjectWrap<BitwigWindow> {
     int getMainPanelStartY();
     BitwigWindow(const Napi::CallbackInfo &info);
 
-    // BitwigUIComponent arranger;
-    // BitwigUIComponent inspector;
     static Napi::Object Init(Napi::Env env, Napi::Object exports);
 
     Napi::Value getRect(const Napi::CallbackInfo &info);

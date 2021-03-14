@@ -1,7 +1,6 @@
 #include "point.h"
-#include "keyboard.h"
+#include "events.h"
 #include "eventsource.h"
-
 #include <CoreGraphics/CoreGraphics.h>
 #include <iostream>
 #include <vector>
@@ -495,17 +494,4 @@ Napi::Value keyPress(const Napi::CallbackInfo &info) {
     keyDown(info);
     usleep(10000);
     return keyUp(info);
-}
-
-Napi::Value InitKeyboard(Napi::Env env, Napi::Object exports)
-{
-    Napi::Object obj = Napi::Object::New(env);
-    obj.Set(Napi::String::New(env, "on"), Napi::Function::New(env, on));
-    obj.Set(Napi::String::New(env, "off"), Napi::Function::New(env, off));
-    obj.Set(Napi::String::New(env, "isEnabled"), Napi::Function::New(env, isEnabled));
-    obj.Set(Napi::String::New(env, "keyDown"), Napi::Function::New(env, keyDown));
-    obj.Set(Napi::String::New(env, "keyUp"), Napi::Function::New(env, keyUp));
-    obj.Set(Napi::String::New(env, "keyPress"), Napi::Function::New(env, keyPress));
-    exports.Set("Keyboard", obj);
-    return exports;
 }

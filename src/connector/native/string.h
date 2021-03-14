@@ -1,6 +1,8 @@
 #pragma once
-
-#include <CoreGraphics/CoreGraphics.h>
 #include <string>
 
-std::string CFStringToString(CFStringRef cfString);
+#if defined(IS_MACOS)
+    #include <CoreGraphics/CoreGraphics.h>
+    std::string CFStringToString(CFStringRef cfString);
+#endif
+

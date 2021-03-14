@@ -1,12 +1,18 @@
 #include "ui.h"
-#include "screen.h"
-#include "keyboard.h"
+#include "events.h"
+#include "os.h"
 #include "string.h"
 #include <iostream>
 #include <vector>
-#include <CoreGraphics/CoreGraphics.h>
-#include <ApplicationServices/ApplicationServices.h>
-#include <experimental/optional>
+
+#if defined(IS_MACOS)
+    #include <CoreGraphics/CoreGraphics.h>
+    #include <ApplicationServices/ApplicationServices.h>    
+    #include <experimental/optional>
+#elif defined(IS_WINDOWS)
+    #include <optional>
+#endif
+
 #include <functional>
 #include <map>
 #include <algorithm>
@@ -25,7 +31,7 @@ int DIRECTION_RIGHT = 1;
 int AXIS_X = 0;
 int AXIS_Y = 1;
 
-std::experimental::optional<BitwigLayout> prevLayout;
+optional<BitwigLayout> prevLayout;
 
 // These are colors for midtones 28, black level 36
 // BenQ screen
@@ -215,21 +221,6 @@ bool operator==(const MWColor& lhs, const MWColor& rhs)
 /**
  * ImageDeets
  */
-ImageDeets::ImageDeets(CGImageRef latestImage, WindowInfo frame) {
-    this->frame = frame;
-    this->imageRef = latestImage;
-    CGDataProviderRef provider = CGImageGetDataProvider(latestImage);
-    imageData = CGDataProviderCopyData(provider);
-
-    bytesPerRow = CGImageGetBytesPerRow(latestImage);
-    bytesPerPixel = CGImageGetBitsPerPixel(latestImage) / 8;
-
-    info = CGImageGetBitmapInfo(latestImage);
-    width = frame.frame.w;
-    height = frame.frame.h;
-    maxInclOffset = getPixelOffset(XYPoint{width - 1, height - 1});
-};
-
 size_t ImageDeets::getPixelOffset(XYPoint point) {
     return (size_t)lround(point.y*bytesPerRow) + (size_t)lround(point.x*bytesPerPixel);
 };
@@ -238,22 +229,7 @@ bool ImageDeets::isWithinBounds(XYPoint point) {
     return point.x >= 0 && point.y >= 0 && getPixelOffset(point) <= maxInclOffset;
 };
 
-MWColor ImageDeets::colorAt(XYPoint point) {
-    size_t offset = getPixelOffset(point);
-    if (offset >= maxInclOffset) {
-        std::cout << "Offset outside range";
-        return MWColor{0, 0, 0};
-    }
-    const UInt8* dataPtr = CFDataGetBytePtr(imageData);
-
-    // int alpha = dataPtr[offset + 3],
-    int red = dataPtr[offset + 2],
-        green = dataPtr[offset + 1],
-        blue = dataPtr[offset + 0];
-    return MWColor{red, green, blue};
-};
-
-std::experimental::optional<XYPoint> ImageDeets::seekUntilColor(
+optional<XYPoint> ImageDeets::seekUntilColor(
     XYPoint startPoint,
     std::function<bool(MWColor)> tester, 
     int changeAxis,
@@ -289,11 +265,6 @@ std::experimental::optional<XYPoint> ImageDeets::seekUntilColor(
     }
 
     return {};
-};
-
-ImageDeets::~ImageDeets() {
-    CFRelease(imageRef);
-    CFRelease(imageData);
 };
 
 /**
@@ -636,65 +607,10 @@ Napi::Object BitwigWindow::Init(Napi::Env env, Napi::Object exports) {
     exports.Set("BitwigWindow", func);
     BitwigWindow::constructor = Napi::Persistent(func);
     BitwigWindow::constructor.SuppressDestruct();
+    return exports;
 };
 Napi::Value BitwigWindow::getRect(const Napi::CallbackInfo &info) {
     return rect.toJSObject(info.Env());
-};
-WindowInfo BitwigWindow::getFrame() {
-    // Go through all on screen windows, find BW, get its frame
-    CFArrayRef array = CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements, kCGNullWindowID);
-    CFIndex count = CFArrayGetCount(array);
-    for (CFIndex i = 0; i < count; i++) {
-        CFDictionaryRef dict = (CFDictionaryRef)CFArrayGetValueAtIndex(array, i);
-        auto str = CFStringToString((CFStringRef)CFDictionaryGetValue(dict, kCGWindowOwnerName));
-        if (str == "Bitwig Studio") {
-            CGRect windowRect;
-            CGRectMakeWithDictionaryRepresentation((CFDictionaryRef)(CFDictionaryGetValue(dict, kCGWindowBounds)), &windowRect);
-            if (windowRect.size.height < 100) {
-                // Bitwig opens a separate window for its tooltips, ignore this window
-                // TODO Revisit better way of only getting the main window
-                continue;
-            }
-            CGWindowID windowId;
-            CFNumberGetValue((CFNumberRef)CFDictionaryGetValue(dict, kCGWindowNumber), kCGWindowIDCFNumberType, &windowId);
-            CFRelease(array);
-            return WindowInfo{
-                windowId,
-                MWRect({ 
-                    (int)windowRect.origin.x, 
-                    (int)windowRect.origin.y,
-                    (int)windowRect.size.width, 
-                    (int)windowRect.size.height
-                })
-            };
-        }
-    }
-    CFRelease(array);
-    return WindowInfo{
-        1,
-        MWRect{0, 0, 0, 0}
-    };
-};
-
-ImageDeets* BitwigWindow::updateScreenshot() {
-    auto newFrame = getFrame();
-    if (newFrame.frame.w == 0 && newFrame.frame.h == 0) {
-        std::cout << "Couldn't find window, can't update screenshot";
-        return latestImageDeets;
-    }
-    lastBWFrame = newFrame;
-    if (latestImageDeets != nullptr) {
-        delete latestImageDeets;
-    }
-    // std::cout << "updating screenshot" << std::endl;
-    auto image = CGWindowListCreateImage(
-        CGRectNull, 
-        kCGWindowListOptionIncludingWindow, 
-        this->lastBWFrame.windowId, 
-        kCGWindowImageBoundsIgnoreFraming | kCGWindowImageNominalResolution
-    );
-    latestImageDeets = new ImageDeets(image, lastBWFrame);
-    return latestImageDeets;
 };
 
 Napi::Value updateUILayoutInfo(const Napi::CallbackInfo &info) {

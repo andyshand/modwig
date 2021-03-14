@@ -1,11 +1,19 @@
 #pragma once
 #include <napi.h>
-#include <CoreGraphics/CoreGraphics.h>
+
+#if defined(IS_MACOS)
+    #include <CoreGraphics/CoreGraphics.h>
+#endif
 
 class BESRect : public Napi::ObjectWrap<BESRect>
 {
 public:
-    CGFloat _x, _y, _w, _h;   
+    #if defined(IS_MACOS)
+        CGFloat _x, _y, _w, _h;   
+    #elif defined(IS_WINDOWS)
+        float _x, _y, _w, _h;
+    #endif
+    
     static Napi::FunctionReference constructor;
     Napi::Value GetX(const Napi::CallbackInfo &info) {
         Napi::Env env = info.Env();
@@ -25,8 +33,11 @@ public:
     }
     static Napi::Object Init(Napi::Env env, Napi::Object exports);
     BESRect(const Napi::CallbackInfo &info);
-    static Napi::Object FromCGRect(const Napi::Env env, CGRect cgRect);
-    CGRect asCGRect() {
-        return CGRectMake(_x, _y, _w, _h);
-    }
+
+    #if defined(IS_MACOS)
+        static Napi::Object FromCGRect(const Napi::Env env, CGRect cgRect);
+        CGRect asCGRect() {
+            return CGRectMake(_x, _y, _w, _h);
+        }
+    #endif
 };

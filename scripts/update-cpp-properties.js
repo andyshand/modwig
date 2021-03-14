@@ -1,5 +1,14 @@
 #!/usr/bin/env node
 
+function getInclude() {
+  const homedir = require('os').homedir()
+  if (require('os').platform() === 'win32') {
+    return require('path').join(homedir, 'AppData\\Local\\node-gyp\\Cache\\14.16.0\\include\\node')
+  } else {
+    return execSync('which node').toString().trim().replace(/bin/, 'include') 
+  }
+}
+
 const fs = require('fs')
 const execSync = require('child_process').execSync
 const cprops = {
@@ -32,7 +41,7 @@ const cprops = {
     version: 4
 }
 cprops.configurations[0].includePath = [
-    execSync('which node').toString().trim().replace(/bin/, 'include'),
+    getInclude(),
     "${workspaceFolder}/node_modules/node-addon-api",
     "${default}"
 ]
