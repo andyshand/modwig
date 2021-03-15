@@ -1,0 +1,4 @@
+﻿  dllmain.cpp
+Y:\Github\modwig-windows\src\connector\native\HookDll\HookDll\dllmain.cpp(7,17): warning C4081: expected 'identifier'; found 'string'
+     Creating library Y:\Github\modwig-windows\src\connector\native\HookDll\x64\Debug\HookDll.lib and object Y:\Github\modwig-windows\src\connector\native\HookDll\x64\Debug\HookDll.exp
+  HookDll.vcxproj -> Y:\Github\modwig-windows\src\connector\native\HookDll\x64\Debug\HookDll.dll

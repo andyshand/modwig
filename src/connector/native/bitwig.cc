@@ -3,6 +3,8 @@
 #include "events.h"
 
 #if defined(IS_MACOS)
+
+// could we use 'extern' here?
 static std::atomic<bool> activeAppDirty;
 #endif
 
