@@ -9,7 +9,7 @@
 #if defined(IS_MACOS)
     #include <CoreGraphics/CoreGraphics.h>
 #elif defined(IS_WINDOWS)
-
+    #include <windows.h>
 #endif
 
 Napi::Value GetMainScreen(const Napi::CallbackInfo &info) {

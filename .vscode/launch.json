@@ -1,7 +1,6 @@
 {
     "version": "0.2.0",
     "configurations": [
-    
        {
           "name": "(lldb) Attach",
           "type": "cppdbg",
@@ -10,30 +9,35 @@
           "processId": "${command:pickProcess}",
           "MIMode": "lldb"
        },
-    {
-       "type": "lldb",
-       "request": "launch",
-       "name": "Launch Program",
-       "program": "/usr/local/bin/electron",
-       "args": [
-          "/Users/andrewshand/Github/electron-quick-start-typescript/dist/main/main.js"
-       ]
-    },
-    {
-      "type": "lldb",
-      "request": "launch",
-      "name": "test.js",
-      "preLaunchTask": "npm: buildc:dev",
-      "program": "/Users/andrewshand/.nvm/versions/node/v12.9.1/bin/node",
-      "args": [
-         "/Users/andrewshand/Github/electron-quick-start-typescript/local/tests/keyboard.js"
-      ]
-   },
-   {
-      "name": "Attach to Main (Port 5858)",
-      "type": "node",
-      "request": "attach",
-      "port": 5858,
-      "sourceMaps": true
-    },]
-  }
+      {
+         "name": "(Windows) Launch",
+         "type": "cppvsdbg",
+         "request": "launch",
+         "program": "${workspaceFolder}/node_modules/electron/dist/electron.exe",
+         "args": [
+            "${workspaceFolder}/dist/main/main.js"
+         ],
+         "stopAtEntry": false,
+         "cwd": "${workspaceFolder}",
+         "environment": [],
+         "console": "externalTerminal"
+      },
+      {
+         "type": "lldb",
+         "request": "launch",
+         "name": "test.js",
+         "preLaunchTask": "npm: buildc:dev",
+         "program": "/Users/andrewshand/.nvm/versions/node/v12.9.1/bin/node",
+         "args": [
+            "/Users/andrewshand/Github/electron-quick-start-typescript/local/tests/keyboard.js"
+         ]
+      },
+      {
+         "name": "Attach to Main (Port 5858)",
+         "type": "node",
+         "request": "attach",
+         "port": 5858,
+         "sourceMaps": true
+      }
+   ]
+}

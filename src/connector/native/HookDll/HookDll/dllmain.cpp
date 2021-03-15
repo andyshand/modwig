@@ -25,7 +25,7 @@ HRESULT hResult;
 static LRESULT CALLBACK mouseHookProc(int nCode, WPARAM wParam, LPARAM lParam);
 //static LRESULT CALLBACK keyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam);
 
-__declspec(dllexport) BOOL WINAPI setMyHook(HWND hWnd)
+extern "C" __declspec(dllexport) BOOL WINAPI setMyHook(HWND hWnd)
 {
     if (hWndServer != NULL)
         return FALSE;
@@ -43,7 +43,7 @@ __declspec(dllexport) BOOL WINAPI setMyHook(HWND hWnd)
     return FALSE;
 }
 
-__declspec(dllexport) BOOL clearMyHook(HWND hWnd)
+extern "C" __declspec(dllexport) BOOL clearMyHook(HWND hWnd)
 {
     if (hWnd != hWndServer)
         return FALSE;
@@ -63,10 +63,14 @@ BOOL APIENTRY DllMain( HMODULE hModule,
     case DLL_PROCESS_ATTACH:
         // Save the instance handle because we need it to set the hook later
         hInstance = hModule;
+        std::cout << "Attaching..." << std::endl;
         return TRUE;
     case DLL_THREAD_ATTACH:
+        return TRUE;
     case DLL_THREAD_DETACH:
+        return TRUE;
     case DLL_PROCESS_DETACH:
+        std::cout << "Detaching..." << std::endl;
         // If the server has not unhooked the hook, unhook it as we unload
         if (hWndServer != NULL)
             clearMyHook(hWndServer);
@@ -86,6 +90,7 @@ static LRESULT CALLBACK mouseHookProc(int nCode, WPARAM wParam, LPARAM lParam)
         return 0;
     } /* pass it on */
 
+    std::cout << "Mouse hook proc triggered" << std::endl;
 
     COPYDATASTRUCT MyCDS;
     MYREC MyRec;
@@ -98,6 +103,7 @@ static LRESULT CALLBACK mouseHookProc(int nCode, WPARAM wParam, LPARAM lParam)
         || wParam == WM_RBUTTONDOWN
         || wParam == WM_RBUTTONUP) {
 
+        std::cout << "Button up/down" << std::endl;
         MyRec.x = GET_X_LPARAM(lParam);
         MyRec.y = GET_Y_LPARAM(lParam);
 
@@ -112,7 +118,9 @@ static LRESULT CALLBACK mouseHookProc(int nCode, WPARAM wParam, LPARAM lParam)
             MyRec.button = WM_LBUTTONUP ? 0 : 1;
         }
         #pragma warning(pop)
-        PostMessage(hWndServer,
+        // Must use SendMessage vs PostMessage here because copy data
+        // needs to know when to free the copied memory
+        SendMessage(hWndServer,
             WM_COPYDATA,
             0,
             (LPARAM)(LPVOID)&MyCDS);

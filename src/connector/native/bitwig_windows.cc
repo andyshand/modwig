@@ -32,6 +32,7 @@ Napi::Value GetPluginWindowsPosition(const Napi::CallbackInfo &info) {
         obj.Set(Napi::String::New(env, "h"), Napi::Number::New(env, rect.top - rect.bottom));
         obj.Set(Napi::String::New(env, "id"), Napi::String::New(env, buff));
         outObj.Set(Napi::String::New(env, buff), obj);
+        return FALSE;
     };
     EnumWindows([](HWND hWnd, LPARAM lParam) -> BOOL {
         char buff[255];
@@ -70,13 +71,14 @@ Napi::Value SetPluginWindowsPosition(const Napi::CallbackInfo &info) {
             rect.bottom - rect.top,
             0
         );
+        return FALSE;
     };
     EnumWindows([](HWND hWnd, LPARAM lParam) -> BOOL {
         char buff[255];
         GetWindowText(hWnd, (LPSTR) buff, 254);
         if (strcmp(buff, "BitwigPluginHost64.exe")) {
             EnumChildWindows(hWnd, [](HWND hWnd, LPARAM lParam) -> BOOL {
-                childWindowWorker(hWnd, lParam);
+                return childWindowWorker(hWnd, lParam);
             }, 0);
             return FALSE;
         }
@@ -142,6 +144,7 @@ Napi::Value CloseFloatingWindows(const Napi::CallbackInfo &info) {
         if (strcmp(buff, "BitwigPluginHost64.exe")) {
             EnumChildWindows(hWnd, [](HWND hWnd, LPARAM lParam) -> BOOL {
                 SendMessage(hWnd, WM_CLOSE, NULL, NULL);
+                return FALSE;
             }, 0);
             return FALSE;
         }

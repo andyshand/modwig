@@ -22,8 +22,8 @@ Napi::Value SetMousePosition(const Napi::CallbackInfo &info)
     Napi::Number y = info[1].As<Napi::Number>();
     INPUT mouseInput = {0};
     mouseInput.type = INPUT_MOUSE;
-    mouseInput.mi.dx = x.LongValue();
-    mouseInput.mi.dy = y.LongValue();
+    mouseInput.mi.dx = x.Uint32Value();
+    mouseInput.mi.dy = y.Uint32Value();
     mouseInput.mi.dwFlags = MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_MOVE | MOUSEEVENTF_VIRTUALDESK;
     mouseInput.mi.time = 0;
     SendInput(1, &mouseInput, sizeof(mouseInput));
@@ -47,11 +47,11 @@ void mouseUpDown(const Napi::CallbackInfo &info, bool down, bool doubleClick = f
     mouseInput.mi.dx = 0;
     mouseInput.mi.dy = 0;
     if (options.Has("x")) {
-        mouseInput.mi.dx = (LONG)options.Get("x").As<Napi::Number>().LongValue();
+        mouseInput.mi.dx = (LONG)options.Get("x").As<Napi::Number>().Uint32Value();
         dwFlags |= MOUSEEVENTF_ABSOLUTE;
     }
     if (options.Has("y")) {
-        mouseInput.mi.dy = (LONG)options.Get("y").As<Napi::Number>().LongValue();
+        mouseInput.mi.dy = (LONG)options.Get("y").As<Napi::Number>().Uint32Value();
         dwFlags |= MOUSEEVENTF_ABSOLUTE;
     }
     if (button == 0) {

@@ -12,5 +12,6 @@
 #include <tchar.h>
 #include <Windowsx.h>
 #include <StrSafe.h>
+#include <iostream>
 
 #endif //PCH_H

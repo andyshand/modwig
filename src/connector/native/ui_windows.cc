@@ -26,14 +26,14 @@ ImageDeets* BitwigWindow::updateScreenshot() {
 
 WindowInfo BitwigWindow::getFrame() {
     auto outRect = MWRect();
-    EnumWindows([](HWND hWnd, LPARAM lParam) -> BOOL {
+    static auto runner = [&](HWND hWnd, LPARAM lParam) -> BOOL {
         char buff[255];
         GetClassName(
             hWnd,
             (LPTSTR) buff,
             254
         );
-        if (strcmp(&buff, "bitwig")) {
+        if (strcmp(buff, "bitwig")) {
             RECT rect;
             GetWindowRect(hWnd, &rect);     
             outRect.x = rect.left;
@@ -43,7 +43,10 @@ WindowInfo BitwigWindow::getFrame() {
             return FALSE;
         }
         // continue the enumeration
-        return TRUE; 
+        return TRUE;
+    };
+    EnumWindows([](HWND hWnd, LPARAM lParam) -> BOOL {
+        return runner(hWnd, lParam);
     }, 0);
     return WindowInfo{
         outRect

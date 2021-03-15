@@ -76,7 +76,7 @@ Napi::Value keyPress(const Napi::CallbackInfo &info) {
 }
 
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-    std::cout << "Got something" << std::endl;
+    std::cout << "Got something" << uMsg <<  std::endl;
 
     if (uMsg == WM_COPYDATA)
       std::cout << "Got a message!" << std::endl;
@@ -106,9 +106,12 @@ Napi::Value InitKeyboardOS(Napi::Env env, Napi::Object exports) {
         setMyHook(messageWindow);
 
         MSG msg;
-        while (GetMessage(&msg, 0, 0, 0) > 0) {
+        while (GetMessage(&msg, NULL, 0, 0) > 0) {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
+
+        std::cout << "Exiting Windows message thread" << std::endl;
     } );
+    return exports;
 }
