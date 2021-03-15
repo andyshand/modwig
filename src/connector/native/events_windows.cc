@@ -1,6 +1,10 @@
 #include <windows.h>
 #include <napi.h>
+#include <thread>
 #include "events.h"
+
+bool threadSetup = false;
+std::thread nativeThread;
 
 CallbackInfo* addEventListener(EventListenerSpec spec) {
     CallbackInfo *ourInfo = new CallbackInfo;
@@ -69,4 +73,42 @@ Napi::Value keyPress(const Napi::CallbackInfo &info) {
     keyDown(info);
     Sleep(10000);
     return keyUp(info);
+}
+
+LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    std::cout << "Got something" << std::endl;
+
+    if (uMsg == WM_COPYDATA)
+      std::cout << "Got a message!" << std::endl;
+
+    return DefWindowProc(hWnd, uMsg, wParam, lParam);
+}
+
+typedef int (__cdecl *MYPROC)(HWND); 
+
+Napi::Value InitKeyboardOS(Napi::Env env, Napi::Object exports) {
+    nativeThread = std::thread( [=] {
+        HINSTANCE hInstance = GetModuleHandle(0);
+        WNDCLASS windowClass = {};
+        windowClass.lpfnWndProc = WindowProc;
+        windowClass.lpszClassName = "FoobarMessageOnlyWindow";
+        if (!RegisterClass(&windowClass)) {
+            std::cout << "Failed to register window class" << std::endl;
+            return 1;
+        }
+        HWND messageWindow = CreateWindowA("FoobarMessageOnlyWindow", 0, 0, 0, 0, 0, 0, HWND_MESSAGE, 0, 0, 0);
+        if (!messageWindow) {
+            std::cout << "Failed to create message-only window" << std::endl;
+            return 1;
+        }
+        auto hinstDLL = LoadLibrary(TEXT("Y:\\Github\\modwig-windows\\src\\connector\\native\\HookDll\\x64\\Debug\\HookDll.dll")); 
+        MYPROC setMyHook = (MYPROC)GetProcAddress(hinstDLL, "setMyHook"); 
+        setMyHook(messageWindow);
+
+        MSG msg;
+        while (GetMessage(&msg, 0, 0, 0) > 0) {
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+        }
+    } );
 }

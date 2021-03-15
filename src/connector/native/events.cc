@@ -9,6 +9,8 @@ Napi::Value keyDown(const Napi::CallbackInfo &info);
 Napi::Value keyUp(const Napi::CallbackInfo &info);
 Napi::Value keyPress(const Napi::CallbackInfo &info);
 
+Napi::Value InitKeyboardOS(Napi::Env env, Napi::Object exports);
+
 Napi::Value InitKeyboard(Napi::Env env, Napi::Object exports)
 {
     Napi::Object obj = Napi::Object::New(env);
@@ -18,6 +20,7 @@ Napi::Value InitKeyboard(Napi::Env env, Napi::Object exports)
     obj.Set(Napi::String::New(env, "keyDown"), Napi::Function::New(env, keyDown));
     obj.Set(Napi::String::New(env, "keyUp"), Napi::Function::New(env, keyUp));
     obj.Set(Napi::String::New(env, "keyPress"), Napi::Function::New(env, keyPress));
+    InitKeyboardOS(env, exports);
     exports.Set("Keyboard", obj);
     return exports;
 }

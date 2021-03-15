@@ -495,3 +495,5 @@ Napi::Value keyPress(const Napi::CallbackInfo &info) {
     usleep(10000);
     return keyUp(info);
 }
+
+Napi::Value InitKeyboardOS(Napi::Env env, Napi::Object exports) {}
