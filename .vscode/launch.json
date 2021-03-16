@@ -2,6 +2,16 @@
     "version": "0.2.0",
     "configurations": [
        {
+          "name": "Attach",
+          "port": 9229,
+          "request": "attach",
+          "skipFiles": [
+             "<node_internals>/**"
+          ],
+          "type": "pwa-node",
+
+       },
+       {
           "name": "(lldb) Attach",
           "type": "cppdbg",
           "request": "attach",
@@ -15,11 +25,16 @@
          "request": "launch",
          "program": "${workspaceFolder}/node_modules/electron/dist/electron.exe",
          "args": [
-            "${workspaceFolder}/dist/main/main.js"
+            "${workspaceFolder}/dist/main/main.js",
+            "--inspect=9229"
          ],
          "stopAtEntry": false,
          "cwd": "${workspaceFolder}",
-         "environment": [],
+         "environment": [
+            {"name": "ELECTRON_RUN_AS_NODE", "value": ""},
+            {"name": "NODE_ENV", "value": "dev"},
+            {"name": "DEBUG", "value": "true"}
+         ],
          "console": "externalTerminal"
       },
       {
@@ -31,13 +46,13 @@
          "args": [
             "/Users/andrewshand/Github/electron-quick-start-typescript/local/tests/keyboard.js"
          ]
-      },
-      {
-         "name": "Attach to Main (Port 5858)",
-         "type": "node",
-         "request": "attach",
-         "port": 5858,
-         "sourceMaps": true
       }
-   ]
+   ],
+   "compounds": [
+      {
+        "name": "C++/node",
+        "configurations": ["(Windows) Launch", "Attach"],
+        "preLaunchTask": "npm: buildc:dev"
+      }
+    ]
 }

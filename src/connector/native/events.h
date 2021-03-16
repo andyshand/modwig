@@ -24,13 +24,23 @@ struct JSEvent {
 struct CallbackInfo {
     int id;
     std::string eventType;
+
+    /**
+     * The JS callback to call (optional)
+     */    
+    Napi::ThreadSafeFunction cb = nullptr;
+
+    /**
+     * We use these callbacks internally in C++ world, so a JS functio
+     * isn't always necessary (optional)
+     */
+    std::function<void(JSEvent*)> nativeFn = nullptr;
     
     #if defined(IS_MACOS)
-        Napi::ThreadSafeFunction cb = nullptr;
-        std::function<void(JSEvent*)> nativeFn = nullptr;
         CGEventMask mask;
         CFMachPortRef tap;
         CFRunLoopSourceRef runloopsrc;
+    #elif defined(IS_WINDOWS)
     #endif
     
     bool operator ==(const CallbackInfo& other) const {

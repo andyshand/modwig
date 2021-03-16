@@ -3,7 +3,6 @@
 
 #if defined(IS_MACOS)
 std::map<MWKeyCode,std::string> keycodeMap = {
-  // Layout independent - will break on non-qwerty :(
   {0x00, "a"},
   {0x01, "s"},
   {0x02, "d"},
@@ -52,14 +51,14 @@ std::map<MWKeyCode,std::string> keycodeMap = {
   {0x2E, "m"},
   {0x2F, "."},
   {0x32, "`"},
-  {0x41, "."},
-  {0x43, "*"},
-  {0x45, "+"},
+  {0x41, "NumpadDecimal"},
+  {0x43, "NumpadMultiply"},
+  {0x45, "NumpadAdd"},
   {0x47, "Clear"},
-  {0x4B, "/"},
-  {0x4C, "Enter"},
-  {0x4E, "-"},
-  {0x51, "="},
+  {0x4B, "NumpadDivide"},
+  {0x4C, "NumpadEnter"},
+  {0x4E, "NumpadSubtract"},
+  {0x51, "NumpadEquals"},
   {0x52, "Numpad0"},
   {0x53, "Numpad1"},
   {0x54, "Numpad2"},

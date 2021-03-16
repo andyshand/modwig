@@ -1,59 +1,84 @@
 #include <windows.h>
 #include <napi.h>
+#include <vector>
+#include <mutex>
+#include <map>
+#include <string>
 #include <thread>
 #include "events.h"
 
+int nextId = 0;
 bool threadSetup = false;
 std::thread nativeThread;
+std::mutex m;
+
+std::map<std::string,std::vector<CallbackInfo*>> callbacksByEventType = {};
 
 CallbackInfo* addEventListener(EventListenerSpec spec) {
     CallbackInfo *ourInfo = new CallbackInfo;
+    ourInfo->nativeFn = spec.cb;
+    ourInfo->id = nextId++;
+    ourInfo->eventType = spec.eventType;
+    if (spec.jsFunction != nullptr) {
+        // std::cout << "Adding JS Listener";
+        ourInfo->cb = Napi::ThreadSafeFunction::New(
+            spec.env,
+            *spec.jsFunction, // JavaScript function called asynchronously                      
+            "Resource Name", // Name         
+            0, // Unlimited queue                      
+            1 // Initial thread count 
+        );                      
+    }
+    if (!callbacksByEventType.count(spec.eventType)) {
+        callbacksByEventType[spec.eventType] = {};
+    }
+    m.lock();
+    callbacksByEventType[spec.eventType].push_back(ourInfo);
+    m.unlock();
     return ourInfo;
 }
+
+typedef struct tagMYREC
+{
+    char type[80];
+    UINT x;
+    UINT y;
+    UINT button;
+} MYREC;
 
 /// Note that mousemove events seem to get fired when mouse is clicked too - TODO investigate
 Napi::Value on(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
-    // auto eventType = info[0].As<Napi::String>().Utf8Value();
-    // auto cb = info[1].As<Napi::Function>();
-    // auto ourInfo = addEventListener(EventListenerSpec({
-    //     eventType,
-    //     nullptr,
-    //     &cb,
-    //     env
-    // }));
-    // return Napi::Number::New(env, ourInfo->id);
-    return Napi::Number::New(env, 1);
+    auto eventType = info[0].As<Napi::String>().Utf8Value();
+    auto cb = info[1].As<Napi::Function>();
+    auto ourInfo = addEventListener(EventListenerSpec({
+        eventType,
+        nullptr,
+        &cb,
+        env
+    }));
+    return Napi::Number::New(env, ourInfo->id);
 }
 
 Napi::Value off(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
-    // int id = info[0].As<Napi::Number>();
-    // m.lock();
-    // callbacks.remove_if([=](CallbackInfo *e){ 
-    //     bool willRemove = e->id == id;     
-    //     if (willRemove) {
-    //         // free it
-    //         delete e;
-    //     }
-    //     return willRemove;
-    // });
-    // m.unlock();
+    int id = info[0].As<Napi::Number>();
+    m.lock();
+    for (auto const& [eventType, callbacks] : callbacksByEventType)
+    {
+        auto nonConstCbs = callbacksByEventType[eventType];
+        auto removeIf = std::remove_if(nonConstCbs.begin(), nonConstCbs.end(), [=](CallbackInfo* e){ 
+            bool willRemove = e->id == id;     
+            if (willRemove) {
+                // free it
+                delete e;
+            }
+            return willRemove;
+        });
+        nonConstCbs.erase(removeIf, callbacks.end());
+    }
+    m.unlock();
     return Napi::Boolean::New(env, true);
-}
-
-Napi::Value isEnabled(const Napi::CallbackInfo &info) {
-    Napi::Env env = info.Env();
-    // int id = info[0].As<Napi::Number>();
-
-    // auto it = std::find_if (callbacks.begin(), callbacks.end(), [=](CallbackInfo *e){ 
-    //     return e->id == id;
-    // });
-    // if (it != callbacks.end()) {
-    //     CallbackInfo* info = *it;
-    //     return Napi::Boolean::New(env, CGEventTapIsEnabled(info->tap));
-    // }
-    return Napi::Boolean::New(env, false);
 }
 
 Napi::Value keyPresser(const Napi::CallbackInfo &info, bool down) {
@@ -75,11 +100,48 @@ Napi::Value keyPress(const Napi::CallbackInfo &info) {
     return keyUp(info);
 }
 
+JSEvent jsEvent;
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     std::cout << "Got something" << uMsg <<  std::endl;
 
-    if (uMsg == WM_COPYDATA)
+    if (uMsg == WM_COPYDATA) {
       std::cout << "Got a message!" << std::endl;
+      auto pMyCDS = (PCOPYDATASTRUCT) lParam;
+      switch( pMyCDS->dwData )
+      {
+          case 1:
+              // Mouse event
+            auto e = (MYREC*)pMyCDS->lpData;
+            jsEvent.type = e->type;
+            jsEvent.button = e->button;
+            jsEvent.x = e->x;
+            jsEvent.y = e->y;
+            auto callback = []( Napi::Env env, Napi::Function jsCallback, JSEvent* value ) {
+                Napi::Object obj = Napi::Object::New(env);
+
+                obj.Set(Napi::String::New(env, "Meta"), Napi::Boolean::New(env, value->Meta));
+                obj.Set(Napi::String::New(env, "Shift"), Napi::Boolean::New(env, value->Shift));
+                obj.Set(Napi::String::New(env, "Control"), Napi::Boolean::New(env, value->Control));
+                obj.Set(Napi::String::New(env, "Alt"), Napi::Boolean::New(env, value->Alt));
+                obj.Set(Napi::String::New(env, "Fn"), Napi::Boolean::New(env, value->Fn));
+
+                obj.Set(Napi::String::New(env, "x"), Napi::Number::New(env, value->x));
+                obj.Set(Napi::String::New(env, "y"), Napi::Number::New(env, value->y));
+                obj.Set(Napi::String::New(env, "button"), Napi::Number::New(env, value->button));
+
+                jsCallback.Call( {obj} );
+            };
+            m.lock();
+            if (callbacksByEventType.count(e->type)) {
+                auto callbacks = callbacksByEventType[e->type];
+                for (auto cb : callbacks) {
+                    cb->cb.BlockingCall( &jsEvent, callback );
+                }
+            }
+            m.unlock();
+            break;
+      }
+    }
 
     return DefWindowProc(hWnd, uMsg, wParam, lParam);
 }
