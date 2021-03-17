@@ -1,6 +1,6 @@
 # Modwig (In Early Development)
 
-Modwig adds helpful keyboard shortcuts and extra features to Bitwig Studio. 
+Modwig adds extra keyboard shortcuts and features to Bitwig Studio. 
 
 ![Preferences](https://github.com/andyshand/modwig/raw/master/github/screenshots/screenshot.png)
 
@@ -25,7 +25,7 @@ Modwig adds helpful keyboard shortcuts and extra features to Bitwig Studio.
 
 ### VST Pass-through for Shortcuts
 
-By default, Bitwig blocks certain shortcuts from working when VST windows are focused. With Modwig, you can bypass this and allow any shortcut to work when you expect.
+With Modwig, all shortcuts can trigger whether VST windows are focused or not.
 
 ### Create Custom Macros
 
