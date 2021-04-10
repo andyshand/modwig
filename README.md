@@ -1,6 +1,6 @@
 # Modwig (In Early Development)
 
-Modwig adds extra keyboard shortcuts and features to Bitwig Studio. 
+Modwig is now Lockpick, [go here](https://github.com/morethanyouknowltd/lockpick) for the latest updates or join the [discord](https://discord.com/invite/6Wetp3ZsKv)
 
 ![Preferences](https://github.com/andyshand/modwig/raw/master/github/screenshots/screenshot.png)
 
@@ -30,7 +30,3 @@ With Modwig, all shortcuts can trigger whether VST windows are focused or not.
 ### Create Custom Macros
 
 Combine all available actions and shortcuts into your own macros using simple Javascript. For example, add a track, open device browser, type "EQ" and hit enter. See [the wiki](https://github.com/andyshand/modwig/wiki/Creating-a-Custom-Mod#running-other-actions-macros) for details.
-
-# Setup
-
-Please note Modwig is currently Mac only, quite unstable and should probably only be used if you're a developer and can afford to troubleshoot issues. See https://github.com/andyshand/modwig/blob/master/CONTRIBUTING.md for developer setup instructions, or ask questions at the [discord](https://discord.com/invite/6Wetp3ZsKv).
