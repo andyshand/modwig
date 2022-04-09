@@ -42,7 +42,7 @@
     "electron-util": "^0.12.2",
     "is-electron-renderer": "^2.0.1",
     "js-base64": "^3.4.2",
-    "moment": "^2.24.0",
+    "moment": "^2.29.2",
     "node-addon-api": "^3.0.0",
     "request": "^2.88.0",
     "semver": "^6.3.0",
